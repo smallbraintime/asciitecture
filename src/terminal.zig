@@ -23,8 +23,9 @@ pub const Terminal = struct {
         return Terminal{ .buffer = buffer };
     }
 
-    pub fn render(_: Terminal, updateBuffer: fn (buff: *Buffer) void) void {
+    pub fn render(self: Terminal, updateBuffer: fn (buff: *Buffer) void) void {
         updateBuffer();
+        self.draw();
     }
 
     fn draw(self: Terminal) void {

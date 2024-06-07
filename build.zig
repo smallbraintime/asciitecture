@@ -5,7 +5,19 @@ pub fn build(b: *std.Build) void {
 
     const optimize = b.standardOptimizeOption(.{});
 
-    _ = b.addModule("ascii-effect", .{ .root_source_file = .{ .path = "src/root.zig" } });
+    const asciitecture_mod = b.addModule("asciitecture", .{
+        .root_source_file = b.path("src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const example = b.addExecutable(.{
+        .name = "example",
+        .root_source_file = b.path("example/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    example.root_module.addImport("asciitecture", asciitecture_mod);
 
     const lib_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/root.zig"),
