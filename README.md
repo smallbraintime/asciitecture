@@ -1,2 +1,2 @@
 # asciitecture
-a simple ascii graphics engine
+a simple ascii graphics library

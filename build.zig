@@ -18,6 +18,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     example.root_module.addImport("asciitecture", asciitecture_mod);
+    const example_run = b.addRunArtifact(example);
+    const example_step = b.step("example", "Run example");
+    example_step.dependOn(&example_run.step);
 
     const lib_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/root.zig"),

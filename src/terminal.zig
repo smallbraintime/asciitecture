@@ -23,12 +23,12 @@ pub const Terminal = struct {
         return Terminal{ .buffer = buffer };
     }
 
-    pub fn render(self: Terminal, updateBuffer: fn (buff: *Buffer) void) void {
+    pub fn render(self: *Terminal, updateBuffer: fn (buff: *Buffer) void) void {
         updateBuffer();
         self.draw();
     }
 
-    fn draw(self: Terminal) void {
+    fn draw(self: *Terminal) void {
         const buf = self.buffer;
         for (0..buf.height) |y| {
             for (0..buf.width) |x| {
@@ -60,6 +60,12 @@ pub const Buffer = struct {
     buf: []Cell,
     height: usize,
     width: usize,
+
+    pub fn setCell(self: *Buffer, x: i32, y: i32, style: Cell) void {
+        if (x >= 0 and x < self.width and y >= 0 and y < self.height) {
+            self.buf[y * self.width + x] = style;
+        }
+    }
 };
 
 pub const Cell = struct { char: u8, fg: Color, bg: Color, mod: Attribute };
