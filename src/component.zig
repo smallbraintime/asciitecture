@@ -80,7 +80,7 @@ pub const Rectange = struct {
     height: usize,
     pos: Vec2,
     style: Cell,
-    fill: bool,
+    filled: bool,
 
     pub fn render(self: *Rectange, buffer: *Buffer) void {
         const topLeft = self.pos;
@@ -88,23 +88,35 @@ pub const Rectange = struct {
         const bottomLeft = Vec2{ .x = self.pos.x, .y = self.pos.y + self.height - 1 };
         const bottomRight = Vec2{ .x = self.pos.x + self.width - 1, .y = self.pos.y + self.height - 1 };
 
-        buffer.drawLine(topLeft, topRight, self.style);
-        buffer.drawLine(topRight, bottomRight, self.style);
-        buffer.drawLine(bottomRight, bottomLeft, self.style);
-        buffer.drawLine(bottomLeft, topLeft, self.style);
+        drawLine(buffer, topLeft, topRight, self.style);
+        drawLine(buffer, topRight, bottomRight, self.style);
+        drawLine(buffer, bottomRight, bottomLeft, self.style);
+        drawLine(buffer, bottomLeft, topLeft, self.style);
 
-        if (self.fill) {}
+        if (self.filled) {
+            fill(buffer, Vec2{ .x = topLeft.x + 1, .y = topLeft.y + 1 }, self.style);
+        }
     }
 };
 
 pub const Triangle = struct {
-    points: [3]Vec2,
+    verticies: [3]Vec2,
     pos: Vec2,
     style: Cell,
-    fill: bool,
+    filled: bool,
 
     pub fn render(self: *Triangle, buffer: *Buffer) void {
-        if (self.fill) {}
+        const p1 = self.verticies[0];
+        const p2 = self.verticies[2];
+        const p3 = self.verticies[3];
+
+        drawLine(buffer, p1, p2, self.style);
+        drawLine(buffer, p2, p3, self.style);
+        drawLine(buffer, p3, p1, self.style);
+
+        if (self.filled) {
+            fill(buffer, Vec2{ .x = (p1.x + p2.x + p3.x) / 3, .y = (p1.y + p2.y + p3.y) / 3 }, self.style);
+        }
     }
 };
 
@@ -112,10 +124,14 @@ pub const Circle = struct {
     radius: usize,
     pos: Vec2,
     style: Cell,
-    fill: bool,
+    filled: bool,
 
     pub fn render(self: *Circle, buffer: *Buffer) void {
-        if (self.fill) {}
+        drawCircle(buffer, self.pos, self.radius, self.style);
+
+        if (self.filled) {
+            fill(buffer, self.pos, self.style);
+        }
     }
 };
 
@@ -136,7 +152,7 @@ pub const Text = struct {
             .mod = self.mod,
         };
 
-        for (0..self.spans.len) |i| {
+        for (0..self.content.len) |i| {
             style.char = self.content[i];
             buffer.setCell(x + i, y, style);
         }
@@ -149,7 +165,10 @@ pub const Particle = struct {
     velocity: Vec2,
     pos: Vec2,
 
-    pub fn render(self: *Particle, buffer: *Buffer) void {}
+    pub fn render(self: *Particle, buffer: *Buffer) void {
+        _ = self;
+        _ = buffer;
+    }
 };
 
 pub const ParticleEffect = struct {
@@ -163,7 +182,10 @@ pub const ParticleEffect = struct {
     isActive: bool,
     pos: Vec2,
 
-    pub fn render(self: *ParticleEffect, buffer: *Buffer) void {}
+    pub fn render(self: *ParticleEffect, buffer: *Buffer) void {
+        _ = self;
+        _ = buffer;
+    }
 };
 
 pub fn drawLine(self: *Buffer, start: Vec2, end: Vec2, style: Cell) void {
@@ -193,7 +215,112 @@ pub fn drawLine(self: *Buffer, start: Vec2, end: Vec2, style: Cell) void {
     }
 }
 
-pub fn flood_fill(x: Vec2, y: Vec2, style: Cell) void {}
+pub fn drawCircle(buffer: *Buffer, pos: Vec2, radius: usize, style: Cell) void {
+    var x = 0;
+    var y = radius;
+    var d = 3 - 2 * radius;
+
+    putCircleCells(buffer, pos, Vec2{ .x = x, .y = radius }, style);
+
+    while (y >= x) {
+        x += 1;
+
+        if (d > 0) {
+            y -= 1;
+            d = d + 4 * (x - y) + 10;
+        } else {
+            d = d + 4 * x + 6;
+        }
+
+        putCircleCells(buffer, pos, Vec2{ .x = x, .y = y }, style);
+    }
+}
+
+fn putCircleCells(buffer: *Buffer, pos: Vec2, edge: Vec2, style: Cell) void {
+    buffer.setCell(pos.x + edge.x, pos.y + edge.y, style);
+    buffer.setCell(pos.x - edge.x, pos.y + edge.y, style);
+    buffer.setCell(pos.x + edge.x, pos.y - edge.y, style);
+    buffer.setCell(pos.x - edge.x, pos.y - edge.y, style);
+    buffer.setCell(pos.x + edge.x, pos.y + edge.y, style);
+    buffer.setCell(pos.x - edge.x, pos.y + edge.y, style);
+    buffer.setCell(pos.x + edge.x, pos.y - edge.y, style);
+    buffer.setCell(pos.x - edge.x, pos.y - edge.y, style);
+}
+
+pub fn fill(buffer: *Buffer, startPos: Vec2, newStyle: Cell) void {
+    flood_fill(
+        buffer,
+        startPos,
+        newStyle,
+        buffer.buf[startPos.y * buffer.width + startPos.x].style,
+        newStyle,
+        std.ArrayList(Vec2),
+    );
+}
+
+pub fn flood_fill(
+    buffer: *Buffer,
+    startPos: Vec2,
+    newStyle: Cell,
+    oldStyle: Cell,
+    visited: std.ArrayList(Vec2),
+) void {
+    const rowInBounds = startPos.x >= 0 and startPos.x < buffer.len;
+    const colInBounds = startPos.y >= 0 and startPos.y < buffer.buf[0].len;
+
+    if (!rowInBounds or !colInBounds) return;
+    for (&visited) |*pos| {
+        if (std.mem.eql(Vec2, pos, startPos)) return;
+    }
+    if (buffer.getCell(startPos.x, startPos.y).style != oldStyle) return;
+
+    try visited.append(startPos);
+    buffer.setCell(startPos.x, startPos.y);
+
+    flood_fill(
+        buffer,
+        {
+            startPos.x += 1;
+            return startPos;
+        },
+        newStyle,
+        oldStyle,
+        visited,
+    );
+
+    flood_fill(
+        buffer,
+        {
+            startPos.x -= 1;
+            return startPos;
+        },
+        newStyle,
+        oldStyle,
+        visited,
+    );
+
+    flood_fill(
+        buffer,
+        {
+            startPos.y += 1;
+            return startPos;
+        },
+        newStyle,
+        oldStyle,
+        visited,
+    );
+
+    flood_fill(
+        buffer,
+        {
+            startPos.y -= 1;
+            return startPos;
+        },
+        newStyle,
+        oldStyle,
+        visited,
+    );
+}
 
 // pub const Canvas = struct {
 //     width: usize,

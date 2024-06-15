@@ -6,7 +6,7 @@ const curses = @cImport({
 pub const Terminal = struct {
     buffer: Buffer,
 
-    pub fn init(allocator: *std.mem.Allocator) Terminal {
+    pub fn init(allocator: std.mem.Allocator) Terminal {
         const stdscr: *curses.WINDOW = curses.initscr();
 
         curses.raw();
@@ -64,6 +64,14 @@ pub const Buffer = struct {
     pub fn setCell(self: *Buffer, x: i32, y: i32, style: Cell) void {
         if (x >= 0 and x < self.width and y >= 0 and y < self.height) {
             self.buf[y * self.width + x] = style;
+        }
+    }
+
+    pub fn getCell(self: *Buffer, x: i32, y: i32) Cell {
+        if (x >= 0 and x < self.width and y >= 0 and y < self.height) {
+            return self.buf[y * self.width + x];
+        } else {
+            unreachable;
         }
     }
 };

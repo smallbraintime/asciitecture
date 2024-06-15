@@ -2,7 +2,6 @@ const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
-
     const optimize = b.standardOptimizeOption(.{});
 
     const asciitecture_mod = b.addModule("asciitecture", .{
@@ -10,6 +9,9 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const options = b.addOptions();
+    const options_mod = options.createModule();
+    asciitecture_mod.addImport("build_options", options_mod);
 
     const example = b.addExecutable(.{
         .name = "example",
@@ -27,9 +29,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
-
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
 }

@@ -2,8 +2,9 @@ const std = @import("std");
 const at = @import("asciitecture");
 
 pub fn main() void {
-    const allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer allocator.deinit();
+    const arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
     const term = at.Terminal.init(allocator);
 
