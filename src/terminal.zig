@@ -36,7 +36,7 @@ pub const Terminal = struct {
                 const char = cell.char;
                 const fg = colorToCurses(cell.fg);
                 const bg = colorToCurses(cell.bg);
-                const attr = attrToCurses(cell.mod);
+                const attr = attrToCurses(cell.attr);
                 const pairIndex: c_short = y * buf.width + x;
 
                 curses.init_pair(pairIndex, fg, bg);
@@ -61,13 +61,13 @@ pub const Buffer = struct {
     height: usize,
     width: usize,
 
-    pub fn setCell(self: *Buffer, x: i32, y: i32, style: Cell) void {
+    pub fn setCell(self: *Buffer, x: usize, y: usize, style: Cell) void {
         if (x >= 0 and x < self.width and y >= 0 and y < self.height) {
             self.buf[y * self.width + x] = style;
         }
     }
 
-    pub fn getCell(self: *Buffer, x: i32, y: i32) Cell {
+    pub fn getCell(self: *Buffer, x: usize, y: usize) Cell {
         if (x >= 0 and x < self.width and y >= 0 and y < self.height) {
             return self.buf[y * self.width + x];
         } else {
@@ -76,7 +76,7 @@ pub const Buffer = struct {
     }
 };
 
-pub const Cell = struct { char: u8, fg: Color, bg: Color, mod: Attribute };
+pub const Cell = struct { char: u8, fg: Color, bg: Color, attr: Attribute };
 
 pub const Color = enum {
     black,

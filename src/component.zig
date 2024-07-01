@@ -1,13 +1,13 @@
 const std = @import("std");
-const term = @import("terminal.zig").Cell;
+const term = @import("terminal.zig");
 const Cell = term.Cell;
 const Buffer = term.Buffer;
 const Color = term.Color;
 const Modifier = term.Modifier;
 
 pub const Vec2 = struct {
-    x: isize,
-    y: isize,
+    x: u32,
+    y: u32,
 };
 
 pub const StaticObject = struct {
@@ -45,7 +45,7 @@ const Component = union(enum) {
     particle: ParticleEffect,
     // canvas: Canvas,
 
-    pub fn render(self: *Component, buffer: *Buffer) void {
+    pub fn render(self: *const Component, buffer: *Buffer) void {
         switch (self.*) {
             inline else => |*case| return try case.render(*buffer),
         }
@@ -70,8 +70,8 @@ pub const Line = struct {
     end: Vec2,
     style: Cell,
 
-    pub fn render(self: *Line, buffer: *Buffer) void {
-        drawLine(*buffer, self.start, self.end, self.style);
+    pub fn render(self: *const Line, buffer: *Buffer) void {
+        drawLine(buffer, self.start, self.end, self.style);
     }
 };
 
@@ -82,7 +82,7 @@ pub const Rectange = struct {
     style: Cell,
     filled: bool,
 
-    pub fn render(self: *Rectange, buffer: *Buffer) void {
+    pub fn render(self: *const Rectange, buffer: *Buffer) void {
         const topLeft = self.pos;
         const topRight = Vec2{ .x = self.pos.x + self.width - 1, .y = self.pos.y };
         const bottomLeft = Vec2{ .x = self.pos.x, .y = self.pos.y + self.height - 1 };
@@ -105,7 +105,7 @@ pub const Triangle = struct {
     style: Cell,
     filled: bool,
 
-    pub fn render(self: *Triangle, buffer: *Buffer) void {
+    pub fn render(self: *const Triangle, buffer: *Buffer) void {
         const p1 = self.verticies[0];
         const p2 = self.verticies[2];
         const p3 = self.verticies[3];
@@ -126,7 +126,7 @@ pub const Circle = struct {
     style: Cell,
     filled: bool,
 
-    pub fn render(self: *Circle, buffer: *Buffer) void {
+    pub fn render(self: *const Circle, buffer: *Buffer) void {
         drawCircle(buffer, self.pos, self.radius, self.style);
 
         if (self.filled) {
@@ -142,7 +142,7 @@ pub const Text = struct {
     mod: Modifier,
     pos: Vec2,
 
-    pub fn render(self: *Text, buffer: *Buffer) void {
+    pub fn render(self: *const Text, buffer: *Buffer) void {
         const x = self.pos.x;
         const y = self.pos.y;
 
@@ -165,7 +165,7 @@ pub const Particle = struct {
     velocity: Vec2,
     pos: Vec2,
 
-    pub fn render(self: *Particle, buffer: *Buffer) void {
+    pub fn render(self: *const Particle, buffer: *Buffer) void {
         _ = self;
         _ = buffer;
     }
@@ -182,26 +182,26 @@ pub const ParticleEffect = struct {
     isActive: bool,
     pos: Vec2,
 
-    pub fn render(self: *ParticleEffect, buffer: *Buffer) void {
+    pub fn render(self: *const ParticleEffect, buffer: *Buffer) void {
         _ = self;
         _ = buffer;
     }
 };
 
 pub fn drawLine(self: *Buffer, start: Vec2, end: Vec2, style: Cell) void {
-    var x0 = start.x;
-    var y0 = start.y;
-    const x1 = end.x;
-    const y1 = end.y;
+    var x0: i32 = @intCast(start.x);
+    var y0: i32 = @intCast(start.y);
+    const x1: i32 = @intCast(end.x);
+    const y1: i32 = @intCast(end.y);
 
-    const dx = @abs(x1 - x0);
-    const dy = @abs(y1 - y0);
-    const sx = if (x0 < x1) 1 else -1;
-    const sy = if (y0 < y1) 1 else -1;
+    const dx: i32 = @intCast(@abs(x1 - x0));
+    const dy: i32 = @intCast(@abs(y1 - y0));
+    const sx: i32 = if (x0 < x1) 1 else -1;
+    const sy: i32 = if (y0 < y1) 1 else -1;
     var err = dx - dy;
 
     while (true) {
-        self.setCell(x0, y0, style);
+        self.setCell(@intCast(x0), @intCast(y0), style);
         if (x0 == x1 and y0 == y1) break;
         const e2 = 2 * err;
         if (e2 > -dy) {

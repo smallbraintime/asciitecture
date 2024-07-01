@@ -2,6 +2,7 @@ const term = @import("terminal.zig");
 pub const Terminal = term.Terminal;
 pub const Color = term.Color;
 pub const Attribute = term.Attribute;
+pub const Cell = term.Cell;
 pub const colorToCurses = term.colorToCurses;
 pub const attrToCurses = term.attrToCurses;
 
@@ -14,5 +15,4 @@ pub const Rectangle = component.Rectange;
 pub const Triangle = component.Triangle;
 pub const Circle = component.Circle;
 pub const Text = component.Text;
-pub const Canvas = component.Canvas;
-
+// pub const Canvas = component.Canvas;
