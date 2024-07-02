@@ -16,8 +16,8 @@ pub const Terminal = struct {
         _ = curses.start_color();
         _ = curses.refresh();
 
-        const max_y: usize = @intCast(curses.getmaxy(stdscr));
-        const max_x: usize = @intCast(curses.getmaxx(stdscr));
+        const max_y: u32 = @intCast(curses.getmaxy(stdscr));
+        const max_x: u32 = @intCast(curses.getmaxx(stdscr));
 
         var buf = try std.ArrayList(Cell).initCapacity(allocator, max_y * max_x);
         try buf.appendNTimes(
@@ -78,16 +78,16 @@ pub const Terminal = struct {
 
 pub const Buffer = struct {
     buf: std.ArrayList(Cell),
-    height: usize,
-    width: usize,
+    height: u32,
+    width: u32,
 
-    pub fn setCell(self: *Buffer, x: usize, y: usize, style: Cell) void {
+    pub fn setCell(self: *Buffer, x: u32, y: u32, style: Cell) void {
         if (x >= 0 and x < self.width and y >= 0 and y < self.height) {
             self.buf.items[y * self.width + x] = style;
         }
     }
 
-    pub fn getCell(self: *Buffer, x: usize, y: usize) Cell {
+    pub fn getCell(self: *Buffer, x: u32, y: u32) Cell {
         if (x >= 0 and x < self.width and y >= 0 and y < self.height) {
             return self.buf.items[y * self.width + x];
         } else {

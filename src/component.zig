@@ -155,7 +155,7 @@ pub const Text = struct {
 
         for (0..self.content.len) |i| {
             style.char = self.content[i];
-            buffer.setCell(x + i, y, style);
+            buffer.setCell(@intCast(x + i), y, style);
         }
     }
 };

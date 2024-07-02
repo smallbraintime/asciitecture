@@ -10,7 +10,7 @@ pub fn main() !void {
 
     var line = at.Line{
         .start = at.Vec2{ .x = 0, .y = 0 },
-        .end = at.Vec2{ .x = 20, .y = 0 },
+        .end = at.Vec2{ .x = term.buffer.width, .y = 0 },
         .style = at.Cell{ .char = '*', .fg = at.Color.white, .bg = at.Color.black, .attr = at.Attribute.normal },
     };
 
@@ -20,7 +20,7 @@ pub fn main() !void {
         .height = 10,
         .style = at.Cell{
             .fg = at.Color.red,
-            .bg = at.Color.white,
+            .bg = at.Color.black,
             .char = '*',
             .attr = at.Attribute.normal,
         },
@@ -68,8 +68,11 @@ pub fn main() !void {
             rectangle.pos.x -= 1;
         }
 
-        line.end.y += 1;
-        line.end.x += 1;
+        if (!toggle) {
+            line.end.y += 1;
+        } else {
+            line.end.y -= 1;
+        }
 
         if (triangle.verticies[0].y != 0) {
             triangle.verticies[0].y -= 1;
