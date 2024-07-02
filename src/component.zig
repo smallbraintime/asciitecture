@@ -76,13 +76,13 @@ pub const Line = struct {
 };
 
 pub const Rectange = struct {
-    width: usize,
-    height: usize,
+    width: u32,
+    height: u32,
     pos: Vec2,
     style: Cell,
     filled: bool,
 
-    pub fn render(self: *const Rectange, buffer: *Buffer) void {
+    pub fn render(self: *const Rectange, buffer: *Buffer) !void {
         const topLeft = self.pos;
         const topRight = Vec2{ .x = self.pos.x + self.width - 1, .y = self.pos.y };
         const bottomLeft = Vec2{ .x = self.pos.x, .y = self.pos.y + self.height - 1 };
@@ -94,7 +94,7 @@ pub const Rectange = struct {
         drawLine(buffer, bottomLeft, topLeft, self.style);
 
         if (self.filled) {
-            fill(buffer, Vec2{ .x = topLeft.x + 1, .y = topLeft.y + 1 }, self.style);
+            try fill(buffer, Vec2{ .x = topLeft.x + 1, .y = topLeft.y + 1 }, self.style);
         }
     }
 };
@@ -247,14 +247,17 @@ fn putCircleCells(buffer: *Buffer, pos: Vec2, edge: Vec2, style: Cell) void {
     buffer.setCell(pos.x - edge.x, pos.y - edge.y, style);
 }
 
-pub fn fill(buffer: *Buffer, startPos: Vec2, newStyle: Cell) void {
-    flood_fill(
+pub fn fill(buffer: *Buffer, startPos: Vec2, newStyle: Cell) !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var visited = std.ArrayList(Vec2).init(gpa.allocator());
+    defer _ = visited.deinit();
+
+    try flood_fill(
         buffer,
         startPos,
         newStyle,
-        buffer.buf[startPos.y * buffer.width + startPos.x].style,
-        newStyle,
-        std.ArrayList(Vec2),
+        buffer.buf.items[startPos.y * buffer.width + startPos.x],
+        &visited,
     );
 }
 
@@ -263,59 +266,57 @@ pub fn flood_fill(
     startPos: Vec2,
     newStyle: Cell,
     oldStyle: Cell,
-    visited: std.ArrayList(Vec2),
-) void {
-    const rowInBounds = startPos.x >= 0 and startPos.x < buffer.len;
-    const colInBounds = startPos.y >= 0 and startPos.y < buffer.buf[0].len;
+    visited: *std.ArrayList(Vec2),
+) !void {
+    const rowInBounds = startPos.x >= 0 and startPos.x < buffer.height;
+    const colInBounds = startPos.y >= 0 and startPos.y < buffer.width;
 
     if (!rowInBounds or !colInBounds) return;
-    for (&visited) |*pos| {
-        if (std.mem.eql(Vec2, pos, startPos)) return;
+    for (try visited.toOwnedSlice()) |pos| {
+        if (pos.x == startPos.x and pos.y == startPos.y) {
+            return;
+        }
     }
-    if (buffer.getCell(startPos.x, startPos.y).style != oldStyle) return;
+    if (std.meta.eql(buffer.getCell(startPos.x, startPos.y), oldStyle)) return;
 
     try visited.append(startPos);
-    buffer.setCell(startPos.x, startPos.y);
+    buffer.setCell(startPos.x, startPos.y, newStyle);
 
-    flood_fill(
+    var startPos1 = startPos;
+    startPos1.x += 1;
+    try flood_fill(
         buffer,
-        {
-            startPos.x += 1;
-            return startPos;
-        },
+        startPos1,
         newStyle,
         oldStyle,
         visited,
     );
 
-    flood_fill(
+    var startPos2 = startPos;
+    startPos2.x -= 1;
+    try flood_fill(
         buffer,
-        {
-            startPos.x -= 1;
-            return startPos;
-        },
+        startPos2,
         newStyle,
         oldStyle,
         visited,
     );
 
-    flood_fill(
+    var startPos3 = startPos;
+    startPos3.y += 1;
+    try flood_fill(
         buffer,
-        {
-            startPos.y += 1;
-            return startPos;
-        },
+        startPos3,
         newStyle,
         oldStyle,
         visited,
     );
 
-    flood_fill(
+    var startPos4 = startPos;
+    startPos4.y -= 1;
+    try flood_fill(
         buffer,
-        {
-            startPos.y -= 1;
-            return startPos;
-        },
+        startPos4,
         newStyle,
         oldStyle,
         visited,

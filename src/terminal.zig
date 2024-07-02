@@ -1,24 +1,39 @@
 const std = @import("std");
-const curses = @cImport({
-    @cInclude("curses.h");
-});
+const curses = @cImport(@cInclude("curses.h"));
+const cstdio = @cImport(@cInclude("stdio.h"));
 
 pub const Terminal = struct {
     buffer: Buffer,
 
-    pub fn init(allocator: std.mem.Allocator) Terminal {
+    pub fn init(allocator: std.mem.Allocator) !Terminal {
         const stdscr: *curses.WINDOW = curses.initscr();
 
-        curses.raw();
-        curses.newterm(null, std.stdout, std.stdin);
-        curses.clearok(stdscr, true);
-        curses.refresh();
+        _ = curses.raw();
+        _ = curses.noecho();
+        _ = curses.keypad(stdscr, true);
+        _ = curses.clearok(stdscr, true);
+        _ = curses.refresh();
 
-        const max_y = curses.getmaxy(stdscr);
-        const max_x = curses.getmaxx(stdscr);
+        const max_y: usize = @intCast(curses.getmaxy(stdscr));
+        const max_x: usize = @intCast(curses.getmaxx(stdscr));
 
-        const buf = try allocator.alloc(Cell, @intCast(max_y * max_x));
-        const buffer = Buffer{ .buf = buf, .height = max_y, .width = max_x };
+        var buf = try std.ArrayList(Cell).initCapacity(allocator, max_y * max_x);
+        try buf.appendNTimes(
+            .{
+                .char = ' ',
+                .fg = Color.black,
+                .bg = Color.black,
+                .attr = Attribute.normal,
+            },
+            max_y * max_x,
+        );
+        try buf.ensureTotalCapacity(max_y * max_x);
+
+        const buffer = Buffer{
+            .buf = buf,
+            .height = max_y,
+            .width = max_x,
+        };
 
         return Terminal{ .buffer = buffer };
     }
@@ -28,51 +43,60 @@ pub const Terminal = struct {
         self.draw();
     }
 
-    fn draw(self: *Terminal) void {
-        const buf = self.buffer;
+    pub fn draw(self: *Terminal) void {
+        const buf = &self.buffer;
         for (0..buf.height) |y| {
             for (0..buf.width) |x| {
-                const cell = buf.buf[y * buf.width + x];
+                const cell = buf.buf.items[y * buf.width + x];
                 const char = cell.char;
                 const fg = colorToCurses(cell.fg);
                 const bg = colorToCurses(cell.bg);
                 const attr = attrToCurses(cell.attr);
-                const pairIndex: c_short = y * buf.width + x;
+                const pairIndex: c_short = @intCast((fg << 8) | bg);
 
-                curses.init_pair(pairIndex, fg, bg);
-                curses.attron(curses.COLOR_PAIR(pairIndex));
-                curses.attron(attr);
-                curses.mvaddch(y, x, char);
-                curses.attroff(attr);
-                curses.attroff(curses.COLOR_PAIR(pairIndex));
+                _ = curses.init_pair(pairIndex, @intCast(fg), @intCast(bg));
+                _ = curses.attron(curses.COLOR_PAIR(pairIndex));
+                _ = curses.attron(@intCast(attr));
+                _ = curses.mvaddch(@intCast(y), @intCast(x), char);
             }
         }
-        curses.refresh();
+
+        _ = curses.refresh();
+        self.buffer.clear();
     }
 
-    pub fn deinit(self: Terminal, allocator: *std.mem.Allocator) void {
-        allocator.free(self.buffer);
-        curses.endwin();
+    pub fn deinit(self: *Terminal) void {
+        self.buffer.buf.deinit();
+        _ = curses.endwin();
     }
 };
 
 pub const Buffer = struct {
-    buf: []Cell,
+    buf: std.ArrayList(Cell),
     height: usize,
     width: usize,
 
     pub fn setCell(self: *Buffer, x: usize, y: usize, style: Cell) void {
         if (x >= 0 and x < self.width and y >= 0 and y < self.height) {
-            self.buf[y * self.width + x] = style;
+            self.buf.items[y * self.width + x] = style;
         }
     }
 
     pub fn getCell(self: *Buffer, x: usize, y: usize) Cell {
         if (x >= 0 and x < self.width and y >= 0 and y < self.height) {
-            return self.buf[y * self.width + x];
+            return self.buf.items[y * self.width + x];
         } else {
             unreachable;
         }
+    }
+
+    pub fn clear(self: *Buffer) void {
+        @memset(self.buf.items, Cell{
+            .char = ' ',
+            .fg = Color.black,
+            .bg = Color.black,
+            .attr = Attribute.normal,
+        });
     }
 };
 
@@ -103,7 +127,7 @@ pub const Attribute = enum {
     italic,
 };
 
-pub fn colorToCurses(color: Color) u16 {
+pub fn colorToCurses(color: Color) u32 {
     switch (color) {
         Color.black => return curses.COLOR_BLACK,
         Color.red => return curses.COLOR_RED,
@@ -116,18 +140,18 @@ pub fn colorToCurses(color: Color) u16 {
     }
 }
 
-pub fn attrToCurses(mod: Attribute) u16 {
+pub fn attrToCurses(mod: Attribute) u32 {
     switch (mod) {
-        Attribute.normal => curses.A_NORMAL,
-        Attribute.standout => curses.A_STANDOUT,
-        Attribute.underline => curses.A_UNDERLINE,
-        Attribute.reverse => curses.A_REVERSE,
-        Attribute.blink => curses.A_BLINK,
-        Attribute.dim => curses.A_BLINK,
-        Attribute.bold => curses.A_BOLD,
-        Attribute.protect => curses.A_PROTECT,
-        Attribute.invis => curses.A_INVIS,
-        Attribute.altcharset => curses.A_ALTCHARSET,
-        Attribute.italic => curses.A_ITALIC,
+        Attribute.normal => return curses.A_NORMAL,
+        Attribute.standout => return curses.A_STANDOUT,
+        Attribute.underline => return curses.A_UNDERLINE,
+        Attribute.reverse => return curses.A_REVERSE,
+        Attribute.blink => return curses.A_BLINK,
+        Attribute.dim => return curses.A_BLINK,
+        Attribute.bold => return curses.A_BOLD,
+        Attribute.protect => return curses.A_PROTECT,
+        Attribute.invis => return curses.A_INVIS,
+        Attribute.altcharset => return curses.A_ALTCHARSET,
+        Attribute.italic => return curses.A_ITALIC,
     }
 }
