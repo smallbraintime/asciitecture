@@ -3,7 +3,7 @@ const term = @import("terminal.zig");
 const Cell = term.Cell;
 const Buffer = term.Buffer;
 const Color = term.Color;
-const Modifier = term.Modifier;
+const Attribute = term.Attribute;
 
 pub const Vec2 = struct {
     x: u32,
@@ -101,36 +101,36 @@ pub const Rectange = struct {
 
 pub const Triangle = struct {
     verticies: [3]Vec2,
-    pos: Vec2,
+    // pos: Vec2,
     style: Cell,
     filled: bool,
 
-    pub fn render(self: *const Triangle, buffer: *Buffer) void {
+    pub fn render(self: *const Triangle, buffer: *Buffer) !void {
         const p1 = self.verticies[0];
-        const p2 = self.verticies[2];
-        const p3 = self.verticies[3];
+        const p2 = self.verticies[1];
+        const p3 = self.verticies[2];
 
         drawLine(buffer, p1, p2, self.style);
         drawLine(buffer, p2, p3, self.style);
         drawLine(buffer, p3, p1, self.style);
 
         if (self.filled) {
-            fill(buffer, Vec2{ .x = (p1.x + p2.x + p3.x) / 3, .y = (p1.y + p2.y + p3.y) / 3 }, self.style);
+            try fill(buffer, Vec2{ .x = (p1.x + p2.x + p3.x) / 3, .y = (p1.y + p2.y + p3.y) / 3 }, self.style);
         }
     }
 };
 
 pub const Circle = struct {
-    radius: usize,
+    radius: u32,
     pos: Vec2,
     style: Cell,
     filled: bool,
 
-    pub fn render(self: *const Circle, buffer: *Buffer) void {
+    pub fn render(self: *const Circle, buffer: *Buffer) !void {
         drawCircle(buffer, self.pos, self.radius, self.style);
 
         if (self.filled) {
-            fill(buffer, self.pos, self.style);
+            try fill(buffer, self.pos, self.style);
         }
     }
 };
@@ -139,7 +139,7 @@ pub const Text = struct {
     content: []const u8,
     fg: Color,
     bg: Color,
-    mod: Modifier,
+    attr: Attribute,
     pos: Vec2,
 
     pub fn render(self: *const Text, buffer: *Buffer) void {
@@ -149,7 +149,8 @@ pub const Text = struct {
         var style = Cell{
             .fg = self.fg,
             .bg = self.bg,
-            .mod = self.mod,
+            .attr = self.attr,
+            .char = ' ',
         };
 
         for (0..self.content.len) |i| {
@@ -215,10 +216,10 @@ pub fn drawLine(self: *Buffer, start: Vec2, end: Vec2, style: Cell) void {
     }
 }
 
-pub fn drawCircle(buffer: *Buffer, pos: Vec2, radius: usize, style: Cell) void {
-    var x = 0;
+pub fn drawCircle(buffer: *Buffer, pos: Vec2, radius: u32, style: Cell) void {
+    var x: u32 = 0;
     var y = radius;
-    var d = 3 - 2 * radius;
+    var d: i64 = @intCast(3 - 2 * radius);
 
     putCircleCells(buffer, pos, Vec2{ .x = x, .y = radius }, style);
 
@@ -227,9 +228,9 @@ pub fn drawCircle(buffer: *Buffer, pos: Vec2, radius: usize, style: Cell) void {
 
         if (d > 0) {
             y -= 1;
-            d = d + 4 * (x - y) + 10;
+            d = d + (4 * @as(i64, @intCast(x)) - @as(i64, @intCast(y)) + 10);
         } else {
-            d = d + 4 * x + 6;
+            d = d + (4 * @as(i64, x) + 6);
         }
 
         putCircleCells(buffer, pos, Vec2{ .x = x, .y = y }, style);

@@ -12,6 +12,8 @@ pub const Terminal = struct {
         _ = curses.noecho();
         _ = curses.keypad(stdscr, true);
         _ = curses.clearok(stdscr, true);
+        _ = curses.curs_set(0);
+        _ = curses.start_color();
         _ = curses.refresh();
 
         const max_y: usize = @intCast(curses.getmaxy(stdscr));
@@ -52,12 +54,15 @@ pub const Terminal = struct {
                 const fg = colorToCurses(cell.fg);
                 const bg = colorToCurses(cell.bg);
                 const attr = attrToCurses(cell.attr);
-                const pairIndex: c_short = @intCast((fg << 8) | bg);
+                const pairIndex: c_short = @intCast(fg | bg);
 
                 _ = curses.init_pair(pairIndex, @intCast(fg), @intCast(bg));
                 _ = curses.attron(curses.COLOR_PAIR(pairIndex));
                 _ = curses.attron(@intCast(attr));
                 _ = curses.mvaddch(@intCast(y), @intCast(x), char);
+                _ = curses.free_pair(pairIndex);
+                _ = curses.attroff(curses.COLOR_PAIR(pairIndex));
+                _ = curses.attroff(@intCast(attr));
             }
         }
 
@@ -127,7 +132,7 @@ pub const Attribute = enum {
     italic,
 };
 
-pub fn colorToCurses(color: Color) u32 {
+fn colorToCurses(color: Color) u32 {
     switch (color) {
         Color.black => return curses.COLOR_BLACK,
         Color.red => return curses.COLOR_RED,
@@ -140,7 +145,7 @@ pub fn colorToCurses(color: Color) u32 {
     }
 }
 
-pub fn attrToCurses(mod: Attribute) u32 {
+fn attrToCurses(mod: Attribute) u32 {
     switch (mod) {
         Attribute.normal => return curses.A_NORMAL,
         Attribute.standout => return curses.A_STANDOUT,
