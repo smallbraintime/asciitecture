@@ -48,7 +48,7 @@ pub fn main() !void {
         .fg = .magenta,
         .bg = .black,
         .attr = .normal,
-        .pos = .{ .x = 30, .y = 0 },
+        .pos = .{ .x = 30, .y = term.buffer.height },
         .content = "Goodbye, world!",
     };
 
@@ -83,12 +83,12 @@ pub fn main() !void {
         }
 
         if (!toggle) {
-            text.pos.y += 1;
-        } else {
             text.pos.y -= 1;
+        } else {
+            text.pos.y += 1;
         }
 
-        if (rectangle.pos.x == term.buffer.width or text.pos.y == term.buffer.width or text.pos.y == 0 or rectangle.pos.x == 0) {
+        if (rectangle.pos.x == term.buffer.width or text.pos.y == term.buffer.height or text.pos.y == 0 or rectangle.pos.x == 0) {
             toggle = !toggle;
         }
 
