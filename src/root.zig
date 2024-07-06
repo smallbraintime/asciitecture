@@ -3,8 +3,6 @@ pub const Terminal = term.Terminal;
 pub const Color = term.Color;
 pub const Attribute = term.Attribute;
 pub const Cell = term.Cell;
-pub const colorToCurses = term.colorToCurses;
-pub const attrToCurses = term.attrToCurses;
 
 const component = @import("component.zig");
 pub const StaticObject = component.StaticObject;
@@ -16,3 +14,7 @@ pub const Triangle = component.Triangle;
 pub const Circle = component.Circle;
 pub const Text = component.Text;
 // pub const Canvas = component.Canvas;
+
+const key = @import("key.zig");
+pub const Key = key.Key;
+pub const getKey = key.getKey;

@@ -13,7 +13,9 @@ pub const Terminal = struct {
         _ = curses.keypad(stdscr, true);
         _ = curses.clearok(stdscr, true);
         _ = curses.curs_set(0);
+        _ = curses.keypad(stdscr, true);
         _ = curses.start_color();
+        _ = curses.nodelay(stdscr, true);
         _ = curses.refresh();
 
         const max_y: u32 = @intCast(curses.getmaxy(stdscr));
@@ -57,12 +59,10 @@ pub const Terminal = struct {
                 const pairIndex: c_short = @intCast(fg | bg);
 
                 _ = curses.init_pair(pairIndex, @intCast(fg), @intCast(bg));
-                _ = curses.attron(curses.COLOR_PAIR(pairIndex));
                 _ = curses.attron(@intCast(attr));
-                _ = curses.mvaddch(@intCast(y), @intCast(x), char);
-                _ = curses.free_pair(pairIndex);
-                _ = curses.attroff(curses.COLOR_PAIR(pairIndex));
-                _ = curses.attroff(@intCast(attr));
+                _ = curses.mvaddch(@intCast(y), @intCast(x), @intCast(char | curses.COLOR_PAIR(pairIndex)));
+                _ = curses.free_pair(curses.COLOR_PAIR(pairIndex));
+                // _ = curses.attroff(@intCast(attr));
             }
         }
 

@@ -11,7 +11,7 @@ pub fn main() !void {
     var line = at.Line{
         .start = at.Vec2{ .x = 0, .y = 0 },
         .end = at.Vec2{ .x = term.buffer.width, .y = 0 },
-        .style = at.Cell{ .char = '*', .fg = at.Color.white, .bg = at.Color.black, .attr = at.Attribute.normal },
+        .style = at.Cell{ .char = ' ', .fg = at.Color.white, .bg = at.Color.red, .attr = at.Attribute.normal },
     };
 
     var rectangle = at.Rectangle{
@@ -20,8 +20,8 @@ pub fn main() !void {
         .height = 10,
         .style = at.Cell{
             .fg = at.Color.red,
-            .bg = at.Color.black,
-            .char = '*',
+            .bg = at.Color.cyan,
+            .char = ' ',
             .attr = at.Attribute.normal,
         },
         .filled = false,
@@ -35,7 +35,7 @@ pub fn main() !void {
     // };
 
     var triangle = at.Triangle{
-        .style = at.Cell{ .char = '*', .fg = .yellow, .bg = .black, .attr = .normal },
+        .style = at.Cell{ .char = ' ', .fg = .yellow, .bg = .yellow, .attr = .normal },
         .verticies = .{
             at.Vec2{ .x = 10, .y = 80 },
             at.Vec2{ .x = 0, .y = 100 },
@@ -54,7 +54,10 @@ pub fn main() !void {
 
     var toggle = false;
 
-    while (true) {
+    var running = true;
+    while (running) {
+        std.time.sleep(50000000);
+
         line.render(&term.buffer);
         try rectangle.render(&term.buffer);
         // try circle.render(&term.buffer);
@@ -92,6 +95,9 @@ pub fn main() !void {
             toggle = !toggle;
         }
 
-        std.time.sleep(50000000);
+        const key = at.getKey();
+        if (key.matches(at.Key{ .char = 'q', .alt = true })) {
+            running = false;
+        }
     }
 }
