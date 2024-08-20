@@ -13,8 +13,9 @@ pub const Rectangle = component.Rectange;
 pub const Triangle = component.Triangle;
 pub const Circle = component.Circle;
 pub const Text = component.Text;
-// pub const Canvas = component.Canvas;
 
 const key = @import("key.zig");
 pub const Key = key.Key;
 pub const getKey = key.getKey;
+
+pub const term_backend = @import("term.zig");
