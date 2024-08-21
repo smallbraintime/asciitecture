@@ -107,18 +107,19 @@ const term = at.term_backend;
 const std = @import("std");
 
 pub fn main() !void {
-    while (true) {
-        try term.newScreen();
-        try term.rawMode();
-        try term.hideCursor();
-        try term.setCursor(5, 5);
-        try term.writeFg(term.Color.green);
-        try term.writeBg(term.Color.red);
-        try term.writeSymbol("@");
-        // var buf: [5]u8 = undefined;
-        // _ = try std.io.getStdIn().reader().readUntilDelimiter(&buf, '\n');
-        // try term.normalMode();
-        // try std.io.getStdOut().writer().print("9\n", .{});
-        try term.endScreen();
-    }
+    try term.newScreen();
+    try term.rawMode();
+
+    try term.setCursor(5, 5);
+    try term.hideCursor();
+    try term.writeFg(term.Color.green);
+    try term.writeBg(term.Color.red);
+    try term.writeSymbol("■■■■■■■■■■■■■■■■■■");
+    try term.writeFg(term.Color.cyan);
+    try term.writeBg(term.Color.magenta);
+    try term.writeSymbol("■■■■■■■■■■■■■■■■■■");
+    std.time.sleep(10000000000);
+
+    try term.normalMode();
+    try term.endScreen();
 }

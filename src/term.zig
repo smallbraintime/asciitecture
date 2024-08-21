@@ -2,6 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const posix = std.posix;
 const stdout = std.io.getStdOut();
+const os = std.os;
 
 var orig_termios: ?posix.termios = null;
 var handle: posix.fd_t = stdout.handle;
@@ -82,11 +83,11 @@ pub fn rawMode() !void {
 }
 
 pub fn normalMode() !void {
-    if (orig_termios != null) {
+    if (orig_termios == null) {
         @panic("termios uninitialized, enter raw mode first");
     }
 
-    try posix.tcsetattr(handle, .FLUSH, orig_termios);
+    try posix.tcsetattr(handle, .FLUSH, orig_termios.?);
 }
 
 pub fn setCursor(x: u16, y: u16) !void {
@@ -144,3 +145,29 @@ pub const Attribute = struct {
     pub const invisible = "\x1b[8m";
     pub const noInvisible = "\x1b[28m";
 };
+
+pub fn Input(char: u21, ctrl: bool, shift: bool, alt: bool) !Input {
+    return struct {
+        char: u21 = char,
+        ctrl: bool = ctrl,
+        shift: bool = shift,
+        alt: bool = alt,
+    };
+}
+
+fn poll(msTimeout: i32) !Input {
+    const stdin = std.io.getStdIn().reader();
+
+    const pollFd = [1]posix.pollfd{.{
+        .fd = stdin,
+        .events = posix.POLL.IN,
+    }};
+
+    if (try posix.poll(pollFd[0], msTimeout)) {
+        return Input(0, false, false, false);
+    }
+
+    var buffer: [20]u8 = undefined;
+    try stdin.read(&buffer);
+    return Input(); // TODO: Make codepoint iterator
+}
