@@ -5,14 +5,10 @@ a simple ascii graphics library
 ```zig build example```
 
 ### Todo
+- Fix term backend
 - Add key handling
-- finish my term backend
-- Change backend
-- Fix circle struct and fill func
-- make raylib like api
-- Add particle effects
+- Fix graphics and add more
 - Add object transformations
 - Add simple physics 
 - Add text area widget
-- Make code more elegant
 
