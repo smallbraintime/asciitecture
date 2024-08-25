@@ -129,10 +129,12 @@ pub const TerminalBackend = struct {
         }
     }
 
-    pub fn putChar(_: *const TerminalBackend, char: []const u8) !void {
+    pub fn putChar(_: *const TerminalBackend, char: u21) !void {
         switch (builtin.os.tag) {
             .linux => {
-                try stdout.writer().print("{s}", .{char});
+                var encodedChar: [4]u8 = undefined;
+                const len = try std.unicode.utf8Encode(char, &encodedChar);
+                try stdout.writer().print("{s}", .{encodedChar[0..len]});
             },
             else => @compileError("not implemented yet"),
         }

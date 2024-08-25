@@ -20,7 +20,7 @@ pub const Terminal = struct {
         var buf = try std.ArrayList(Cell).initCapacity(allocator, x * y);
         try buf.appendNTimes(
             .{
-                .char = " ",
+                .char = ' ',
                 .fg = term.Color.default,
                 .bg = term.Color.default,
                 .attr = term.Attribute.reset,
@@ -55,12 +55,12 @@ pub const Terminal = struct {
                 try backend.setCursor(@intCast(x), @intCast(y));
                 try backend.setFg(cell.fg);
                 try backend.setBg(cell.bg);
-                try backend.setAttr(cell.attr);
+                // try backend.setAttr(cell.attr);
                 try backend.putChar(cell.char);
             }
         }
 
-        try backend.clearScreen();
+        // try backend.clearScreen();
         self.buffer.clear();
     }
 
@@ -90,7 +90,7 @@ pub const Buffer = struct {
 
     pub fn clear(self: *Buffer) void {
         @memset(self.buf.items, Cell{
-            .char = " ",
+            .char = ' ',
             .fg = term.Color.default,
             .bg = term.Color.default,
             .attr = term.Attribute.reset,
@@ -99,7 +99,7 @@ pub const Buffer = struct {
 };
 
 pub const Cell = struct {
-    char: []const u8,
+    char: u21,
     fg: term.Color,
     bg: term.Color,
     attr: []const u8,

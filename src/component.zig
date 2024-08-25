@@ -147,14 +147,17 @@ pub const Text = struct {
         const x = self.pos.x;
         const y = self.pos.y;
 
-        const style = Cell{
+        var style = Cell{
             .fg = self.fg,
             .bg = self.bg,
             .attr = self.attr,
-            .char = self.content,
+            .char = ' ',
         };
 
-        buffer.setCell(x, y, style);
+        for (0..self.content.len) |i| {
+            style.char = self.content[i];
+            buffer.setCell(@intCast(x + i), y, style);
+        }
     }
 };
 

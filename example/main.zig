@@ -13,7 +13,7 @@ pub fn main() !void {
     var line = at.Line{
         .start = at.Vec2{ .x = 0, .y = 0 },
         .end = at.Vec2{ .x = term.buffer.width, .y = 0 },
-        .style = at.Cell{ .char = " ", .fg = Color.white, .bg = Color.red, .attr = Attribute.reset },
+        .style = at.Cell{ .char = ' ', .fg = Color.white, .bg = Color.red, .attr = Attribute.reset },
     };
 
     var rectangle = at.Rectangle{
@@ -23,7 +23,7 @@ pub fn main() !void {
         .style = at.Cell{
             .fg = .red,
             .bg = .cyan,
-            .char = " ",
+            .char = ' ',
             .attr = Attribute.reset,
         },
         .filled = false,
@@ -37,7 +37,7 @@ pub fn main() !void {
     // };
 
     var triangle = at.Triangle{
-        .style = at.Cell{ .char = " ", .fg = .yellow, .bg = .yellow, .attr = Attribute.reset },
+        .style = at.Cell{ .char = ' ', .fg = .yellow, .bg = .yellow, .attr = Attribute.reset },
         .verticies = .{
             at.Vec2{ .x = 10, .y = 80 },
             at.Vec2{ .x = 0, .y = 100 },
