@@ -1,7 +1,7 @@
 const std = @import("std");
 const at = @import("asciitecture");
-const Color = at.termBackend.Color;
-const Attribute = at.termBackend.Attribute;
+const Color = at.Color;
+const Attributes = at.Attributes;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -13,7 +13,7 @@ pub fn main() !void {
     var line = at.Line{
         .start = at.Vec2{ .x = 0, .y = 0 },
         .end = at.Vec2{ .x = term.buffer.width, .y = 0 },
-        .style = at.Cell{ .char = ' ', .fg = Color.white, .bg = Color.red, .attr = Attribute.reset },
+        .style = at.Cell{ .char = ' ', .fg = Color.white, .bg = Color.red, .attr = Attributes.reset },
     };
 
     var rectangle = at.Rectangle{
@@ -24,20 +24,13 @@ pub fn main() !void {
             .fg = .red,
             .bg = .cyan,
             .char = ' ',
-            .attr = Attribute.reset,
+            .attr = Attributes.reset,
         },
         .filled = false,
     };
 
-    // const circle = at.Circle{
-    //     .pos = at.Vec2{ .x = 10, .y = 20 },
-    //     .style = at.Cell{ .fg = .blue, .bg = .green, .char = '*', .attr = .normal },
-    //     .radius = 5,
-    //     .filled = false,
-    // };
-
     var triangle = at.Triangle{
-        .style = at.Cell{ .char = ' ', .fg = .yellow, .bg = .yellow, .attr = Attribute.reset },
+        .style = at.Cell{ .char = ' ', .fg = .yellow, .bg = .yellow, .attr = Attributes.reset },
         .verticies = .{
             at.Vec2{ .x = 10, .y = 80 },
             at.Vec2{ .x = 0, .y = 100 },
@@ -49,7 +42,7 @@ pub fn main() !void {
     var text = at.Text{
         .fg = .magenta,
         .bg = .black,
-        .attr = Attribute.reset,
+        .attr = Attributes.reset,
         .pos = .{ .x = 30, .y = term.buffer.height },
         .content = "Goodbye, world!",
     };
@@ -62,7 +55,6 @@ pub fn main() !void {
 
         line.render(&term.buffer);
         try rectangle.render(&term.buffer);
-        // try circle.render(&term.buffer);
         try triangle.render(&term.buffer);
         text.render(&term.buffer);
         try term.draw();
@@ -98,35 +90,3 @@ pub fn main() !void {
         }
     }
 }
-
-// const std = @import("std");
-// const at = @import("asciitecture");
-// const termBackend = at.termBackend;
-// const TerminalBackend = termBackend.TerminalBackend;
-// const Color = termBackend.Color;
-//
-// pub fn main() !void {
-//     var term = try TerminalBackend.init();
-//     try term.newScreen();
-//     try term.rawMode();
-//
-//     try term.setCursor(5, 5);
-//     try term.hideCursor();
-//     try term.setFg(Color.green);
-//     try term.setBg(Color.red);
-//     try term.putChar("■");
-//     try term.setFg(Color.cyan);
-//     try term.setBg(Color.magenta);
-//     try term.putChar("■");
-//     _ = try term.screenSize();
-//
-//     // const c = try term.keyPoll();
-//     // try term.setFgRgb(50, 50, 50);
-//     // try term.setBgRgb(100, 100, 100);
-//     // try std.io.getStdOut().writer().print("{s}", .{try c.fmt()});
-//     std.time.sleep(1000000000);
-//
-//     try term.showCursor();
-//     try term.normalMode();
-//     try term.endScreen();
-// }
