@@ -2,12 +2,13 @@ const std = @import("std");
 const term = @import("terminal.zig");
 const Cell = term.Cell;
 const Buffer = term.Buffer;
-const Color = term.Color;
-const Attribute = term.Attribute;
+const termBackend = @import("terminalBackend.zig");
+const Color = termBackend.Color;
+const Attribute = termBackend.Attribute;
 
 pub const Vec2 = struct {
-    x: u32,
-    y: u32,
+    x: u16,
+    y: u16,
 };
 
 pub const StaticObject = struct {
@@ -76,8 +77,8 @@ pub const Line = struct {
 };
 
 pub const Rectange = struct {
-    width: u32,
-    height: u32,
+    width: u16,
+    height: u16,
     pos: Vec2,
     style: Cell,
     filled: bool,
@@ -139,24 +140,21 @@ pub const Text = struct {
     content: []const u8,
     fg: Color,
     bg: Color,
-    attr: Attribute,
+    attr: []const u8,
     pos: Vec2,
 
     pub fn render(self: *const Text, buffer: *Buffer) void {
         const x = self.pos.x;
         const y = self.pos.y;
 
-        var style = Cell{
+        const style = Cell{
             .fg = self.fg,
             .bg = self.bg,
             .attr = self.attr,
-            .char = ' ',
+            .char = self.content,
         };
 
-        for (0..self.content.len) |i| {
-            style.char = self.content[i];
-            buffer.setCell(@intCast(x + i), y, style);
-        }
+        buffer.setCell(x, y, style);
     }
 };
 
