@@ -14,6 +14,7 @@ const TerminalBackend = @This();
 handle: posix.fd_t,
 orig_termios: posix.termios,
 tty: std.fs.File,
+buf: std.io.BufferedWriter(4096, std.fs.File.Writer),
 
 pub fn init() !TerminalBackend {
     switch (builtin.os.tag) {
@@ -23,37 +24,42 @@ pub fn init() !TerminalBackend {
                 .orig_termios = try posix.tcgetattr(handle),
                 .handle = handle,
                 .tty = try std.fs.openFileAbsolute("/dev/tty", .{ .mode = .read_write }),
+                .buf = std.io.bufferedWriter(stdout.writer()),
             };
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn newScreen(_: *const TerminalBackend) !void {
+pub fn newScreen(self: *TerminalBackend) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[?1049h", .{});
+            try self.buf.writer().print("\x1b[?1049h", .{});
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn endScreen(_: *const TerminalBackend) !void {
+pub fn endScreen(self: *TerminalBackend) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[?1049l", .{});
+            try self.buf().writer().print("\x1b[?1049l", .{});
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn clearScreen(_: *const TerminalBackend) !void {
+pub fn clearScreen(self: *const TerminalBackend) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[2J", .{});
+            try self.buf.writer().print("\x1b[2J", .{});
         },
         else => @compileError("not implemented yet"),
     }
+}
+
+pub fn flush(self: *TerminalBackend) !void {
+    try self.buf.flush();
 }
 
 pub fn screenSize(self: *const TerminalBackend) !ScreenSize {
@@ -108,84 +114,84 @@ pub fn normalMode(self: *const TerminalBackend) !void {
     }
 }
 
-pub fn setCursor(_: *const TerminalBackend, x: u16, y: u16) !void {
+pub fn setCursor(self: *TerminalBackend, x: u16, y: u16) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[{d};{d}H", .{ y, x });
+            try self.buf.writer().print("\x1b[{d};{d}H", .{ y, x });
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn hideCursor(_: *const TerminalBackend) !void {
+pub fn hideCursor(self: *TerminalBackend) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[?25l", .{});
+            try self.buf.writer().print("\x1b[?25l", .{});
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn showCursor(_: *const TerminalBackend) !void {
+pub fn showCursor(self: *TerminalBackend) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[?25h", .{});
+            try self.buf.writer().print("\x1b[?25h", .{});
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn putChar(_: *const TerminalBackend, char: u21) !void {
+pub fn putChar(self: *TerminalBackend, char: u21) !void {
     switch (builtin.os.tag) {
         .linux => {
             var encodedChar: [4]u8 = undefined;
             const len = try std.unicode.utf8Encode(char, &encodedChar);
-            try stdout.writer().print("{s}", .{encodedChar[0..len]});
+            try self.buf.writer().print("{s}", .{encodedChar[0..len]});
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn setFg(_: *const TerminalBackend, color: Color) !void {
+pub fn setFg(self: *TerminalBackend, color: Color) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[38;5;{d}m", .{@intFromEnum(color)});
+            try self.buf.writer().print("\x1b[38;5;{d}m", .{@intFromEnum(color)});
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn setBg(_: *const TerminalBackend, color: Color) !void {
+pub fn setBg(self: *TerminalBackend, color: Color) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[48;5;{d}m", .{@intFromEnum(color)});
+            try self.buf.writer().print("\x1b[48;5;{d}m", .{@intFromEnum(color)});
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn setFgRgb(_: *const TerminalBackend, r: u8, g: u8, b: u8) !void {
+pub fn setFgRgb(self: *TerminalBackend, r: u8, g: u8, b: u8) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[38;2;{d};{d};{d}m", .{ r, g, b });
+            try self.buf.writer().print("\x1b[38;2;{d};{d};{d}m", .{ r, g, b });
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn setBgRgb(_: *const TerminalBackend, r: u8, g: u8, b: u8) !void {
+pub fn setBgRgb(self: *TerminalBackend, r: u8, g: u8, b: u8) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[48;2;{d};{d};{d}m", .{ r, g, b });
+            try self.buf.writer().print("\x1b[48;2;{d};{d};{d}m", .{ r, g, b });
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn setAttr(_: *const TerminalBackend, attr: []const u8) !void {
+pub fn setAttr(self: *TerminalBackend, attr: []const u8) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try stdout.writer().print("\x1b[{s}", .{attr});
+            try self.buf.writer().print("\x1b[{s}", .{attr});
         },
         else => @compileError("not implemented yet"),
     }

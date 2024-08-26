@@ -2,6 +2,7 @@ const std = @import("std");
 const at = @import("asciitecture");
 const Color = at.Color;
 const Attributes = at.Attributes;
+const graphics = at.graphics;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -10,83 +11,32 @@ pub fn main() !void {
     var term = try at.Terminal.init(gpa.allocator());
     defer term.deinit();
 
-    var line = at.Line{
-        .start = at.Vec2{ .x = 0, .y = 0 },
-        .end = at.Vec2{ .x = term.buffer.width, .y = 0 },
-        .style = at.Cell{ .char = ' ', .fg = Color.white, .bg = Color.red, .attr = Attributes.reset },
-    };
+    var rectLocationX: u16 = 50;
+    var toogleDirection = false;
 
-    var rectangle = at.Rectangle{
-        .pos = at.Vec2{ .x = 10, .y = 10 },
-        .width = 10,
-        .height = 10,
-        .style = at.Cell{
-            .fg = .red,
-            .bg = .cyan,
-            .char = ' ',
-            .attr = Attributes.reset,
-        },
-        .filled = false,
-    };
+    while (true) {
+        std.time.sleep(5000000);
 
-    var triangle = at.Triangle{
-        .style = at.Cell{ .char = ' ', .fg = .yellow, .bg = .yellow, .attr = Attributes.reset },
-        .verticies = .{
-            at.Vec2{ .x = 10, .y = 80 },
-            at.Vec2{ .x = 0, .y = 100 },
-            at.Vec2{ .x = 20, .y = 100 },
-        },
-        .filled = false,
-    };
+        graphics.drawLine(&term.buffer, .{ .x = 0, .y = 0 }, .{ .x = term.buffer.width, .y = term.buffer.height }, .{ .char = ' ', .fg = .red, .bg = .red, .attr = Attributes.reset });
 
-    var text = at.Text{
-        .fg = .magenta,
-        .bg = .black,
-        .attr = Attributes.reset,
-        .pos = .{ .x = 30, .y = term.buffer.height },
-        .content = "Goodbye, world!",
-    };
+        graphics.drawRectangle(&term.buffer, 10, 10, .{ .x = rectLocationX, .y = 10 }, 0, .{ .char = ' ', .fg = .red, .bg = .cyan, .attr = Attributes.reset }, false, false);
 
-    var toggle = false;
+        graphics.drawTriangle(&term.buffer, .{ .{ .x = 10, .y = 5 }, .{ .x = 0, .y = 20 }, .{ .x = 20, .y = 20 } }, 0, .{ .char = ' ', .fg = .yellow, .bg = .yellow, .attr = Attributes.reset }, false);
 
-    const running = true;
-    while (running) {
-        // std.time.sleep(50000000);
+        graphics.drawText(&term.buffer, .{ .x = 30, .y = 30 }, "Goodbye, World!", .magenta, .black, Attributes.reset);
 
-        line.render(&term.buffer);
-        try rectangle.render(&term.buffer);
-        try triangle.render(&term.buffer);
-        text.render(&term.buffer);
         try term.draw();
 
-        if (!toggle) {
-            rectangle.pos.x += 1;
+        if (toogleDirection) {
+            rectLocationX -= 1;
         } else {
-            rectangle.pos.x -= 1;
+            rectLocationX += 1;
         }
 
-        if (!toggle) {
-            line.end.y += 1;
-        } else {
-            line.end.y -= 1;
-        }
-
-        if (triangle.verticies[0].y != 0) {
-            triangle.verticies[0].y -= 1;
-
-            triangle.verticies[1].y -= 1;
-
-            triangle.verticies[2].y -= 1;
-        }
-
-        if (!toggle) {
-            text.pos.y -= 1;
-        } else {
-            text.pos.y += 1;
-        }
-
-        if (rectangle.pos.x == term.buffer.width or text.pos.y == term.buffer.height or text.pos.y == 0 or rectangle.pos.x == 0) {
-            toggle = !toggle;
+        if (rectLocationX > 100) {
+            toogleDirection = true;
+        } else if (rectLocationX <= 50) {
+            toogleDirection = false;
         }
     }
 }

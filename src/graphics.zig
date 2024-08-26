@@ -1,8 +1,8 @@
 const std = @import("std");
-const term = @import("terminal.zig");
-const Cell = term.Cell;
-const Buffer = term.Buffer;
-const termBackend = @import("terminalBackend.zig");
+const termBackend = @import("backend/main.zig");
+const Terminal = @import("Terminal.zig");
+const Cell = @import("Cell.zig");
+const Buffer = @import("Buffer.zig");
 const Color = termBackend.Color;
 const Attribute = termBackend.Attribute;
 
@@ -10,6 +10,10 @@ pub const Vec2 = struct {
     x: u16,
     y: u16,
 };
+
+pub fn screenMeltingTransition(buffer: *Buffer) void {
+    _ = buffer;
+}
 
 pub fn drawLine(buffer: *Buffer, start: Vec2, end: Vec2, style: Cell) void {
     var x0: i32 = @intCast(start.x);
@@ -38,25 +42,46 @@ pub fn drawLine(buffer: *Buffer, start: Vec2, end: Vec2, style: Cell) void {
     }
 }
 
-pub fn drawRectangle(buffer: *Buffer, width: u16, height: u16, pos: Vec2, style: Cell, filling: bool, rounding: bool) !void {
-    const topLeft = pos;
-    const topRight = Vec2{ .x = pos.x + width - 1, .y = pos.y };
-    const bottomLeft = Vec2{ .x = pos.x, .y = pos.y + height - 1 };
-    const bottomRight = Vec2{ .x = pos.x + width - 1, .y = pos.y + height - 1 };
+pub fn drawLineStrip(buffer: *Buffer, points: []const Vec2, style: Cell) void {
+    _ = buffer;
+    _ = points;
+    _ = style;
+}
+
+pub fn drawBezierLine(buffer: *Buffer, start: Vec2, end: Vec2, style: Cell) void {
+    _ = buffer;
+    _ = start;
+    _ = end;
+    _ = style;
+}
+
+pub fn drawSpline(buffer: *Buffer, points: []const Vec2, style: Cell) void {
+    _ = buffer;
+    _ = points;
+    _ = style;
+}
+
+pub fn drawRectangle(buffer: *Buffer, width: u16, height: u16, position: Vec2, rotation: f16, style: Cell, filling: bool, rounding: bool) void {
+    const topLeft = position;
+    const topRight = Vec2{ .x = position.x + width - 1, .y = position.y };
+    const bottomLeft = Vec2{ .x = position.x, .y = position.y + height - 1 };
+    const bottomRight = Vec2{ .x = position.x + width - 1, .y = position.y + height - 1 };
 
     drawLine(buffer, topLeft, topRight, style);
     drawLine(buffer, topRight, bottomRight, style);
     drawLine(buffer, bottomRight, bottomLeft, style);
     drawLine(buffer, bottomLeft, topLeft, style);
 
-    if (filling) {
-        try fill(buffer, Vec2{ .x = topLeft.x + 1, .y = topLeft.y + 1 }, style);
-    }
+    // if (filling) {
+    // try fill(buffer, Vec2{ .x = topLeft.x + 1, .y = topLeft.y + 1 }, style);
+    // }
 
-    _ = rounding; //TODO: Add border rounding
+    _ = rounding; //TODO: Add border rounding and rotation
+    _ = rotation;
+    _ = filling;
 }
 
-pub fn drawTriangle(buffer: *Buffer, verticies: [3]Vec2, style: Cell, filling: bool) !void {
+pub fn drawTriangle(buffer: *Buffer, verticies: [3]Vec2, rotation: f16, style: Cell, filling: bool) void {
     const p1 = verticies[0];
     const p2 = verticies[1];
     const p3 = verticies[2];
@@ -65,17 +90,20 @@ pub fn drawTriangle(buffer: *Buffer, verticies: [3]Vec2, style: Cell, filling: b
     drawLine(buffer, p2, p3, style);
     drawLine(buffer, p3, p1, style);
 
-    if (filling) {
-        try fill(buffer, Vec2{ .x = (p1.x + p2.x + p3.x) / 3, .y = (p1.y + p2.y + p3.y) / 3 }, style);
-    }
+    // if (filling) {
+    // try fill(buffer, Vec2{ .x = (p1.x + p2.x + p3.x) / 3, .y = (p1.y + p2.y + p3.y) / 3 }, style);
+    // }
+
+    _ = rotation; //TODO: Make rotation
+    _ = filling;
 }
 
-pub fn drawCircle(buffer: *Buffer, pos: Vec2, radius: u32, style: Cell, filling: bool) void {
+pub fn drawCircle(buffer: *Buffer, position: Vec2, radius: u32, style: Cell, filling: bool) void {
     var x: u32 = 0;
     var y = radius;
     var d: i64 = @intCast(3 - 2 * radius);
 
-    putCircleCells(buffer, pos, Vec2{ .x = x, .y = radius }, style);
+    putCircleCells(buffer, position, Vec2{ .x = x, .y = radius }, style);
 
     while (y >= x) {
         x += 1;
@@ -87,44 +115,37 @@ pub fn drawCircle(buffer: *Buffer, pos: Vec2, radius: u32, style: Cell, filling:
             d = d + (4 * @as(i64, x) + 6);
         }
 
-        putCircleCells(buffer, pos, Vec2{ .x = x, .y = y }, style);
+        putCircleCells(buffer, position, Vec2{ .x = x, .y = y }, style);
     }
 
-    if (filling) {
-        try fill(buffer, pos, style);
-    }
+    // if (filling) {
+    //     try fill(buffer, position, style);
+    // }
+    _ = filling;
 }
 
-pub const Text = struct {
-    content: []const u8,
-    fg: Color,
-    bg: Color,
-    attr: []const u8,
-    pos: Vec2,
+pub fn drawText(buffer: *Buffer, position: Vec2, content: []const u8, fg: Color, bg: Color, attr: Attribute) void {
+    const x = position.x;
+    const y = position.y;
 
-    pub fn render(self: *const Text, buffer: *Buffer) void {
-        const x = self.pos.x;
-        const y = self.pos.y;
+    var style = Cell{
+        .fg = fg,
+        .bg = bg,
+        .attr = attr,
+        .char = ' ',
+    };
 
-        var style = Cell{
-            .fg = self.fg,
-            .bg = self.bg,
-            .attr = self.attr,
-            .char = ' ',
-        };
-
-        for (0..self.content.len) |i| {
-            style.char = self.content[i];
-            buffer.setCell(@intCast(x + i), y, style);
-        }
+    for (0..content.len) |i| {
+        style.char = content[i];
+        buffer.setCell(@intCast(x + i), y, style);
     }
-};
+}
 
 pub const Particle = struct {
     style: Cell,
     lifetime: f32,
     velocity: Vec2,
-    pos: Vec2,
+    position: Vec2,
 
     pub fn render(self: *const Particle, buffer: *Buffer) void {
         _ = self;
@@ -141,7 +162,7 @@ pub const ParticleEffect = struct {
     startStyle: Cell,
     endStyle: Cell,
     isActive: bool,
-    pos: Vec2,
+    postion: Vec2,
 
     pub fn render(self: *const ParticleEffect, buffer: *Buffer) void {
         _ = self;
@@ -149,7 +170,25 @@ pub const ParticleEffect = struct {
     }
 };
 
-pub const Canvas = struct {};
+pub fn image(content: []const u8) Image {
+    _ = content;
+}
+
+pub const Flip = enum(u3) {
+    vertical,
+    horizontal,
+    none,
+};
+
+pub const Image = struct {
+    pub fn draw(buffer: *Buffer, position: Vec2, rotation: f16, flip: Flip, style: Cell) void {
+        _ = buffer;
+        _ = position;
+        _ = rotation;
+        _ = style;
+        _ = flip;
+    }
+};
 
 fn fill(buffer: *Buffer, startPos: Vec2, newStyle: Cell) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};

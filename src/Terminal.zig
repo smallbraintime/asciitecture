@@ -65,8 +65,13 @@ pub fn draw(self: *Terminal) !void {
         }
     }
 
+    try backend.flush();
     // try backend.clearScreen();
     self.buffer.clear();
+}
+
+pub fn transition(animation: fn (*Buffer) void) void {
+    _ = animation;
 }
 
 pub fn deinit(self: *Terminal) void {
