@@ -10,8 +10,9 @@ const Terminal = @This();
 
 buffer: Buffer,
 backend: TerminalBackend,
+tick: u64,
 
-pub fn init(allocator: std.mem.Allocator) !Terminal {
+pub fn init(allocator: std.mem.Allocator, tick: u64) !Terminal {
     var backend = try TerminalBackend.init();
 
     try backend.newScreen();
@@ -43,15 +44,12 @@ pub fn init(allocator: std.mem.Allocator) !Terminal {
     return Terminal{
         .buffer = buffer,
         .backend = backend,
+        .tick = tick,
     };
 }
 
-pub fn render(self: *Terminal, updateBuffer: fn (buff: *Buffer) void) void {
-    updateBuffer();
-    self.draw();
-}
-
 pub fn draw(self: *Terminal) !void {
+    std.time.sleep(self.tick);
     const buf = &self.buffer;
     const backend = &self.backend;
     for (0..buf.height) |y| {
