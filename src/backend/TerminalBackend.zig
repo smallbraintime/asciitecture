@@ -7,13 +7,11 @@ const backendMain = @import("main.zig");
 const ScreenSize = backendMain.ScreenSize;
 const Color = backendMain.Color;
 const Attribute = backendMain.Attribute;
-const Input = @import("input.zig").Input;
 
 const TerminalBackend = @This();
 
 handle: posix.fd_t,
 orig_termios: posix.termios,
-tty: std.fs.File,
 buf: std.io.BufferedWriter(4096, std.fs.File.Writer),
 
 pub fn init() !TerminalBackend {
@@ -23,7 +21,6 @@ pub fn init() !TerminalBackend {
             return TerminalBackend{
                 .orig_termios = try posix.tcgetattr(handle),
                 .handle = handle,
-                .tty = try std.fs.openFileAbsolute("/dev/tty", .{ .mode = .read_write }),
                 .buf = std.io.bufferedWriter(stdout.writer()),
             };
         },
@@ -43,13 +40,13 @@ pub fn newScreen(self: *TerminalBackend) !void {
 pub fn endScreen(self: *TerminalBackend) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try self.buf().writer().print("\x1b[?1049l", .{});
+            try self.buf.writer().print("\x1b[?1049l", .{});
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn clearScreen(self: *const TerminalBackend) !void {
+pub fn clearScreen(self: *TerminalBackend) !void {
     switch (builtin.os.tag) {
         .linux => {
             try self.buf.writer().print("\x1b[2J", .{});
@@ -188,48 +185,11 @@ pub fn setBgRgb(self: *TerminalBackend, r: u8, g: u8, b: u8) !void {
     }
 }
 
-pub fn setAttr(self: *TerminalBackend, attr: []const u8) !void {
+pub fn setAttr(self: *TerminalBackend, attr: Attribute) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try self.buf.writer().print("\x1b[{s}", .{attr});
+            try self.buf.writer().print("\x1b[{d}m", .{@intFromEnum(attr)});
         },
         else => @compileError("not implemented yet"),
     }
-}
-
-pub fn keyPoll(self: *const TerminalBackend) !Input {
-    var buf: [16]u8 = undefined;
-    _ = try self.tty.read(&buf);
-    return try parseKeyCode(&buf);
-}
-
-fn parseKeyCode(buf: []const u8) !Input {
-    var input = Input{
-        .key = 0,
-        .ctrl = false,
-        .shift = false,
-        .alt = false,
-    };
-    var cpIter = (try std.unicode.Utf8View.init(buf)).iterator();
-    while (cpIter.nextCodepoint()) |cp| {
-        switch (cp) {
-            0x41...0x5A => {
-                input.key = cp;
-                input.shift = true;
-            },
-            0x10 => {
-                input.shift = true;
-            },
-            0x11 => {
-                input.ctrl = true;
-            },
-            0x12 => {
-                input.alt = true;
-            },
-            else => {
-                input.key = cp;
-            },
-        }
-    }
-    return input;
 }

@@ -5,10 +5,26 @@ a simple ascii graphics library
 ```zig build example```
 
 ### Todo
-- Fix term backend
+- Fix framing
+- Fix Attributes
+- Replace ints with floats 
+- Unify rgb and indexed color into one union
+- Separate input from terminal backend
 - Add key handling
+- Attributes as enum
+- Add resizing
 - Fix graphics and add more
-- Add object transformations
-- Add simple physics 
-- Add text area widget
+- Add animation to the Text 
+- Add frame transition system (screen melting)
+- Add possibility to render two characters as one cell(pixel)
+- Add tests
 
+- Add object collision checks
+- Add text area widget
+- Add list widget
+- Add physics 
+- Add lighting
+- Add animation system
+
+- Add a little bit real ascii art
+- Maybe some 3d

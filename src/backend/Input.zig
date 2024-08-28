@@ -1,6 +1,51 @@
 const std = @import("std");
 
-pub const Input = struct {
+const Input = @This();
+
+tty: std.fs.File,
+
+pub fn init() Input {
+    return Input{ .tty = try std.fs.openFileAbsolute("/dev/tty", .{ .mode = .read_write }) };
+}
+
+pub fn keyPoll(self: *Input) !Input {
+    var buf: [16]u8 = undefined;
+    _ = try self.tty.read(&buf);
+    return try parseKeyCode(&buf);
+}
+
+fn parseKeyCode(buf: []const u8) !Input {
+    var input = Input{
+        .key = 0,
+        .ctrl = false,
+        .shift = false,
+        .alt = false,
+    };
+    var cpIter = (try std.unicode.Utf8View.init(buf)).iterator();
+    while (cpIter.nextCodepoint()) |cp| {
+        switch (cp) {
+            0x41...0x5A => {
+                input.key = cp;
+                input.shift = true;
+            },
+            0x10 => {
+                input.shift = true;
+            },
+            0x11 => {
+                input.ctrl = true;
+            },
+            0x12 => {
+                input.alt = true;
+            },
+            else => {
+                input.key = cp;
+            },
+        }
+    }
+    return input;
+}
+
+pub const Key = struct {
     key: u21,
     ctrl: bool,
     shift: bool,
@@ -35,7 +80,7 @@ pub const Input = struct {
     }
 };
 
-pub const Key = struct {
+pub const Keys = struct {
     pub const backspace: u21 = 0x08;
     pub const tab: u21 = 0x09;
     pub const enter: u21 = 0x0D;

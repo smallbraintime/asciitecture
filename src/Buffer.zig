@@ -2,7 +2,7 @@ const std = @import("std");
 const Cell = @import("Cell.zig");
 const backend = @import("backend/main.zig");
 const Color = backend.Color;
-const Attributes = backend.Attributes;
+const Attribute = backend.Attribute;
 
 const Buffer = @This();
 
@@ -27,8 +27,8 @@ pub fn getCell(self: *Buffer, x: u16, y: u16) Cell {
 pub fn clear(self: *Buffer) void {
     @memset(self.buf.items, Cell{
         .char = ' ',
-        .fg = Color.default,
-        .bg = Color.default,
-        .attr = Attributes.reset,
+        .fg = .default,
+        .bg = .default,
+        .attr = .reset,
     });
 }
