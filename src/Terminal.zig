@@ -5,19 +5,21 @@ const Color = tbackend.Color;
 const Attribute = tbackend.Attribute;
 const Buffer = @import("Buffer.zig");
 const Cell = @import("Cell.zig");
+
 const Terminal = @This();
 
 buffer: Buffer,
 backend: TerminalBackend,
-tick: u64,
-speed: u16,
-deltaTime: i128,
-previousTime: i128,
-frameCount: u64,
-fps: u64,
-fpsTimer: i128,
+targetDelta: f32,
+speed: f32,
+deltaTime: f32,
+fps: f32,
 
-pub fn init(allocator: std.mem.Allocator, backend: anytype, targetFps: u64, speed: u16) !Terminal {
+_currentTime: i128,
+_ticks: u32,
+_elapsedTime: f32,
+
+pub fn init(allocator: std.mem.Allocator, backend: anytype, targetFps: f32, speed: f32) !Terminal {
     var backend_ = try backend.init();
 
     try backend_.newScreen();
@@ -30,8 +32,8 @@ pub fn init(allocator: std.mem.Allocator, backend: anytype, targetFps: u64, spee
     try buf.appendNTimes(
         .{
             .char = ' ',
-            .fg = .default,
-            .bg = .default,
+            .fg = .{ .indexed = .default },
+            .bg = .{ .indexed = .default },
             .attr = .reset,
         },
         screenSize.y * screenSize.x,
@@ -47,29 +49,26 @@ pub fn init(allocator: std.mem.Allocator, backend: anytype, targetFps: u64, spee
     return Terminal{
         .buffer = buffer,
         .backend = backend_,
-        .tick = 1000000000 / targetFps,
+        .targetDelta = 1 / targetFps,
         .speed = speed,
-        .deltaTime = 0,
-        .previousTime = std.time.nanoTimestamp(),
-        .frameCount = 0,
+        .deltaTime = 0.0,
         .fps = 0,
-        .fpsTimer = 0,
+        ._currentTime = std.time.nanoTimestamp(),
+        ._ticks = 0,
+        ._elapsedTime = 0,
     };
 }
 
+pub fn deinit(self: *Terminal) void {
+    self.buffer.buf.deinit();
+}
+
 pub fn draw(self: *Terminal) !void {
-    const currentTime = std.time.nanoTimestamp();
-    self.deltaTime = currentTime - self.deltaTime;
-    self.previousTime = currentTime;
+    const newTime = std.time.nanoTimestamp();
+    self.deltaTime = @as(f32, @floatFromInt(newTime - self._currentTime)) / std.time.ns_per_s;
+    self._currentTime = newTime;
 
-    self.frameCount += 1;
-    self.fpsTimer += self.deltaTime;
-
-    if (self.fpsTimer >= 1000000000) {
-        self.fps = self.frameCount;
-        self.frameCount = 0;
-        self.fpsTimer = 0;
-    }
+    self.calcFps();
 
     const buf = &self.buffer;
     const backend = &self.backend;
@@ -86,9 +85,8 @@ pub fn draw(self: *Terminal) !void {
     try backend.flush();
     self.buffer.clear();
 
-    if (self.deltaTime < self.tick) {
-        std.time.sleep(@intCast(self.tick - self.deltaTime * self.speed));
-        self.buffer.setCell(5, 15, .{ .fg = .green, .bg = .black, .attr = .reset, .char = 'd' });
+    if (self.deltaTime < self.targetDelta) {
+        std.time.sleep(@intFromFloat((self.targetDelta - self.deltaTime * self.speed) * std.time.ns_per_s));
     }
 }
 
@@ -96,6 +94,13 @@ pub fn transition(animation: fn (*Buffer) void) void {
     _ = animation;
 }
 
-pub fn deinit(self: *Terminal) void {
-    self.buffer.buf.deinit();
+fn calcFps(self: *Terminal) void {
+    self._elapsedTime += self.deltaTime;
+    self._ticks += 1;
+
+    if (self._elapsedTime >= 1.0) {
+        self.fps = @as(f32, @floatFromInt(self._ticks)) / self._elapsedTime;
+        self._ticks = 0;
+        self._elapsedTime = 0;
+    }
 }

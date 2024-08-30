@@ -27,8 +27,8 @@ pub fn getCell(self: *Buffer, x: u16, y: u16) Cell {
 pub fn clear(self: *Buffer) void {
     @memset(self.buf.items, Cell{
         .char = ' ',
-        .fg = .default,
-        .bg = .default,
+        .fg = .{ .indexed = .default },
+        .bg = .{ .indexed = .default },
         .attr = .reset,
     });
 }

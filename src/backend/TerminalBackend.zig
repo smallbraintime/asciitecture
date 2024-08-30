@@ -6,6 +6,8 @@ const os = std.os;
 const backendMain = @import("main.zig");
 const ScreenSize = backendMain.ScreenSize;
 const Color = backendMain.Color;
+const IndexedColor = backendMain.IndexedColor;
+const RgbColor = backendMain.RgbColor;
 const Attribute = backendMain.Attribute;
 
 const TerminalBackend = @This();
@@ -150,6 +152,20 @@ pub fn putChar(self: *TerminalBackend, char: u21) !void {
 }
 
 pub fn setFg(self: *TerminalBackend, color: Color) !void {
+    switch (color) {
+        .indexed => |*indexed| try setIndexedFg(self, indexed.*),
+        .rgb => |*rgb| try setRgbFg(self, rgb.*),
+    }
+}
+
+pub fn setBg(self: *TerminalBackend, color: Color) !void {
+    switch (color) {
+        .indexed => |*indexed| try setIndexedBg(self, indexed.*),
+        .rgb => |*rgb| try setRgbBg(self, rgb.*),
+    }
+}
+
+pub fn setIndexedFg(self: *TerminalBackend, color: IndexedColor) !void {
     switch (builtin.os.tag) {
         .linux => {
             try self.buf.writer().print("\x1b[38;5;{d}m", .{@intFromEnum(color)});
@@ -158,7 +174,7 @@ pub fn setFg(self: *TerminalBackend, color: Color) !void {
     }
 }
 
-pub fn setBg(self: *TerminalBackend, color: Color) !void {
+pub fn setIndexedBg(self: *TerminalBackend, color: IndexedColor) !void {
     switch (builtin.os.tag) {
         .linux => {
             try self.buf.writer().print("\x1b[48;5;{d}m", .{@intFromEnum(color)});
@@ -167,19 +183,19 @@ pub fn setBg(self: *TerminalBackend, color: Color) !void {
     }
 }
 
-pub fn setFgRgb(self: *TerminalBackend, r: u8, g: u8, b: u8) !void {
+pub fn setRgbFg(self: *TerminalBackend, color: RgbColor) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try self.buf.writer().print("\x1b[38;2;{d};{d};{d}m", .{ r, g, b });
+            try self.buf.writer().print("\x1b[38;2;{d};{d};{d}m", .{ color.r, color.g, color.b });
         },
         else => @compileError("not implemented yet"),
     }
 }
 
-pub fn setBgRgb(self: *TerminalBackend, r: u8, g: u8, b: u8) !void {
+pub fn setRgbBg(self: *TerminalBackend, color: RgbColor) !void {
     switch (builtin.os.tag) {
         .linux => {
-            try self.buf.writer().print("\x1b[48;2;{d};{d};{d}m", .{ r, g, b });
+            try self.buf.writer().print("\x1b[48;2;{d};{d};{d}m", .{ color.r, color.g, color.b });
         },
         else => @compileError("not implemented yet"),
     }

@@ -5,13 +5,9 @@ a simple ascii graphics library
 ```zig build example```
 
 ### Todo
-- Fix framing
-- Fix Attributes
+- Improve frame pacing
 - Replace ints with floats 
-- Unify rgb and indexed color into one union
-- Separate input from terminal backend
 - Add key handling
-- Attributes as enum
 - Add resizing
 - Fix graphics and add more
 - Add animation to the Text 
@@ -19,12 +15,11 @@ a simple ascii graphics library
 - Add possibility to render two characters as one cell(pixel)
 - Add tests
 
+- Make rendering faster
 - Add object collision checks
 - Add text area widget
 - Add list widget
 - Add physics 
 - Add lighting
 - Add animation system
-
 - Add a little bit real ascii art
-- Maybe some 3d

@@ -8,7 +8,7 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
-    var term = try at.Terminal.init(gpa.allocator(), TerminalBackend, 1, 1);
+    var term = try at.Terminal.init(gpa.allocator(), TerminalBackend, 60, 1);
     defer term.deinit();
 
     var rectLocationX: u16 = 120;
@@ -19,32 +19,29 @@ pub fn main() !void {
     var frameDelimeter: u16 = 0;
 
     while (true) {
-        graphics.drawLine(&term.buffer, .{ .x = 0, .y = 0 }, .{ .x = term.buffer.width, .y = term.buffer.height }, .{ .char = ' ', .fg = .red, .bg = .red, .attr = .reset });
+        graphics.drawLine(&term.buffer, .{ .x = 0, .y = 0 }, .{ .x = term.buffer.width, .y = term.buffer.height }, .{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .red }, .attr = .reset });
 
-        graphics.drawRectangle(&term.buffer, 10, 10, .{ .x = rectLocationX, .y = 10 }, 0, .{ .char = ' ', .fg = .red, .bg = .cyan, .attr = .reset }, false, false);
+        graphics.drawRectangle(&term.buffer, 10, 10, .{ .x = rectLocationX, .y = 10 }, 0, .{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = .reset }, false, false);
 
-        graphics.drawTriangle(&term.buffer, .{ .{ .x = 100, .y = 15 }, .{ .x = 80, .y = 40 }, .{ .x = 120, .y = 40 } }, 0, .{ .char = ' ', .fg = .yellow, .bg = .yellow, .attr = .reset }, false);
+        graphics.drawTriangle(&term.buffer, .{ .{ .x = 100, .y = 15 }, .{ .x = 80, .y = 40 }, .{ .x = 120, .y = 40 } }, 0, .{ .char = ' ', .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .yellow }, .attr = .reset }, false);
 
-        graphics.drawText(&term.buffer, textLocation, "Goodbye, World!", .white, .black, .reset);
+        graphics.drawText(&term.buffer, textLocation, "Goodbye, World!", .{ .indexed = .white }, .{ .indexed = .black }, .reset);
+
+        term.buffer.setCell(3, 4, .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = .reset });
+        term.buffer.setCell(4, 4, .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = .reset });
+        term.buffer.setCell(5, 5, .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = .reset });
+        term.buffer.setCell(6, 5, .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = .reset });
+        term.buffer.setCell(5, 3, .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = .reset });
+        term.buffer.setCell(6, 3, .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = .reset });
+        term.buffer.setCell(7, 4, .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = .reset });
+        term.buffer.setCell(8, 4, .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = .reset });
 
         var buf1: [100]u8 = undefined;
-        const deltaTime = try std.fmt.bufPrint(&buf1, "deltaTime:{}                           ", .{term.deltaTime});
-        graphics.drawText(&term.buffer, .{ .x = 1, .y = 10 }, deltaTime, .white, .black, .reset);
-        var buf: [100]u8 = undefined;
-        const time = try std.fmt.bufPrint(&buf, "previousTime:{}", .{term.previousTime});
-        graphics.drawText(&term.buffer, .{ .x = 1, .y = 11 }, time, .white, .black, .reset);
+        const deltaTime = try std.fmt.bufPrint(&buf1, "deltaTime:{d:.20}", .{term.deltaTime});
+        graphics.drawText(&term.buffer, .{ .x = 1, .y = 10 }, deltaTime, .{ .indexed = .white }, .{ .indexed = .black }, .reset);
         var buf2: [100]u8 = undefined;
-        const fps = try std.fmt.bufPrint(&buf2, "fps:{}", .{term.fps});
-        graphics.drawText(&term.buffer, .{ .x = 1, .y = 12 }, fps, .white, .black, .reset);
-
-        term.buffer.setCell(3, 4, .{ .bg = .black, .fg = .default, .char = ' ', .attr = .reset });
-        term.buffer.setCell(4, 4, .{ .bg = .black, .fg = .default, .char = ' ', .attr = .reset });
-        term.buffer.setCell(5, 5, .{ .bg = .black, .fg = .default, .char = ' ', .attr = .reset });
-        term.buffer.setCell(6, 5, .{ .bg = .black, .fg = .default, .char = ' ', .attr = .reset });
-        term.buffer.setCell(5, 3, .{ .bg = .black, .fg = .default, .char = ' ', .attr = .reset });
-        term.buffer.setCell(6, 3, .{ .bg = .black, .fg = .default, .char = ' ', .attr = .reset });
-        term.buffer.setCell(7, 4, .{ .bg = .black, .fg = .default, .char = ' ', .attr = .reset });
-        term.buffer.setCell(8, 4, .{ .bg = .black, .fg = .default, .char = ' ', .attr = .reset });
+        const fps = try std.fmt.bufPrint(&buf2, "fps:{d:.2}", .{term.fps});
+        graphics.drawText(&term.buffer, .{ .x = 1, .y = 11 }, fps, .{ .indexed = .white }, .{ .indexed = .black }, .reset);
 
         try term.draw();
 
