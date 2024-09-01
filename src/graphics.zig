@@ -7,8 +7,8 @@ const Color = termBackend.Color;
 const Attribute = termBackend.Attribute;
 
 pub const Vec2 = struct {
-    x: u16,
-    y: u16,
+    x: f32,
+    y: f32,
 };
 
 pub fn screenMeltingTransition(buffer: *Buffer) void {
@@ -16,19 +16,19 @@ pub fn screenMeltingTransition(buffer: *Buffer) void {
 }
 
 pub fn drawLine(buffer: *Buffer, start: Vec2, end: Vec2, style: Cell) void {
-    var x0: i32 = @intCast(start.x);
-    var y0: i32 = @intCast(start.y);
-    const x1: i32 = @intCast(end.x);
-    const y1: i32 = @intCast(end.y);
+    var x0 = start.x * buffer.ratio;
+    var y0 = start.y * buffer.ratio;
+    const x1 = end.x * buffer.ratio;
+    const y1 = end.y * buffer.ratio;
 
-    const dx: i32 = @intCast(@abs(x1 - x0));
-    const dy: i32 = @intCast(@abs(y1 - y0));
-    const sx: i32 = if (x0 < x1) 1 else -1;
-    const sy: i32 = if (y0 < y1) 1 else -1;
+    const dx = @abs(x1 - x0);
+    const dy = @abs(y1 - y0);
+    const sx: f32 = if (x0 < x1) 1 else -1;
+    const sy: f32 = if (y0 < y1) 1 else -1;
     var err = dx - dy;
 
     while (true) {
-        buffer.setCell(@intCast(x0), @intCast(y0), style);
+        buffer.writeCell(@intFromFloat(@round(x0)), @intFromFloat(@round(y0)), style);
         if (x0 == x1 and y0 == y1) break;
         const e2 = 2 * err;
         if (e2 > -dy) {
@@ -61,7 +61,7 @@ pub fn drawSpline(buffer: *Buffer, points: []const Vec2, style: Cell) void {
     _ = style;
 }
 
-pub fn drawRectangle(buffer: *Buffer, width: u16, height: u16, position: Vec2, rotation: f16, style: Cell, filling: bool, rounding: bool) void {
+pub fn drawRectangle(buffer: *Buffer, width: f32, height: f32, position: Vec2, rotation: f32, style: Cell, filling: bool, rounding: bool) void {
     const topLeft = position;
     const topRight = Vec2{ .x = position.x + width - 1, .y = position.y };
     const bottomLeft = Vec2{ .x = position.x, .y = position.y + height - 1 };
@@ -81,7 +81,7 @@ pub fn drawRectangle(buffer: *Buffer, width: u16, height: u16, position: Vec2, r
     _ = filling;
 }
 
-pub fn drawTriangle(buffer: *Buffer, verticies: [3]Vec2, rotation: f16, style: Cell, filling: bool) void {
+pub fn drawTriangle(buffer: *Buffer, verticies: [3]Vec2, rotation: f32, style: Cell, filling: bool) void {
     const p1 = verticies[0];
     const p2 = verticies[1];
     const p3 = verticies[2];
@@ -98,24 +98,24 @@ pub fn drawTriangle(buffer: *Buffer, verticies: [3]Vec2, rotation: f16, style: C
     _ = filling;
 }
 
-pub fn drawCircle(buffer: *Buffer, position: Vec2, radius: u32, style: Cell, filling: bool) void {
-    var x: u32 = 0;
+pub fn drawCircle(buffer: *Buffer, position: Vec2, radius: f32, style: Cell, filling: bool) void {
+    var x: f32 = 0;
     var y = radius;
-    var d: i64 = @intCast(3 - 2 * radius);
+    var d = 3 - 2 * radius;
 
-    putCircleCells(buffer, position, Vec2{ .x = x, .y = radius }, style);
+    drawCirc(buffer, position, .{ .x = x, .y = y }, style);
 
     while (y >= x) {
-        x += 1;
-
         if (d > 0) {
             y -= 1;
-            d = d + (4 * @as(i64, @intCast(x)) - @as(i64, @intCast(y)) + 10);
+            d = d + 4 * (x - y) + 10;
         } else {
-            d = d + (4 * @as(i64, x) + 6);
+            d = d + 4 * x + 6;
         }
 
-        putCircleCells(buffer, position, Vec2{ .x = x, .y = y }, style);
+        x += 1;
+
+        drawCirc(buffer, position, .{ .x = x, .y = y }, style);
     }
 
     // if (filling) {
@@ -124,9 +124,9 @@ pub fn drawCircle(buffer: *Buffer, position: Vec2, radius: u32, style: Cell, fil
     _ = filling;
 }
 
-pub fn drawText(buffer: *Buffer, position: Vec2, content: []const u8, fg: Color, bg: Color, attr: Attribute) void {
-    const x = position.x;
-    const y = position.y;
+pub fn drawText(buffer: *Buffer, content: []const u8, position: Vec2, fg: Color, bg: Color, attr: Attribute) void {
+    const x = position.x * buffer.ratio;
+    const y = position.y * buffer.ratio;
 
     var style = Cell{
         .fg = fg,
@@ -137,7 +137,7 @@ pub fn drawText(buffer: *Buffer, position: Vec2, content: []const u8, fg: Color,
 
     for (0..content.len) |i| {
         style.char = content[i];
-        buffer.setCell(@intCast(x + i), y, style);
+        buffer.writeCell(@as(usize, @intFromFloat(@round(x))) + i, @intFromFloat(@round(y)), style);
     }
 }
 
@@ -181,7 +181,7 @@ pub const Flip = enum(u3) {
 };
 
 pub const Image = struct {
-    pub fn draw(buffer: *Buffer, position: Vec2, rotation: f16, flip: Flip, style: Cell) void {
+    pub fn draw(buffer: *Buffer, position: Vec2, rotation: f32, flip: Flip, style: Cell) void {
         _ = buffer;
         _ = position;
         _ = rotation;
@@ -223,7 +223,7 @@ fn flood_fill(
     if (std.meta.eql(buffer.getCell(startPos.x, startPos.y), oldStyle)) return;
 
     try visited.append(startPos);
-    buffer.setCell(startPos.x, startPos.y, newStyle);
+    buffer.writeCell(startPos.x, startPos.y, newStyle);
 
     var startPos1 = startPos;
     startPos1.x += 1;
@@ -266,13 +266,13 @@ fn flood_fill(
     );
 }
 
-fn putCircleCells(buffer: *Buffer, pos: Vec2, edge: Vec2, style: Cell) void {
-    buffer.setCell(pos.x + edge.x, pos.y + edge.y, style);
-    buffer.setCell(pos.x - edge.x, pos.y + edge.y, style);
-    buffer.setCell(pos.x + edge.x, pos.y - edge.y, style);
-    buffer.setCell(pos.x - edge.x, pos.y - edge.y, style);
-    buffer.setCell(pos.x + edge.x, pos.y + edge.y, style);
-    buffer.setCell(pos.x - edge.x, pos.y + edge.y, style);
-    buffer.setCell(pos.x + edge.x, pos.y - edge.y, style);
-    buffer.setCell(pos.x - edge.x, pos.y - edge.y, style);
+fn drawCirc(buffer: *Buffer, pos: Vec2, edge: Vec2, style: Cell) void {
+    buffer.writeCell(@intFromFloat(@round(pos.x + edge.x)), @intFromFloat(@round(pos.y + edge.y)), style);
+    buffer.writeCell(@intFromFloat(@round(pos.x - edge.x)), @intFromFloat(@round(pos.y + edge.y)), style);
+    buffer.writeCell(@intFromFloat(@round(pos.x + edge.x)), @intFromFloat(@round(pos.y - edge.y)), style);
+    buffer.writeCell(@intFromFloat(@round(pos.x - edge.x)), @intFromFloat(@round(pos.y - edge.y)), style);
+    buffer.writeCell(@intFromFloat(@round(pos.x + edge.x)), @intFromFloat(@round(pos.y + edge.y)), style);
+    buffer.writeCell(@intFromFloat(@round(pos.x - edge.x)), @intFromFloat(@round(pos.y + edge.y)), style);
+    buffer.writeCell(@intFromFloat(@round(pos.x + edge.x)), @intFromFloat(@round(pos.y - edge.y)), style);
+    buffer.writeCell(@intFromFloat(@round(pos.x - edge.x)), @intFromFloat(@round(pos.y - edge.y)), style);
 }

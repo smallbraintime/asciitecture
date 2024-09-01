@@ -5,57 +5,40 @@ const Color = tbackend.Color;
 const Attribute = tbackend.Attribute;
 const Buffer = @import("Buffer.zig");
 const Cell = @import("Cell.zig");
+const ScreenSize = tbackend.ScreenSize;
 
 const Terminal = @This();
 
 buffer: Buffer,
 backend: TerminalBackend,
 targetDelta: f32,
-speed: f32,
 deltaTime: f32,
+speed: f32,
 fps: f32,
+minimized: bool,
 
 _currentTime: i128,
-_ticks: u32,
-_elapsedTime: f32,
 
 pub fn init(allocator: std.mem.Allocator, backend: anytype, targetFps: f32, speed: f32) !Terminal {
     var backend_ = try backend.init();
-
     try backend_.newScreen();
     try backend_.rawMode();
     try backend_.hideCursor();
-
     const screenSize = try backend_.screenSize();
 
-    var buf = try std.ArrayList(Cell).initCapacity(allocator, screenSize.x * screenSize.y);
-    try buf.appendNTimes(
-        .{
-            .char = ' ',
-            .fg = .{ .indexed = .default },
-            .bg = .{ .indexed = .default },
-            .attr = .reset,
-        },
-        screenSize.y * screenSize.x,
-    );
-    try buf.ensureTotalCapacity(screenSize.y * screenSize.x);
+    var buffer = try Buffer.init(allocator, screenSize.width, screenSize.height);
+    buffer.setViewport(0, 0, screenSize.width, screenSize.height);
 
-    const buffer = Buffer{
-        .buf = buf,
-        .height = screenSize.y,
-        .width = screenSize.x,
-    };
-
+    const delta = 1 / targetFps;
     return Terminal{
         .buffer = buffer,
         .backend = backend_,
-        .targetDelta = 1 / targetFps,
+        .targetDelta = delta,
+        .deltaTime = delta,
         .speed = speed,
-        .deltaTime = 0.0,
-        .fps = 0,
+        .fps = 0.0,
+        .minimized = false,
         ._currentTime = std.time.nanoTimestamp(),
-        ._ticks = 0,
-        ._elapsedTime = 0,
     };
 }
 
@@ -64,17 +47,19 @@ pub fn deinit(self: *Terminal) void {
 }
 
 pub fn draw(self: *Terminal) !void {
-    const newTime = std.time.nanoTimestamp();
-    self.deltaTime = @as(f32, @floatFromInt(newTime - self._currentTime)) / std.time.ns_per_s;
-    self._currentTime = newTime;
-
+    try self.handle_resize();
     self.calcFps();
+    if (!self.minimized) {
+        try self.render();
+    }
+}
 
+fn render(self: *Terminal) !void {
     const buf = &self.buffer;
     const backend = &self.backend;
-    for (0..buf.height) |y| {
-        for (0..buf.width) |x| {
-            const cell = buf.buf.items[y * buf.width + x];
+    for (buf.viewport.y..buf.viewport.height) |y| {
+        for (buf.viewport.x..buf.viewport.width) |x| {
+            const cell = buf.buf.items[y * buf.size.width + x];
             try backend.setCursor(@intCast(x), @intCast(y));
             try backend.setFg(cell.fg);
             try backend.setBg(cell.bg);
@@ -85,22 +70,36 @@ pub fn draw(self: *Terminal) !void {
     try backend.flush();
     self.buffer.clear();
 
-    if (self.deltaTime < self.targetDelta) {
-        std.time.sleep(@intFromFloat((self.targetDelta - self.deltaTime * self.speed) * std.time.ns_per_s));
+    const newTime = std.time.nanoTimestamp();
+    const drawTime = @as(f32, @floatFromInt(newTime - self._currentTime)) / std.time.ns_per_s;
+    self._currentTime = newTime;
+
+    if (drawTime < self.targetDelta) {
+        const delayTime = self.targetDelta - drawTime;
+        std.time.sleep(@intFromFloat(delayTime * std.time.ns_per_s));
+        self.deltaTime = drawTime + delayTime;
+    } else {
+        self.deltaTime = drawTime;
     }
+}
+
+fn handle_resize(self: *Terminal) !void {
+    const screenSize = try self.backend.screenSize();
+    if (!std.meta.eql(screenSize, self.buffer.size)) {
+        if (screenSize.width == 0 and screenSize.height == 0) {
+            self.minimized = true;
+        }
+        try self.buffer.resize(screenSize.width, screenSize.height);
+        try self.backend.clearScreen();
+    }
+
+    self.minimized = false;
+}
+
+fn calcFps(self: *Terminal) void {
+    self.fps = 1.0 / self.deltaTime;
 }
 
 pub fn transition(animation: fn (*Buffer) void) void {
     _ = animation;
-}
-
-fn calcFps(self: *Terminal) void {
-    self._elapsedTime += self.deltaTime;
-    self._ticks += 1;
-
-    if (self._elapsedTime >= 1.0) {
-        self.fps = @as(f32, @floatFromInt(self._ticks)) / self._elapsedTime;
-        self._ticks = 0;
-        self._elapsedTime = 0;
-    }
 }

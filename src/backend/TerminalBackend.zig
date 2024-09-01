@@ -71,7 +71,7 @@ pub fn screenSize(self: *const TerminalBackend) !ScreenSize {
                 return error.IoctlError;
             }
 
-            return ScreenSize{ .x = ws.ws_col, .y = ws.ws_row };
+            return ScreenSize{ .width = ws.ws_col, .height = ws.ws_row };
         },
         else => @compileError("not implemented yet"),
     }

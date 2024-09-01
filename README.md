@@ -5,17 +5,18 @@ a simple ascii graphics library
 ```zig build example```
 
 ### Todo
-- Improve frame pacing
-- Replace ints with floats 
-- Add key handling
 - Add resizing
+- Add key handling (event handling)
+- Terminal, TerminalBackend, Input with function initializer
+- Improve rendering pipeline
+- Fix attributes
+- Add ortographical matrix for all graphics
 - Fix graphics and add more
 - Add animation to the Text 
 - Add frame transition system (screen melting)
 - Add possibility to render two characters as one cell(pixel)
 - Add tests
 
-- Make rendering faster
 - Add object collision checks
 - Add text area widget
 - Add list widget

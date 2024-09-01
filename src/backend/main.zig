@@ -1,8 +1,8 @@
 pub const TerminalBackend = @import("TerminalBackend.zig");
 
 pub const ScreenSize = struct {
-    x: u16,
-    y: u16,
+    width: usize,
+    height: usize,
 };
 
 pub const RgbColor = struct {
