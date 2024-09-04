@@ -3,13 +3,13 @@ const tbackend = @import("backend/main.zig");
 const TerminalBackend = tbackend.TerminalBackend;
 const Color = tbackend.Color;
 const Attribute = tbackend.Attribute;
-const Buffer = @import("Buffer.zig");
+const Screen = @import("Screen.zig");
 const Cell = @import("Cell.zig");
 const ScreenSize = tbackend.ScreenSize;
 
 const Terminal = @This();
 
-buffer: Buffer,
+screen: Screen,
 backend: TerminalBackend,
 targetDelta: f32,
 deltaTime: f32,
@@ -26,12 +26,11 @@ pub fn init(allocator: std.mem.Allocator, backend: anytype, targetFps: f32, spee
     try backend_.hideCursor();
     const screenSize = try backend_.screenSize();
 
-    var buffer = try Buffer.init(allocator, screenSize.width, screenSize.height);
-    buffer.setViewport(0, 0, screenSize.width, screenSize.height);
+    const screen = try Screen.init(allocator, screenSize.width, screenSize.height);
 
     const delta = 1 / targetFps;
     return Terminal{
-        .buffer = buffer,
+        .screen = screen,
         .backend = backend_,
         .targetDelta = delta,
         .deltaTime = delta,
@@ -43,22 +42,22 @@ pub fn init(allocator: std.mem.Allocator, backend: anytype, targetFps: f32, spee
 }
 
 pub fn deinit(self: *Terminal) void {
-    self.buffer.buf.deinit();
+    self.screen.buf.deinit();
 }
 
 pub fn draw(self: *Terminal) !void {
     try self.handle_resize();
     self.calcFps();
     if (!self.minimized) {
-        try self.render();
+        try self.draw_screen();
     }
 }
 
-fn render(self: *Terminal) !void {
-    const buf = &self.buffer;
+fn draw_screen(self: *Terminal) !void {
+    const buf = &self.screen;
     const backend = &self.backend;
-    for (buf.viewport.y..buf.viewport.height) |y| {
-        for (buf.viewport.x..buf.viewport.width) |x| {
+    for (0..buf.size.height) |y| {
+        for (0..buf.size.width) |x| {
             const cell = buf.buf.items[y * buf.size.width + x];
             try backend.setCursor(@intCast(x), @intCast(y));
             try backend.setFg(cell.fg);
@@ -68,7 +67,7 @@ fn render(self: *Terminal) !void {
         }
     }
     try backend.flush();
-    self.buffer.clear();
+    self.screen.clear();
 
     const newTime = std.time.nanoTimestamp();
     const drawTime = @as(f32, @floatFromInt(newTime - self._currentTime)) / std.time.ns_per_s;
@@ -85,11 +84,11 @@ fn render(self: *Terminal) !void {
 
 fn handle_resize(self: *Terminal) !void {
     const screenSize = try self.backend.screenSize();
-    if (!std.meta.eql(screenSize, self.buffer.size)) {
+    if (!std.meta.eql(screenSize, self.screen.size)) {
         if (screenSize.width == 0 and screenSize.height == 0) {
             self.minimized = true;
         }
-        try self.buffer.resize(screenSize.width, screenSize.height);
+        try self.screen.resize(screenSize.width, screenSize.height);
         try self.backend.clearScreen();
     }
 
@@ -100,6 +99,6 @@ fn calcFps(self: *Terminal) void {
     self.fps = 1.0 / self.deltaTime;
 }
 
-pub fn transition(animation: fn (*Buffer) void) void {
+pub fn transition(animation: fn (*Screen) void) void {
     _ = animation;
 }
