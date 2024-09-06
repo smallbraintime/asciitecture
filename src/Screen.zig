@@ -8,14 +8,16 @@ const ScreenSize = backend.ScreenSize;
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
 
-const Buffer = @This();
+const Screen = @This();
 
 buf: std.ArrayList(Cell),
 size: ScreenSize,
+refSize: ScreenSize,
+scaleVec: Vec2,
+center: Vec2,
 view: View,
-worldSize: Vec2,
 
-pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Buffer {
+pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Screen {
     const capacity = width * height;
 
     var buf = try std.ArrayList(Cell).initCapacity(allocator, capacity);
@@ -29,55 +31,67 @@ pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Buffer {
         capacity,
     );
 
-    return Buffer{
+    var screen = Screen{
         .buf = buf,
         .size = .{
             .width = width,
             .height = height,
         },
+        .refSize = ScreenSize{ .width = width, .height = height },
+        .scaleVec = vec2(1, 1),
+        .center = Vec2.fromInt(width, height).div(&vec2(2, 2)),
         .view = undefined,
-        .worldSize = vec2(@as(f32, @floatFromInt(width)), @as(f32, @floatFromInt(height))),
     };
+    screen.setView(&vec2(0, 0));
+
+    return screen;
 }
 
-pub fn resize(self: *Buffer, width: usize, height: usize) !void {
+pub fn resize(self: *Screen, width: usize, height: usize) !void {
     self.size.width = width;
     self.size.height = height;
-    const newCapacity = width * height;
-    try self.buf.resize(newCapacity);
+    self.center = Vec2.fromInt(width, height).div(&vec2(2, 2));
+    self.scaleVec = Vec2.fromInt(width, height).div(&Vec2.fromInt(self.refSize.width, self.refSize.height));
+    try self.buf.resize(width * height);
 }
 
-pub fn setViewport(self: *Buffer, x: usize, y: usize) void {
+pub fn setView(self: *Screen, pos: *const Vec2) void {
+    const size = pos.add(&vec2(self.center.x() / 2, self.center.y() / 2));
     self.view = View{
-        .x = x,
-        .y = y,
+        .pos = pos.*,
+        .left = -size.x(),
+        .right = size.x(),
+        .bottom = -size.y(),
+        .top = size.y(),
     };
 }
 
-pub fn writeCell(self: *Buffer, x: usize, y: usize, style: Cell) void {
-    if (x >= 0 and x < self.size.width and y >= 0 and y < self.size.height) {
-        self.buf.items[y * self.size.width + x] = style;
+pub fn writeCell(self: *Screen, x: usize, y: usize, style: *const Cell) void {
+    const fitToScreen = x >= 0 and x < self.size.width and y >= 0 and y < self.size.height;
+    if (fitToScreen) {
+        self.buf.items[y * self.size.width + x] = style.*;
     }
 }
 
-pub fn writeCellF(self: *Buffer, x: f32, y: f32, style: Cell) void {
-    const screenPos = math.worldToScreen(&vec2(x, y), self.size.width, self.size.height, self.worldSize.x(), self.worldSize.y());
-    const ix: usize = @intFromFloat(@round(screenPos.x()));
-    const iy: usize = @intFromFloat(@round(screenPos.y()));
-    if (ix >= 0 and ix < self.size.width and iy >= 0 and iy < self.size.height) {
-        self.buf.items[iy * self.size.width + ix] = style;
+pub fn writeCellF(self: *Screen, x: f32, y: f32, style: *const Cell) void {
+    const screenPos = self.worldToScreen(&vec2(x, y));
+    const fitToScreen = screenPos.x() >= 0 and screenPos.x() <= @as(f32, @floatFromInt(self.size.width - 1)) and screenPos.y() >= 0 and screenPos.y() < @as(f32, @floatFromInt(self.size.height - 1));
+    if (fitToScreen) {
+        const ix: usize = @intFromFloat(@round(screenPos.x()));
+        const iy: usize = @intFromFloat(@round(screenPos.y()));
+        self.buf.items[iy * self.size.width + ix] = style.*;
     }
 }
 
-pub fn readCell(self: *Buffer, x: usize, y: usize) Cell {
+pub fn readCell(self: *const Screen, x: usize, y: usize) Cell {
     if (x >= 0 and x < self.size.width and y >= 0 and y < self.size.height) {
         return self.buf.items[y * self.size.width + x];
     } else {
-        unreachable;
+        @panic("Screen index out of bound");
     }
 }
 
-pub fn clear(self: *Buffer) void {
+pub fn clear(self: *Screen) void {
     @memset(self.buf.items, Cell{
         .char = ' ',
         .fg = .{ .indexed = .default },
@@ -86,7 +100,14 @@ pub fn clear(self: *Buffer) void {
     });
 }
 
+fn worldToScreen(self: *const Screen, pos: *const Vec2) Vec2 {
+    return vec2(self.center.x() + (pos.x() - self.view.pos.x()) * self.scaleVec.x(), self.center.y() + (pos.y() - self.view.pos.y()) * self.scaleVec.y());
+}
+
 const View = struct {
-    x: usize,
-    y: usize,
+    pos: Vec2,
+    left: f32,
+    right: f32,
+    bottom: f32,
+    top: f32,
 };

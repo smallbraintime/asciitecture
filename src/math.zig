@@ -1,10 +1,15 @@
 const std = @import("std");
+const ScreenSize = @import("backend/main.zig").ScreenSize;
 
 pub const Vec2 = struct {
     v: @Vector(2, f32),
 
     pub fn init(xs: f32, ys: f32) Vec2 {
         return .{ .v = .{ xs, ys } };
+    }
+
+    pub fn fromInt(xs: usize, ys: usize) Vec2 {
+        return .{ .v = .{ @floatFromInt(xs), @floatFromInt(ys) } };
     }
 
     pub fn x(self: *const Vec2) f32 {
@@ -15,66 +20,37 @@ pub const Vec2 = struct {
         return self.v[1];
     }
 
-    pub fn add(self: *const Vec2, v: *const Vec2) void {
-        self.v + v.v;
+    pub fn add(a: *const Vec2, b: *const Vec2) Vec2 {
+        return .{ .v = a.v + b.v };
     }
 
-    pub fn addX(self: *const Vec2, xs: f32) void {
-        self.v[0] + xs;
+    pub fn sub(a: *const Vec2, b: *const Vec2) Vec2 {
+        return .{ .v = a.v - b.v };
     }
 
-    pub fn addY(self: *const Vec2, ys: f32) void {
-        self.v[1] + ys;
+    pub fn mul(a: *const Vec2, b: *const Vec2) Vec2 {
+        return .{ .v = a.v * b.v };
     }
 
-    pub fn sub(self: *const Vec2, v: *const Vec2) void {
-        self.v - v.v;
+    pub fn div(a: *const Vec2, b: *const Vec2) Vec2 {
+        return .{ .v = a.v / b.v };
     }
 
-    pub fn subX(self: *const Vec2, xs: f32) void {
-        self.v[0] - xs;
+    pub fn translate(a: *const Vec2, b: *const Vec2) Vec2 {
+        return a.add(&b);
     }
 
-    pub fn subY(self: *const Vec2, ys: f32) void {
-        self.v[1] - ys;
+    pub fn scale(a: *const Vec2, b: *const Vec2) Vec2 {
+        return a.mul(&b);
     }
 
-    pub fn mul(self: *const Vec2, v: *const Vec2) void {
-        self.v * v.v;
-    }
-
-    pub fn mulX(self: *const Vec2, xs: f32) void {
-        self.v[0] * xs;
-    }
-
-    pub fn mulY(self: *const Vec2, ys: f32) void {
-        self.v[1] * ys;
-    }
-
-    pub fn div(self: *const Vec2, v: *const Vec2) void {
-        self.v / v.v;
-    }
-
-    pub fn divX(self: *const Vec2, xs: f32) void {
-        self.v[0] / xs;
-    }
-
-    pub fn divY(self: *const Vec2, ys: f32) void {
-        self.v[1] / ys;
+    pub fn rotate(self: *const Vec2, angle: f32) Vec2 {
+        const xs = self.x();
+        const ys = self.y();
+        const cos = std.math.cos(angle);
+        const sin = std.math.sin(angle);
+        return init(xs * cos - ys * sin, xs * sin - ys * cos);
     }
 };
 
 pub const vec2 = Vec2.init;
-
-pub fn worldToScreen(v: *const Vec2, screenWidth: usize, screenHeight: usize, worldWidth: f32, worldHeight: f32) Vec2 {
-    const fScreenWidth: f32 = @floatFromInt(screenWidth);
-    const fScreenHeight: f32 = @floatFromInt(screenHeight);
-
-    const scaleX = fScreenWidth / worldWidth;
-    const scaleY = fScreenHeight / worldHeight;
-
-    const centerX = fScreenWidth / 2;
-    const centerY = fScreenHeight / 2;
-
-    return vec2(centerX + v.x() * scaleX, centerY + v.y() * scaleY);
-}

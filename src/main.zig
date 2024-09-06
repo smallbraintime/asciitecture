@@ -8,3 +8,5 @@ pub const Attribute = backend.Attributes;
 pub const graphics = @import("graphics.zig");
 
 pub const TerminalBackend = backend.TerminalBackend;
+
+pub const math = @import("math.zig");

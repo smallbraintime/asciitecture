@@ -5,21 +5,20 @@ const Cell = @import("Cell.zig");
 const Screen = @import("Screen.zig");
 const Color = termBackend.Color;
 const Attribute = termBackend.Attribute;
-
-pub const Vec2 = struct {
-    x: f32,
-    y: f32,
-};
+const math = @import("math.zig");
+const scaleWorld = math.scaleWorld;
+const Vec2 = math.Vec2;
+const vec2 = math.vec2;
 
 pub fn screenMeltingTransition(screen: *Screen) void {
     _ = screen;
 }
 
-pub fn drawLine(screen: *Screen, start: Vec2, end: Vec2, style: Cell) void {
-    var x0 = start.x;
-    var y0 = start.y;
-    const x1 = end.x;
-    const y1 = end.y;
+pub fn drawLine(screen: *Screen, p0: *const Vec2, p1: *const Vec2, style: *const Cell) void {
+    var x0 = p0.x();
+    var y0 = p0.y();
+    const x1 = p1.x();
+    const y1 = p1.y();
 
     const dx = @abs(x1 - x0);
     const dy = @abs(y1 - y0);
@@ -61,16 +60,16 @@ pub fn drawSpline(screen: *Screen, points: []const Vec2, style: Cell) void {
     _ = style;
 }
 
-pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: Vec2, rotation: f32, style: Cell, filling: bool, rounding: bool) void {
+pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, rotation: f32, style: *const Cell, filling: bool, rounding: bool) void {
     const topLeft = position;
-    const topRight = Vec2{ .x = position.x + width - 1, .y = position.y };
-    const bottomLeft = Vec2{ .x = position.x, .y = position.y + height - 1 };
-    const bottomRight = Vec2{ .x = position.x + width - 1, .y = position.y + height - 1 };
+    const topRight = vec2(position.x() + width - 1, position.y());
+    const bottomLeft = vec2(position.x(), position.y() + height - 1);
+    const bottomRight = vec2(position.x() + width - 1, position.y() + height - 1);
 
-    drawLine(screen, topLeft, topRight, style);
-    drawLine(screen, topRight, bottomRight, style);
-    drawLine(screen, bottomRight, bottomLeft, style);
-    drawLine(screen, bottomLeft, topLeft, style);
+    drawLine(screen, topLeft, &topRight, style);
+    drawLine(screen, &topRight, &bottomRight, style);
+    drawLine(screen, &bottomRight, &bottomLeft, style);
+    drawLine(screen, &bottomLeft, topLeft, style);
 
     // if (filling) {
     // try fill(screen, Vec2{ .x = topLeft.x + 1, .y = topLeft.y + 1 }, style);
@@ -81,7 +80,7 @@ pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: Vec2, r
     _ = filling;
 }
 
-pub fn drawTriangle(screen: *Screen, verticies: [3]Vec2, rotation: f32, style: Cell, filling: bool) void {
+pub fn drawTriangle(screen: *Screen, verticies: [3]*const Vec2, rotation: f32, style: *const Cell, filling: bool) void {
     const p1 = verticies[0];
     const p2 = verticies[1];
     const p3 = verticies[2];
@@ -124,7 +123,7 @@ pub fn drawCircle(screen: *Screen, position: Vec2, radius: f32, style: Cell, fil
     _ = filling;
 }
 
-pub fn drawText(screen: *Screen, content: []const u8, position: Vec2, fg: Color, bg: Color, attr: Attribute) void {
+pub fn drawText(screen: *Screen, content: []const u8, pos: *const Vec2, fg: Color, bg: Color, attr: Attribute) void {
     var style = Cell{
         .fg = fg,
         .bg = bg,
@@ -134,7 +133,7 @@ pub fn drawText(screen: *Screen, content: []const u8, position: Vec2, fg: Color,
 
     for (0..content.len) |i| {
         style.char = content[i];
-        screen.writeCellF(position.x + @as(f32, @floatFromInt(i)), position.y, style);
+        screen.writeCellF(pos.x() + @as(f32, @floatFromInt(i)), pos.y(), &style);
     }
 }
 

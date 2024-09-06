@@ -152,16 +152,26 @@ pub fn putChar(self: *TerminalBackend, char: u21) !void {
 }
 
 pub fn setFg(self: *TerminalBackend, color: Color) !void {
-    switch (color) {
-        .indexed => |*indexed| try setIndexedFg(self, indexed.*),
-        .rgb => |*rgb| try setRgbFg(self, rgb.*),
+    switch (builtin.os.tag) {
+        .linux => {
+            switch (color) {
+                .indexed => |*indexed| try setIndexedFg(self, indexed.*),
+                .rgb => |*rgb| try setRgbFg(self, rgb.*),
+            }
+        },
+        else => @compileError("not implemented yet"),
     }
 }
 
 pub fn setBg(self: *TerminalBackend, color: Color) !void {
-    switch (color) {
-        .indexed => |*indexed| try setIndexedBg(self, indexed.*),
-        .rgb => |*rgb| try setRgbBg(self, rgb.*),
+    switch (builtin.os.tag) {
+        .linux => {
+            switch (color) {
+                .indexed => |*indexed| try setIndexedBg(self, indexed.*),
+                .rgb => |*rgb| try setRgbBg(self, rgb.*),
+            }
+        },
+        else => @compileError("not implemented yet"),
     }
 }
 
