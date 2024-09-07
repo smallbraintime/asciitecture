@@ -1,4 +1,4 @@
-pub const TerminalBackend = @import("TerminalBackend.zig");
+pub const Tty = @import("Tty.zig");
 
 pub const ScreenSize = struct {
     width: usize,

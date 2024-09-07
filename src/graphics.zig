@@ -6,13 +6,8 @@ const Screen = @import("Screen.zig");
 const Color = termBackend.Color;
 const Attribute = termBackend.Attribute;
 const math = @import("math.zig");
-const scaleWorld = math.scaleWorld;
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
-
-pub fn screenMeltingTransition(screen: *Screen) void {
-    _ = screen;
-}
 
 pub fn drawLine(screen: *Screen, p0: *const Vec2, p1: *const Vec2, style: *const Cell) void {
     var x0 = p0.x();
@@ -41,43 +36,40 @@ pub fn drawLine(screen: *Screen, p0: *const Vec2, p1: *const Vec2, style: *const
     }
 }
 
-pub fn drawLineStrip(screen: *Screen, points: []const Vec2, style: Cell) void {
-    _ = screen;
-    _ = points;
-    _ = style;
-}
-
-pub fn drawBezierLine(screen: *Screen, start: Vec2, end: Vec2, style: Cell) void {
+pub fn drawBezierCurve(screen: *Screen, start: Vec2, end: Vec2, style: Cell) void {
     _ = screen;
     _ = start;
     _ = end;
     _ = style;
 }
 
-pub fn drawSpline(screen: *Screen, points: []const Vec2, style: Cell) void {
-    _ = screen;
-    _ = points;
-    _ = style;
-}
+pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, rotation: f32, style: *const Cell, filling: bool) void {
+    const top_left = position;
+    const top_right = vec2(position.x() + width - 1, position.y());
+    const bottom_left = vec2(position.x(), position.y() + height - 1);
+    const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
 
-pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, rotation: f32, style: *const Cell, filling: bool, rounding: bool) void {
-    const topLeft = position;
-    const topRight = vec2(position.x() + width - 1, position.y());
-    const bottomLeft = vec2(position.x(), position.y() + height - 1);
-    const bottomRight = vec2(position.x() + width - 1, position.y() + height - 1);
+    drawLine(screen, top_left, &top_right, style);
+    drawLine(screen, &top_right, &bottom_right, style);
+    drawLine(screen, &bottom_right, &bottom_left, style);
+    drawLine(screen, &bottom_left, top_left, style);
 
-    drawLine(screen, topLeft, &topRight, style);
-    drawLine(screen, &topRight, &bottomRight, style);
-    drawLine(screen, &bottomRight, &bottomLeft, style);
-    drawLine(screen, &bottomLeft, topLeft, style);
-
-    // if (filling) {
-    // try fill(screen, Vec2{ .x = topLeft.x + 1, .y = topLeft.y + 1 }, style);
-    // }
-
-    _ = rounding; //TODO: Add border rounding and rotation
     _ = rotation;
     _ = filling;
+}
+
+pub const Border = enum {
+    thick,
+    double_line,
+    rounded,
+};
+
+pub fn drawPrettyRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, borders: Border) void {
+    _ = screen;
+    _ = width;
+    _ = height;
+    _ = position;
+    _ = borders;
 }
 
 pub fn drawTriangle(screen: *Screen, verticies: [3]*const Vec2, rotation: f32, style: *const Cell, filling: bool) void {
@@ -89,11 +81,7 @@ pub fn drawTriangle(screen: *Screen, verticies: [3]*const Vec2, rotation: f32, s
     drawLine(screen, p2, p3, style);
     drawLine(screen, p3, p1, style);
 
-    // if (filling) {
-    // try fill(screen, Vec2{ .x = (p1.x + p2.x + p3.x) / 3, .y = (p1.y + p2.y + p3.y) / 3 }, style);
-    // }
-
-    _ = rotation; //TODO: Make rotation
+    _ = rotation;
     _ = filling;
 }
 
@@ -117,9 +105,6 @@ pub fn drawCircle(screen: *Screen, position: Vec2, radius: f32, style: Cell, fil
         drawCirc(screen, position, .{ .x = x, .y = y }, style);
     }
 
-    // if (filling) {
-    //     try fill(screen, position, style);
-    // }
     _ = filling;
 }
 
@@ -185,82 +170,6 @@ pub const Image = struct {
         _ = flip;
     }
 };
-
-fn fill(screen: *Screen, startPos: Vec2, newStyle: Cell) !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    var visited = std.ArrayList(Vec2).init(gpa.allocator());
-    defer _ = visited.deinit();
-
-    try flood_fill(
-        screen,
-        startPos,
-        newStyle,
-        screen.buf.items[startPos.y * screen.width + startPos.x],
-        &visited,
-    );
-}
-
-fn flood_fill(
-    screen: *Screen,
-    startPos: Vec2,
-    newStyle: Cell,
-    oldStyle: Cell,
-    visited: *std.ArrayList(Vec2),
-) !void {
-    const rowInBounds = startPos.x >= 0 and startPos.x < screen.height;
-    const colInBounds = startPos.y >= 0 and startPos.y < screen.width;
-
-    if (!rowInBounds or !colInBounds) return;
-    for (try visited.toOwnedSlice()) |pos| {
-        if (pos.x == startPos.x and pos.y == startPos.y) {
-            return;
-        }
-    }
-    if (std.meta.eql(screen.getCell(startPos.x, startPos.y), oldStyle)) return;
-
-    try visited.append(startPos);
-    screen.writeCell(startPos.x, startPos.y, newStyle);
-
-    var startPos1 = startPos;
-    startPos1.x += 1;
-    try flood_fill(
-        screen,
-        startPos1,
-        newStyle,
-        oldStyle,
-        visited,
-    );
-
-    var startPos2 = startPos;
-    startPos2.x -= 1;
-    try flood_fill(
-        screen,
-        startPos2,
-        newStyle,
-        oldStyle,
-        visited,
-    );
-
-    var startPos3 = startPos;
-    startPos3.y += 1;
-    try flood_fill(
-        screen,
-        startPos3,
-        newStyle,
-        oldStyle,
-        visited,
-    );
-
-    var startPos4 = startPos;
-    startPos4.y -= 1;
-    try flood_fill(
-        screen,
-        startPos4,
-        newStyle,
-        oldStyle,
-        visited,
-    );
-}
 
 fn drawCirc(screen: *Screen, pos: Vec2, edge: Vec2, style: Cell) void {
     screen.writeCell(@intFromFloat(@round(pos.x + edge.x)), @intFromFloat(@round(pos.y + edge.y)), style);

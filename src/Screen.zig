@@ -67,18 +67,18 @@ pub fn setView(self: *Screen, pos: *const Vec2) void {
 }
 
 pub fn writeCell(self: *Screen, x: usize, y: usize, style: *const Cell) void {
-    const fitToScreen = x >= 0 and x < self.size.width and y >= 0 and y < self.size.height;
-    if (fitToScreen) {
+    const fit_to_screen = x >= 0 and x < self.size.width and y >= 0 and y < self.size.height;
+    if (fit_to_screen) {
         self.buf.items[y * self.size.width + x] = style.*;
     }
 }
 
 pub fn writeCellF(self: *Screen, x: f32, y: f32, style: *const Cell) void {
-    const screenPos = self.worldToScreen(&vec2(x, y));
-    const fitToScreen = screenPos.x() >= 0 and screenPos.x() <= @as(f32, @floatFromInt(self.size.width - 1)) and screenPos.y() >= 0 and screenPos.y() < @as(f32, @floatFromInt(self.size.height - 1));
-    if (fitToScreen) {
-        const ix: usize = @intFromFloat(@round(screenPos.x()));
-        const iy: usize = @intFromFloat(@round(screenPos.y()));
+    const screen_pos = self.worldToScreen(&vec2(x, y));
+    const fit_to_screen = screen_pos.x() >= 0 and screen_pos.x() <= @as(f32, @floatFromInt(self.size.width - 1)) and screen_pos.y() >= 0 and screen_pos.y() < @as(f32, @floatFromInt(self.size.height - 1));
+    if (fit_to_screen) {
+        const ix: usize = @intFromFloat(@round(screen_pos.x()));
+        const iy: usize = @intFromFloat(@round(screen_pos.y()));
         self.buf.items[iy * self.size.width + ix] = style.*;
     }
 }

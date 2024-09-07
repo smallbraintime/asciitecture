@@ -1,6 +1,6 @@
 const std = @import("std");
 const tbackend = @import("backend/main.zig");
-const TerminalBackend = tbackend.TerminalBackend;
+const Tty = tbackend.Tty;
 const Color = tbackend.Color;
 const Attribute = tbackend.Attribute;
 const Screen = @import("Screen.zig");
@@ -10,7 +10,7 @@ const ScreenSize = tbackend.ScreenSize;
 const Terminal = @This();
 
 screen: Screen,
-backend: TerminalBackend,
+backend: Tty,
 targetDelta: f32,
 deltaTime: f32,
 speed: f32,
@@ -19,16 +19,16 @@ minimized: bool,
 
 _currentTime: i128,
 
-pub fn init(allocator: std.mem.Allocator, backend: anytype, targetFps: f32, speed: f32) !Terminal {
+pub fn init(allocator: std.mem.Allocator, backend: anytype, target_fps: f32, speed: f32) !Terminal {
     var backend_ = try backend.init();
     try backend_.newScreen();
     try backend_.rawMode();
     try backend_.hideCursor();
-    const screenSize = try backend_.screenSize();
+    const screen_size = try backend_.screenSize();
 
-    const screen = try Screen.init(allocator, screenSize.width, screenSize.height);
+    const screen = try Screen.init(allocator, screen_size.width, screen_size.height);
 
-    const delta = 1 / targetFps;
+    const delta = 1 / target_fps;
     return Terminal{
         .screen = screen,
         .backend = backend_,
@@ -69,26 +69,26 @@ fn draw_screen(self: *Terminal) !void {
     try backend.flush();
     self.screen.clear();
 
-    const newTime = std.time.nanoTimestamp();
-    const drawTime = @as(f32, @floatFromInt(newTime - self._currentTime)) / std.time.ns_per_s;
-    self._currentTime = newTime;
+    const new_time = std.time.nanoTimestamp();
+    const draw_time = @as(f32, @floatFromInt(new_time - self._currentTime)) / std.time.ns_per_s;
+    self._currentTime = new_time;
 
-    if (drawTime < self.targetDelta) {
-        const delayTime = self.targetDelta - drawTime;
+    if (draw_time < self.targetDelta) {
+        const delayTime = self.targetDelta - draw_time;
         std.time.sleep(@intFromFloat(delayTime * std.time.ns_per_s));
-        self.deltaTime = drawTime + delayTime;
+        self.deltaTime = draw_time + delayTime;
     } else {
-        self.deltaTime = drawTime;
+        self.deltaTime = draw_time;
     }
 }
 
 fn handle_resize(self: *Terminal) !void {
-    const screenSize = try self.backend.screenSize();
-    if (!std.meta.eql(screenSize, self.screen.size)) {
-        if (screenSize.width == 0 and screenSize.height == 0) {
+    const screen_size = try self.backend.screenSize();
+    if (!std.meta.eql(screen_size, self.screen.size)) {
+        if (screen_size.width == 0 and screen_size.height == 0) {
             self.minimized = true;
         }
-        try self.screen.resize(screenSize.width, screenSize.height);
+        try self.screen.resize(screen_size.width, screen_size.height);
         try self.backend.clearScreen();
     }
 
