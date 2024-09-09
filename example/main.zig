@@ -3,6 +3,8 @@ const at = @import("asciitecture");
 const graphics = at.graphics;
 const vec2 = at.math.vec2;
 const Tty = at.Tty;
+const Input = at.Input;
+const Key = at.Key;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -15,11 +17,17 @@ pub fn main() !void {
     var rect_speed: f32 = 1;
     var text_pos = vec2(0, 0);
     var text_speed = vec2(1, 1);
-    // var view_pos = vec2(0, 0);
-    // var view_speed: f32 = 1;
+    var view_pos = vec2(0, 0);
+
+    var textpos2 = vec2(0, 0);
+
+    const max_jump: f32 = 0;
+    var player_y: f32 = 17;
+    var is_falling = false;
+    var start_jump = false;
 
     while (true) {
-        graphics.drawLine(&term.screen, &vec2(20.0, 20.0), &vec2(0.0, 0.0), &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .red }, .attr = .reset });
+        graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .red }, .attr = .reset });
 
         graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 0, &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = .reset }, false);
 
@@ -46,10 +54,25 @@ pub fn main() !void {
 
         try term.draw();
 
-        // term.screen.setView(&viewPos);
-        // viewPos = viewPos.add(&vec2(1 * viewSpeedX, 0));
+        graphics.drawLine(&term.screen, &vec2(view_pos.x(), player_y), &vec2(view_pos.x(), player_y + 2), &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .black }, .attr = .reset });
+        term.screen.writeCellF(view_pos.x(), player_y - 1, &.{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = .reset, .char = '@' });
+        term.screen.setView(&view_pos);
         rect_posx += rect_speed;
         text_pos = text_pos.add(&text_speed);
+        if (player_y <= max_jump) {
+            is_falling = true;
+            start_jump = false;
+        }
+        if (player_y == 17) {
+            is_falling = false;
+        }
+        if (is_falling) {
+            player_y = vec2(0, player_y).add(&vec2(0, 0.5)).y();
+            start_jump = false;
+        }
+        if (start_jump) {
+            player_y = vec2(0, player_y).add(&vec2(0, -1)).y();
+        }
 
         const width: f32 = @floatFromInt(term.screen.refSize.width);
         const height: f32 = @floatFromInt(term.screen.refSize.height);
@@ -57,16 +80,31 @@ pub fn main() !void {
         if (text_pos.y() >= height / 2 or text_pos.y() <= (-height / 2) + 1.0) text_speed = text_speed.mul(&vec2(1.0, -1.0));
         if (rect_posx == 60) rect_speed *= -1.0;
         if (rect_posx == 0) rect_speed *= -1.0;
-        // if (viewPos.x() == 20) viewSpeedX *= -1.0;
-        // if (viewPos.x() == -20) viewSpeedX *= -1.0;
 
-        // var b: [100]u8 = undefined;
-        // const in = try std.fmt.bufPrint(&b, "input:{s}", .{try term.backend.pollInput()});
-        // graphics.drawText(&term.screen, in, &vec2(-20.0, -18.0), .{ .indexed = .white }, .{ .indexed = .black }, .reset);
-        // for (b) |c| {
-        //     if (c == 'q') {
-        //         break;
-        //     }
-        // }
+        const input = try term.backend.getInput();
+        if (input.eql(&Input{ .key = Key.up })) {
+            // textpos2 = textpos2.add(&vec2(0, -1));
+            start_jump = true;
+        }
+        if (input.eql(&Input{ .key = Key.down })) {
+            // textpos2 = textpos2.add(&vec2(0, 1));
+        }
+        if (input.eql(&Input{ .key = Key.right })) {
+            // textpos2 = textpos2.add(&vec2(1, 0));
+            view_pos = view_pos.add(&vec2(1, 0));
+        }
+        if (input.eql(&Input{ .key = Key.left })) {
+            // textpos2 = textpos2.add(&vec2(-1, 0));
+            view_pos = view_pos.add(&vec2(-1, 0));
+        }
+        if (input.eql(&Input{ .key = Key.space })) {
+            graphics.drawText(&term.screen, "something", &vec2(-20, -17), .{ .indexed = .white }, .{ .indexed = .black }, .reset);
+        }
+        if (input.eql(&Input{ .key = 'q' })) break;
+        var b: [100]u8 = undefined;
+        var uni: [20]u8 = undefined;
+        _ = try std.unicode.utf8Encode(input.key, &uni);
+        const in = try std.fmt.bufPrint(&b, "input: {s}", .{uni});
+        graphics.drawText(&term.screen, in, &textpos2, .{ .indexed = .white }, .{ .indexed = .black }, .reset);
     }
 }

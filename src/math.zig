@@ -49,7 +49,7 @@ pub const Vec2 = struct {
         const ys = self.y();
         const cos = std.math.cos(angle);
         const sin = std.math.sin(angle);
-        return init(xs * cos - ys * sin, xs * sin - ys * cos);
+        return vec2(xs * cos - ys * sin, xs * sin + ys * cos);
     }
 };
 

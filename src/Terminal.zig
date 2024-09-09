@@ -25,10 +25,9 @@ pub fn init(allocator: std.mem.Allocator, backend: anytype, target_fps: f32, spe
     try backend_.rawMode();
     try backend_.hideCursor();
     const screen_size = try backend_.screenSize();
-
     const screen = try Screen.init(allocator, screen_size.width, screen_size.height);
-
     const delta = 1 / target_fps;
+
     return Terminal{
         .screen = screen,
         .backend = backend_,
@@ -43,6 +42,7 @@ pub fn init(allocator: std.mem.Allocator, backend: anytype, target_fps: f32, spe
 
 pub fn deinit(self: *Terminal) void {
     self.screen.buf.deinit();
+    self.backend.endScreen() catch {};
 }
 
 pub fn draw(self: *Terminal) !void {
@@ -91,7 +91,6 @@ fn handle_resize(self: *Terminal) !void {
         try self.screen.resize(screen_size.width, screen_size.height);
         try self.backend.clearScreen();
     }
-
     self.minimized = false;
 }
 

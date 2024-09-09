@@ -43,19 +43,20 @@ pub fn drawBezierCurve(screen: *Screen, start: Vec2, end: Vec2, style: Cell) voi
     _ = style;
 }
 
-pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, rotation: f32, style: *const Cell, filling: bool) void {
-    const top_left = position;
-    const top_right = vec2(position.x() + width - 1, position.y());
-    const bottom_left = vec2(position.x(), position.y() + height - 1);
-    const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
+pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, rotation_angle: f32, style: *const Cell, fill: bool) void {
+    const top_left = position.rotate(rotation_angle);
+    const top_right = vec2(position.x() + width - 1, position.y()).rotate(rotation_angle);
+    const bottom_left = vec2(position.x(), position.y() + height - 1).rotate(rotation_angle);
+    const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1).rotate(rotation_angle);
 
-    drawLine(screen, top_left, &top_right, style);
-    drawLine(screen, &top_right, &bottom_right, style);
-    drawLine(screen, &bottom_right, &bottom_left, style);
-    drawLine(screen, &bottom_left, top_left, style);
+    if (fill) {} else {
+        drawLine(screen, &top_left, &top_right, style);
+        drawLine(screen, &top_right, &bottom_right, style);
+        drawLine(screen, &bottom_right, &bottom_left, style);
+        drawLine(screen, &bottom_left, &top_left, style);
+    }
 
-    _ = rotation;
-    _ = filling;
+    //TODO:Fix rotation
 }
 
 pub const Border = enum {

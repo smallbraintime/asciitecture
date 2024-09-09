@@ -9,12 +9,15 @@ const Color = backendMain.Color;
 const IndexedColor = backendMain.IndexedColor;
 const RgbColor = backendMain.RgbColor;
 const Attribute = backendMain.Attribute;
+const Input = backendMain.Input;
+const Key = backendMain.Key;
 
 const Tty = @This();
 
 handle: posix.fd_t,
 orig_termios: posix.termios,
 buf: std.io.BufferedWriter(4096, std.fs.File.Writer),
+stdin: std.fs.File.Reader,
 
 pub fn init() !Tty {
     const handle = stdout.handle;
@@ -22,6 +25,7 @@ pub fn init() !Tty {
         .orig_termios = try posix.tcgetattr(handle),
         .handle = handle,
         .buf = std.io.bufferedWriter(stdout.writer()),
+        .stdin = std.io.getStdIn().reader(),
     };
 }
 
@@ -53,24 +57,29 @@ pub fn screenSize(self: *const Tty) !ScreenSize {
 }
 
 pub fn rawMode(self: *Tty) !void {
-    var termios = try posix.tcgetattr(self.handle);
+    const orig_termios = try posix.tcgetattr(self.handle);
+    var termios = orig_termios;
 
+    termios.iflag.IGNBRK = false;
     termios.iflag.BRKINT = false;
+    termios.iflag.PARMRK = false;
     termios.iflag.ICRNL = false;
+    termios.iflag.IGNCR = false;
     termios.iflag.INPCK = false;
     termios.iflag.ISTRIP = false;
     termios.iflag.IXON = false;
-    termios.oflag.OPOST = false;
-    termios.cflag.CSIZE = .CS8;
     termios.lflag.ECHO = false;
+    termios.lflag.ECHONL = false;
     termios.lflag.ICANON = false;
     termios.lflag.IEXTEN = false;
     termios.lflag.ISIG = false;
+    termios.cflag.CSIZE = .CS8;
+    termios.cflag.PARENB = false;
+    termios.oflag.OPOST = false;
     termios.cc[@intFromEnum(posix.V.MIN)] = 0;
-    termios.cc[@intFromEnum(posix.V.TIME)] = 1;
+    termios.cc[@intFromEnum(posix.V.TIME)] = 0;
 
     try posix.tcsetattr(self.handle, .FLUSH, termios);
-
     self.orig_termios = termios;
 }
 
@@ -130,9 +139,35 @@ pub fn setAttr(self: *Tty, attr: Attribute) !void {
     try self.buf.writer().print("\x1b[{d}m", .{@intFromEnum(attr)});
 }
 
-pub fn pollInput(self: *const Tty) ![]const u8 {
-    _ = self;
-    var buf: [1]u8 = undefined;
-    while (try std.posix.read(std.posix.STDIN_FILENO, &buf) == 0) {}
-    return &buf;
+pub fn getInput(self: *const Tty) !Input {
+    var buf: [20]u8 = undefined;
+    const c = try self.stdin.read(&buf);
+    const view = try std.unicode.Utf8View.init(buf[0..c]);
+    var iter = view.iterator();
+
+    var input = Input{};
+
+    if (iter.nextCodepoint()) |c0| switch (c0) {
+        '\x1b' => {
+            if (iter.nextCodepoint()) |c1| switch (c1) {
+                '[' => {
+                    switch (buf[2]) {
+                        'A' => input.key = Key.up,
+                        'B' => input.key = Key.down,
+                        'C' => input.key = Key.right,
+                        'D' => input.key = Key.left,
+                        else => input.key = Key.none,
+                    }
+                },
+                else => input.key = Key.none,
+            } else {
+                input.key = Key.none;
+            }
+        },
+        else => input.key = c0,
+    } else {
+        input.key = Key.none;
+    }
+
+    return input;
 }

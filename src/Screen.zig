@@ -19,7 +19,6 @@ view: View,
 
 pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Screen {
     const capacity = width * height;
-
     var buf = try std.ArrayList(Cell).initCapacity(allocator, capacity);
     try buf.appendNTimes(
         .{
@@ -43,7 +42,6 @@ pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Screen {
         .view = undefined,
     };
     screen.setView(&vec2(0, 0));
-
     return screen;
 }
 
