@@ -54,11 +54,11 @@ pub fn Terminal(comptime T: type) type {
             try self.handleResize();
             self.calcFps();
             if (!self.minimized) {
-                try self.drawScreen();
+                try self.drawFrame();
             }
         }
 
-        fn drawScreen(self: *Terminal(T)) !void {
+        fn drawFrame(self: *Terminal(T)) !void {
             const buf = &self.screen;
             const backend = &self.backend;
             for (0..buf.size.height) |y| {
@@ -110,4 +110,28 @@ pub fn Terminal(comptime T: type) type {
             _ = animation;
         }
     };
+}
+
+test "frame draw benchmark" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer {
+        const result = gpa.deinit();
+        if (result == .leak) {
+            @panic("memory leak occured");
+        }
+    }
+    var term = try Terminal(LinuxTty).init(gpa.allocator(), 999, 1);
+
+    const graphics = @import("graphics.zig");
+    const math = @import("math.zig");
+    graphics.drawLine(&term.screen, &math.vec2(50.0, 20.0), &math.vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .red }, .attr = null });
+    graphics.drawRectangle(&term.screen, 10, 10, &math.vec2(0.0, 0.0), 0, &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
+    graphics.drawRectangle(&term.screen, 10, 10, &math.vec2(-20, -20), 0, &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
+
+    const start = std.time.milliTimestamp();
+    try term.draw();
+    const end = std.time.milliTimestamp();
+    const result = end - start;
+    try term.deinit();
+    std.debug.print("benchmark result: {d} ms", .{result});
 }
