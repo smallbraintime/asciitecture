@@ -7,4 +7,4 @@ const Cell = @This();
 char: u21,
 fg: Color,
 bg: Color,
-attr: Attribute,
+attr: ?Attribute,

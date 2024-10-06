@@ -12,8 +12,8 @@ const Screen = @This();
 
 buf: std.ArrayList(Cell),
 size: ScreenSize,
-refSize: ScreenSize,
-scaleVec: Vec2,
+ref_size: ScreenSize,
+scale_vec: Vec2,
 center: Vec2,
 view: View,
 
@@ -25,7 +25,7 @@ pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Screen {
             .char = ' ',
             .fg = .{ .indexed = .default },
             .bg = .{ .indexed = .default },
-            .attr = .reset,
+            .attr = null,
         },
         capacity,
     );
@@ -36,8 +36,8 @@ pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Screen {
             .width = width,
             .height = height,
         },
-        .refSize = ScreenSize{ .width = width, .height = height },
-        .scaleVec = vec2(1, 1),
+        .ref_size = ScreenSize{ .width = width, .height = height },
+        .scale_vec = vec2(1, 1),
         .center = Vec2.fromInt(width, height).div(&vec2(2, 2)),
         .view = undefined,
     };
@@ -49,11 +49,11 @@ pub fn resize(self: *Screen, width: usize, height: usize) !void {
     self.size.width = width;
     self.size.height = height;
     self.center = Vec2.fromInt(width, height).div(&vec2(2, 2));
-    self.scaleVec = Vec2.fromInt(width, height).div(&Vec2.fromInt(self.refSize.width, self.refSize.height));
+    self.scale_vec = Vec2.fromInt(width, height).div(&Vec2.fromInt(self.ref_size.width, self.ref_size.height));
     try self.buf.resize(width * height);
 }
 
-pub fn setView(self: *Screen, pos: *const Vec2) void {
+pub inline fn setView(self: *Screen, pos: *const Vec2) void {
     const size = pos.add(&vec2(self.center.x() / 2, self.center.y() / 2));
     self.view = View{
         .pos = pos.*,
@@ -64,14 +64,14 @@ pub fn setView(self: *Screen, pos: *const Vec2) void {
     };
 }
 
-pub fn writeCell(self: *Screen, x: usize, y: usize, style: *const Cell) void {
+pub inline fn writeCell(self: *Screen, x: usize, y: usize, style: *const Cell) void {
     const fit_to_screen = x >= 0 and x < self.size.width and y >= 0 and y < self.size.height;
     if (fit_to_screen) {
         self.buf.items[y * self.size.width + x] = style.*;
     }
 }
 
-pub fn writeCellF(self: *Screen, x: f32, y: f32, style: *const Cell) void {
+pub inline fn writeCellF(self: *Screen, x: f32, y: f32, style: *const Cell) void {
     const screen_pos = self.worldToScreen(&vec2(x, y));
     const fit_to_screen = screen_pos.x() >= 0 and screen_pos.x() <= @as(f32, @floatFromInt(self.size.width - 1)) and screen_pos.y() >= 0 and screen_pos.y() < @as(f32, @floatFromInt(self.size.height - 1));
     if (fit_to_screen) {
@@ -81,7 +81,7 @@ pub fn writeCellF(self: *Screen, x: f32, y: f32, style: *const Cell) void {
     }
 }
 
-pub fn readCell(self: *const Screen, x: usize, y: usize) Cell {
+pub inline fn readCell(self: *const Screen, x: usize, y: usize) Cell {
     if (x >= 0 and x < self.size.width and y >= 0 and y < self.size.height) {
         return self.buf.items[y * self.size.width + x];
     } else {
@@ -94,12 +94,12 @@ pub fn clear(self: *Screen) void {
         .char = ' ',
         .fg = .{ .indexed = .default },
         .bg = .{ .indexed = .default },
-        .attr = .reset,
+        .attr = null,
     });
 }
 
-fn worldToScreen(self: *const Screen, pos: *const Vec2) Vec2 {
-    return vec2(self.center.x() + (pos.x() - self.view.pos.x()) * self.scaleVec.x(), self.center.y() + (pos.y() - self.view.pos.y()) * self.scaleVec.y());
+inline fn worldToScreen(self: *const Screen, pos: *const Vec2) Vec2 {
+    return vec2(self.center.x() + (pos.x() - self.view.pos.x()) * self.scale_vec.x(), self.center.y() + (pos.y() - self.view.pos.y()) * self.scale_vec.y());
 }
 
 const View = struct {

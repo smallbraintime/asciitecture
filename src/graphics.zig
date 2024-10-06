@@ -1,6 +1,5 @@
 const std = @import("std");
 const termBackend = @import("backend/main.zig");
-const Terminal = @import("Terminal.zig");
 const Cell = @import("Cell.zig");
 const Screen = @import("Screen.zig");
 const Color = termBackend.Color;
@@ -109,7 +108,7 @@ pub fn drawCircle(screen: *Screen, position: Vec2, radius: f32, style: Cell, fil
     _ = filling;
 }
 
-pub fn drawText(screen: *Screen, content: []const u8, pos: *const Vec2, fg: Color, bg: Color, attr: Attribute) void {
+pub fn drawText(screen: *Screen, content: []const u8, pos: *const Vec2, fg: Color, bg: Color, attr: ?Attribute) void {
     var style = Cell{
         .fg = fg,
         .bg = bg,

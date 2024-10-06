@@ -9,8 +9,9 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    asciitecture_mod.linkSystemLibrary("ncursesw", .{});
     asciitecture_mod.linkSystemLibrary("c", .{});
+    // asciitecture_mod.linkSystemLibrary("libudev", .{});
+    asciitecture_mod.linkSystemLibrary("X11", .{});
     const options = b.addOptions();
     const options_mod = options.createModule();
     asciitecture_mod.addImport("build_options", options_mod);
