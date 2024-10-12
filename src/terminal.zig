@@ -6,10 +6,12 @@ const Attribute = tbackend.Attribute;
 const Screen = @import("Screen.zig");
 const Cell = @import("Cell.zig");
 const ScreenSize = tbackend.ScreenSize;
+const RawScreen = @import("RawScreen.zig");
 
 pub fn Terminal(comptime T: type) type {
     return struct {
         screen: Screen,
+        last_screen: RawScreen,
         backend: T,
         target_delta: f32,
         delta_time: f32,
@@ -27,10 +29,12 @@ pub fn Terminal(comptime T: type) type {
             try backend_.flush();
             const screen_size = try backend_.screenSize();
             const screen = try Screen.init(allocator, screen_size.width, screen_size.height);
+            const last_screen = try RawScreen.init(allocator, screen_size.width, screen_size.height);
             const delta = 1 / target_fps;
 
             return .{
                 .screen = screen,
+                .last_screen = last_screen,
                 .backend = backend_,
                 .target_delta = delta,
                 .delta_time = delta,
@@ -42,12 +46,13 @@ pub fn Terminal(comptime T: type) type {
         }
 
         pub fn deinit(self: *Terminal(T)) !void {
-            try self.backend.normalMode();
             try self.backend.showCursor();
             try self.backend.clearScreen();
             try self.backend.endScreen();
+            try self.backend.normalMode();
             try self.backend.flush();
             self.screen.buf.deinit();
+            self.last_screen.buf.deinit();
         }
 
         pub fn draw(self: *Terminal(T)) !void {
@@ -60,19 +65,25 @@ pub fn Terminal(comptime T: type) type {
 
         fn drawFrame(self: *Terminal(T)) !void {
             const buf = &self.screen;
-            const backend = &self.backend;
+            const last_buf = &self.last_screen;
+            var backend = &self.backend;
             for (0..buf.size.height) |y| {
                 for (0..buf.size.width) |x| {
                     const cell = buf.buf.items[y * buf.size.width + x];
-                    try backend.setCursor(@intCast(x), @intCast(y));
-                    try backend.setFg(cell.fg);
-                    try backend.setBg(cell.bg);
-                    if (cell.attr) |attr| {
-                        try backend.setAttr(attr);
+                    const last_cell = last_buf.buf.items[y * last_buf.size.width + x];
+
+                    if (!std.meta.eql(cell, last_cell)) {
+                        try backend.setCursor(@intCast(x), @intCast(y));
+                        try backend.setFg(cell.fg);
+                        try backend.setBg(cell.bg);
+                        if (cell.attr) |attr| {
+                            try backend.setAttr(attr);
+                        }
+                        try backend.putChar(cell.char);
                     }
-                    try backend.putChar(cell.char);
                 }
             }
+            try self.last_screen.replace(&self.screen.buf.items);
             try backend.flush();
             self.screen.clear();
 
@@ -89,6 +100,7 @@ pub fn Terminal(comptime T: type) type {
             }
         }
 
+        // This should be handled by a signal
         fn handleResize(self: *Terminal(T)) !void {
             const screen_size = try self.backend.screenSize();
             if (!std.meta.eql(screen_size, self.screen.size)) {
@@ -96,6 +108,7 @@ pub fn Terminal(comptime T: type) type {
                     self.minimized = true;
                 }
                 try self.screen.resize(screen_size.width, screen_size.height);
+                try self.last_screen.resize(screen_size.width, screen_size.height);
                 try self.backend.clearScreen();
             }
             self.minimized = false;
@@ -128,10 +141,11 @@ test "frame draw benchmark" {
     graphics.drawRectangle(&term.screen, 10, 10, &math.vec2(0.0, 0.0), 0, &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
     graphics.drawRectangle(&term.screen, 10, 10, &math.vec2(-20, -20), 0, &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
 
-    const start = std.time.milliTimestamp();
     try term.draw();
-    const end = std.time.milliTimestamp();
+    const start = std.time.microTimestamp();
+    try term.draw();
+    const end = std.time.microTimestamp();
     const result = end - start;
     try term.deinit();
-    std.debug.print("benchmark result: {d} ms", .{result});
+    std.debug.print("benchmark result: {d} qs\n", .{result});
 }

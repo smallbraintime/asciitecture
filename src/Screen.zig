@@ -29,6 +29,7 @@ pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Screen {
         },
         capacity,
     );
+    try buf.ensureTotalCapacity(capacity);
 
     var screen = Screen{
         .buf = buf,
@@ -42,6 +43,7 @@ pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Screen {
         .view = undefined,
     };
     screen.setView(&vec2(0, 0));
+
     return screen;
 }
 

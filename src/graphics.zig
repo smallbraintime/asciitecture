@@ -43,19 +43,19 @@ pub fn drawBezierCurve(screen: *Screen, start: Vec2, end: Vec2, style: Cell) voi
 }
 
 pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, rotation_angle: f32, style: *const Cell, fill: bool) void {
-    const top_left = position.rotate(rotation_angle);
-    const top_right = vec2(position.x() + width - 1, position.y()).rotate(rotation_angle);
-    const bottom_left = vec2(position.x(), position.y() + height - 1).rotate(rotation_angle);
-    const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1).rotate(rotation_angle);
+    const top_left = position;
+    const top_right = vec2(position.x() + width - 1, position.y());
+    const bottom_left = vec2(position.x(), position.y() + height - 1);
+    const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
 
     if (fill) {} else {
-        drawLine(screen, &top_left, &top_right, style);
+        drawLine(screen, top_left, &top_right, style);
         drawLine(screen, &top_right, &bottom_right, style);
         drawLine(screen, &bottom_right, &bottom_left, style);
-        drawLine(screen, &bottom_left, &top_left, style);
+        drawLine(screen, &bottom_left, top_left, style);
     }
 
-    //TODO:Fix rotation
+    _ = rotation_angle;
 }
 
 pub const Border = enum {
@@ -155,7 +155,7 @@ pub fn image(content: []const u8) Image {
     _ = content;
 }
 
-pub const Flip = enum(u3) {
+pub const Flip = enum(u8) {
     vertical,
     horizontal,
     none,

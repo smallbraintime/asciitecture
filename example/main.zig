@@ -16,7 +16,7 @@ pub fn main() !void {
         }
     }
 
-    var term = try at.Terminal(LinuxTty).init(gpa.allocator(), 75, 1);
+    var term = try at.Terminal(LinuxTty).init(gpa.allocator(), 9999, 1);
     defer {
         term.deinit() catch |err| {
             @panic(@errorName(err));
@@ -44,9 +44,9 @@ pub fn main() !void {
     var start_jump = false;
 
     while (true) {
-        graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .red }, .attr = null });
+        graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .red }, .attr = null });
 
-        graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 0, &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
+        graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 0, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
 
         graphics.drawTriangle(&term.screen, .{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, &.{ .char = '●', .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .default }, .attr = null }, false);
 
