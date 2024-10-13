@@ -35,6 +35,12 @@ pub fn resize(self: *RawScreen, width: usize, height: usize) !void {
     self.size.width = width;
     self.size.height = height;
     try self.buf.resize(width * height);
+    @memset(self.buf.items, Cell{
+        .char = undefined,
+        .fg = .{ .indexed = undefined },
+        .bg = .{ .indexed = undefined },
+        .attr = null,
+    });
 }
 
 pub fn deinit(self: *RawScreen) !void {

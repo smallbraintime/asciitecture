@@ -16,7 +16,7 @@ pub fn main() !void {
         }
     }
 
-    var term = try at.Terminal(LinuxTty).init(gpa.allocator(), 9999, 1);
+    var term = try at.Terminal(LinuxTty).init(gpa.allocator(), 75, 1);
     defer {
         term.deinit() catch |err| {
             @panic(@errorName(err));
@@ -46,7 +46,12 @@ pub fn main() !void {
     while (true) {
         graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .red }, .attr = null });
 
-        graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 0, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
+        graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 45, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
+
+        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-30.0, -5.0), .plain, .{ .indexed = .black });
+        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-20.0, -5.0), .thick, .{ .indexed = .black });
+        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-10.0, -5.0), .rounded, .{ .indexed = .black });
+        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(0.0, -5.0), .double_line, .{ .indexed = .black });
 
         graphics.drawTriangle(&term.screen, .{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, &.{ .char = '●', .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .default }, .attr = null }, false);
 
@@ -71,6 +76,16 @@ pub fn main() !void {
         var buf2: [100]u8 = undefined;
         const fps = try std.fmt.bufPrint(&buf2, "fps:{d:.2}", .{term.fps});
         graphics.drawText(&term.screen, fps, &vec2(-20.0, -19.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
+
+        const rot1 = vec2(50.0, 20.0).rotate(90, &vec2(0, 0));
+        const rot2 = vec2(-50.0, -20.0).rotate(90, &vec2(0, 0));
+
+        var buf3: [100]u8 = undefined;
+        const rot = try std.fmt.bufPrint(&buf3, "rot:{} {}", .{ rot1, rot2 });
+        graphics.drawText(&term.screen, rot, &vec2(-20.0, -16.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
+
+        // graphics.drawLine(&term.screen, &rot1, &rot2, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .green }, .attr = null });
+        // graphics.drawLine(&term.screen, &vec2(-20.0, 50.0), &vec2(20.0, -50.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .green }, .attr = null });
 
         try term.draw();
 

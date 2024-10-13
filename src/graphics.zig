@@ -42,34 +42,86 @@ pub fn drawBezierCurve(screen: *Screen, start: Vec2, end: Vec2, style: Cell) voi
     _ = style;
 }
 
-pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, rotation_angle: f32, style: *const Cell, fill: bool) void {
+pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, rotation_angle: f32, style: *const Cell, filling: bool) void {
+    // const origin = vec2(position.x() + width / 2, position.y() + height / 2);
     const top_left = position;
     const top_right = vec2(position.x() + width - 1, position.y());
     const bottom_left = vec2(position.x(), position.y() + height - 1);
     const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
 
-    if (fill) {} else {
-        drawLine(screen, top_left, &top_right, style);
-        drawLine(screen, &top_right, &bottom_right, style);
-        drawLine(screen, &bottom_right, &bottom_left, style);
-        drawLine(screen, &bottom_left, top_left, style);
-    }
+    drawLine(screen, top_left, &top_right, style);
+    drawLine(screen, &top_right, &bottom_right, style);
+    drawLine(screen, &bottom_right, &bottom_left, style);
+    drawLine(screen, &bottom_left, top_left, style);
 
     _ = rotation_angle;
+    _ = filling;
 }
 
-pub const Border = enum {
+pub const Border = enum(u8) {
+    plain,
     thick,
     double_line,
     rounded,
 };
 
-pub fn drawPrettyRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, borders: Border) void {
-    _ = screen;
-    _ = width;
-    _ = height;
-    _ = position;
-    _ = borders;
+pub fn drawPrettyRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, borders: Border, fg: Color) void {
+    const top_left = position;
+    const top_right = vec2(position.x() + width - 1, position.y());
+    const bottom_left = vec2(position.x(), position.y() + height - 1);
+    const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
+
+    var horizontal_border = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
+    var vertical_border = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
+    var top_left_edge = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
+    var top_right_edge = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
+    var bottom_left_edge = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
+    var bottom_right_edge = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
+
+    switch (borders) {
+        .plain => {
+            horizontal_border.char = '─';
+            vertical_border.char = '│';
+            top_left_edge.char = '┌';
+            top_right_edge.char = '┐';
+            bottom_left_edge.char = '└';
+            bottom_right_edge.char = '┘';
+        },
+        .thick => {
+            horizontal_border.char = '━';
+            vertical_border.char = '┃';
+            top_left_edge.char = '┏';
+            top_right_edge.char = '┓';
+            bottom_left_edge.char = '┗';
+            bottom_right_edge.char = '┛';
+        },
+        .double_line => {
+            horizontal_border.char = '═';
+            vertical_border.char = '║';
+            top_left_edge.char = '╔';
+            top_right_edge.char = '╗';
+            bottom_left_edge.char = '╚';
+            bottom_right_edge.char = '╝';
+        },
+        .rounded => {
+            horizontal_border.char = '─';
+            vertical_border.char = '│';
+            top_left_edge.char = '╭';
+            top_right_edge.char = '╮';
+            bottom_left_edge.char = '╰';
+            bottom_right_edge.char = '╯';
+        },
+    }
+
+    drawLine(screen, &top_left.add(&vec2(1, 0)), &top_right.sub(&vec2(1, 0)), &horizontal_border);
+    drawLine(screen, &top_right.add(&vec2(0, 1)), &bottom_right.sub(&vec2(0, 1)), &vertical_border);
+    drawLine(screen, &bottom_right.sub(&vec2(1, 0)), &bottom_left.add(&vec2(1, 0)), &horizontal_border);
+    drawLine(screen, &bottom_left.sub(&vec2(0, 1)), &top_left.add(&vec2(0, 1)), &vertical_border);
+
+    screen.writeCellF(top_left.x(), top_left.y(), &top_left_edge);
+    screen.writeCellF(top_right.x(), top_right.y(), &top_right_edge);
+    screen.writeCellF(bottom_left.x(), bottom_left.y(), &bottom_left_edge);
+    screen.writeCellF(bottom_right.x(), bottom_right.y(), &bottom_right_edge);
 }
 
 pub fn drawTriangle(screen: *Screen, verticies: [3]*const Vec2, rotation: f32, style: *const Cell, filling: bool) void {
