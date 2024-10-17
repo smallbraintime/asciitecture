@@ -1,10 +1,8 @@
-const std = @import("std");
-
-pub const LinuxTty = @import("LinuxTty.zig");
-
-pub const ScreenSize = struct {
-    width: usize,
-    height: usize,
+pub const Cell = struct {
+    char: u21,
+    fg: Color,
+    bg: Color,
+    attr: ?Attribute,
 };
 
 pub const RgbColor = struct {

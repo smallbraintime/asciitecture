@@ -1,14 +1,15 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const cell = @import("../cell.zig");
+const util = @import("../util.zig");
 const posix = std.posix;
 const stdout = std.io.getStdOut();
 const os = std.os;
-const backendMain = @import("main.zig");
-const ScreenSize = backendMain.ScreenSize;
-const Color = backendMain.Color;
-const IndexedColor = backendMain.IndexedColor;
-const RgbColor = backendMain.RgbColor;
-const Attribute = backendMain.Attribute;
+const ScreenSize = util.ScreenSize;
+const Color = cell.Color;
+const IndexedColor = cell.IndexedColor;
+const RgbColor = cell.RgbColor;
+const Attribute = cell.Attribute;
 
 const LinuxTty = @This();
 
@@ -58,7 +59,7 @@ pub inline fn screenSize(self: *const LinuxTty) !ScreenSize {
         return error.IoctlError;
     }
 
-    return ScreenSize{ .width = ws.ws_col, .height = ws.ws_row };
+    return ScreenSize{ .cols = ws.ws_col, .rows = ws.ws_row };
 }
 
 pub fn rawMode(self: *LinuxTty) !void {

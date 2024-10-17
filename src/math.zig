@@ -1,5 +1,4 @@
 const std = @import("std");
-const ScreenSize = @import("backend/main.zig").ScreenSize;
 
 pub const vec2 = Vec2.init;
 

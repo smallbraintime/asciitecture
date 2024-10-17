@@ -1,9 +1,9 @@
-const backend = @import("backend/main.zig");
-pub const LinuxTty = backend.LinuxTty;
-pub const Color = backend.Color;
-pub const Attribute = backend.Attribute;
+pub const LinuxTty = @import("backends/LinuxTty.zig");
 pub const Terminal = @import("terminal.zig").Terminal;
-pub const Cell = @import("Cell.zig");
+pub const cell = @import("cell.zig");
+pub const Cell = cell.Cell;
+pub const Color = cell.Color;
+pub const Attribute = cell.Attribute;
 pub const graphics = @import("graphics.zig");
 pub const math = @import("math.zig");
 pub const input = @import("input.zig");

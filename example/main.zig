@@ -1,11 +1,11 @@
 const std = @import("std");
 const at = @import("asciitecture");
 const graphics = at.graphics;
-const vec2 = at.math.vec2;
 const input = at.input;
 const LinuxTty = at.LinuxTty;
 const Input = input.Input;
 const Key = input.Key;
+const vec2 = at.math.vec2;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -39,12 +39,20 @@ pub fn main() !void {
     var view_direction: f32 = 1;
     var view_is_moving = false;
     const max_jump: f32 = 0;
-    var player_y: f32 = 17;
     var is_falling = false;
     var start_jump = false;
 
+    // const image_literal = [_]u21{
+    //     //x x\n
+    //     // x \n
+    //     //x x\n
+    // };
+    // const image = graphics.imageFromStr(&image_literal);
+
     while (true) {
         graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .red }, .attr = null });
+
+        graphics.drawBezierCurve(&term.screen, &.{ vec2(-20.0, 10.0), vec2(-20.0, 20.0), vec2(20.0, 10.0), vec2(20.0, 20.0) }, &.{ .char = '●', .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .default }, .attr = null });
 
         graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 45, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
 
@@ -55,7 +63,11 @@ pub fn main() !void {
 
         graphics.drawTriangle(&term.screen, .{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, &.{ .char = '●', .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .default }, .attr = null }, false);
 
+        graphics.drawCircle(&term.screen, &vec2(-30.0, -15.0), 3, &.{ .char = '●', .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = null }, false);
+
         graphics.drawText(&term.screen, "Goodbye, World!", &text_pos, .{ .indexed = .green }, .{ .indexed = .black }, null);
+
+        // image.draw(&term.screen, &vec2(0.0, 0.0), 0, .none, &.{ .char = ' ', .fg = .{ .indexed = .white }, .bg = .{ .indexed = .red }, .attr = null });
 
         term.screen.writeCell(3, 4, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
         term.screen.writeCell(4, 4, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
@@ -66,8 +78,8 @@ pub fn main() !void {
         term.screen.writeCell(7, 4, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
         term.screen.writeCell(8, 4, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
 
-        graphics.drawLine(&term.screen, &vec2(view_pos.x(), player_y), &vec2(view_pos.x(), player_y + 2), &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .black }, .attr = null });
-        term.screen.writeCellF(view_pos.x(), player_y - 1, &.{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = null, .char = '@' });
+        graphics.drawLine(&term.screen, &view_pos, &vec2(view_pos.x(), view_pos.y() + 2), &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .black }, .attr = null });
+        term.screen.writeCellF(view_pos.x(), view_pos.y() - 1, &.{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = null, .char = '@' });
 
         var buf1: [100]u8 = undefined;
         const delta_time = try std.fmt.bufPrint(&buf1, "delta_time:{d:.20}", .{term.delta_time});
@@ -77,12 +89,12 @@ pub fn main() !void {
         const fps = try std.fmt.bufPrint(&buf2, "fps:{d:.2}", .{term.fps});
         graphics.drawText(&term.screen, fps, &vec2(-20.0, -19.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
 
-        const rot1 = vec2(50.0, 20.0).rotate(90, &vec2(0, 0));
-        const rot2 = vec2(-50.0, -20.0).rotate(90, &vec2(0, 0));
+        // const rot1 = vec2(50.0, 20.0).rotate(90, &vec2(0, 0));
+        // const rot2 = vec2(-50.0, -20.0).rotate(90, &vec2(0, 0));
 
-        var buf3: [100]u8 = undefined;
-        const rot = try std.fmt.bufPrint(&buf3, "rot:{} {}", .{ rot1, rot2 });
-        graphics.drawText(&term.screen, rot, &vec2(-20.0, -16.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
+        // var buf3: [100]u8 = undefined;
+        // const rot = try std.fmt.bufPrint(&buf3, "rot:{} {}", .{ rot1, rot2 });
+        // graphics.drawText(&term.screen, rot, &vec2(-20.0, -16.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
 
         // graphics.drawLine(&term.screen, &rot1, &rot2, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .green }, .attr = null });
         // graphics.drawLine(&term.screen, &vec2(-20.0, 50.0), &vec2(20.0, -50.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .green }, .attr = null });
@@ -92,23 +104,23 @@ pub fn main() !void {
         term.screen.setView(&view_pos);
         rect_posx += rect_speed;
         text_pos = text_pos.add(&text_speed);
-        if (player_y <= max_jump) {
+        if (view_pos.y() <= max_jump) {
             is_falling = true;
             start_jump = false;
         }
-        if (player_y == 17) {
+        if (view_pos.y() == 17) {
             is_falling = false;
         }
         if (is_falling) {
-            player_y = vec2(0, player_y).add(&vec2(0, 0.5)).y();
+            view_pos = view_pos.add(&vec2(0, 0.5));
             start_jump = false;
         }
         if (start_jump) {
-            player_y = vec2(0, player_y).add(&vec2(0, -1)).y();
+            view_pos = view_pos.add(&vec2(0, -0.5));
         }
 
-        const width: f32 = @floatFromInt(term.screen.ref_size.width);
-        const height: f32 = @floatFromInt(term.screen.ref_size.height);
+        const width: f32 = @floatFromInt(term.screen.ref_size.cols);
+        const height: f32 = @floatFromInt(term.screen.ref_size.rows);
         if (text_pos.x() >= (width / 2) - 14.0 or text_pos.x() <= (-width / 2) + 1.0) text_speed = text_speed.mul(&vec2(-1.0, 1.0));
         if (text_pos.y() >= height / 2 or text_pos.y() <= (-height / 2) + 1.0) text_speed = text_speed.mul(&vec2(1.0, -1.0));
         if (rect_posx == 60) rect_speed *= -1.0;

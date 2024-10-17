@@ -1,10 +1,10 @@
 const std = @import("std");
-const termBackend = @import("backend/main.zig");
-const Cell = @import("Cell.zig");
-const Screen = @import("Screen.zig");
-const Color = termBackend.Color;
-const Attribute = termBackend.Attribute;
+const cell = @import("cell.zig");
 const math = @import("math.zig");
+const Screen = @import("Screen.zig");
+const Cell = cell.Cell;
+const Color = cell.Color;
+const Attribute = cell.Attribute;
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
 
@@ -35,11 +35,18 @@ pub fn drawLine(screen: *Screen, p0: *const Vec2, p1: *const Vec2, style: *const
     }
 }
 
-pub fn drawBezierCurve(screen: *Screen, start: Vec2, end: Vec2, style: Cell) void {
-    _ = screen;
-    _ = start;
-    _ = end;
-    _ = style;
+pub fn drawBezierCurve(screen: *Screen, points: *const [4]Vec2, style: *const Cell) void {
+    var xu: f32 = 0.0;
+    var yu: f32 = 0.0;
+    var u: f32 = 0.0;
+    while (u >= 1.0) {
+        xu = std.math.pow(f32, 1 - u, 3) * points[0].x() + 3 * u * std.math.pow(f32, 1 - u, 2) * points[1].x() + 3 * std.math.pow(f32, u, 2) * @as(f32, 1 - u) * points[2].x() + std.math.pow(f32, u, 3) * points[3].x();
+        yu = std.math.pow(f32, 1 - u, 3) * points[0].y() + 3 * u * std.math.pow(f32, 1 - u, 2) * points[1].y() + 3 * std.math.pow(f32, u, 2) * @as(f32, 1 - u) * points[2].y() + std.math.pow(f32, u, 3) * points[3].y();
+
+        screen.writeCellF(xu, yu, style);
+
+        u += 0.0001;
+    }
 }
 
 pub fn drawRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, rotation_angle: f32, style: *const Cell, filling: bool) void {
@@ -137,14 +144,14 @@ pub fn drawTriangle(screen: *Screen, verticies: [3]*const Vec2, rotation: f32, s
     _ = filling;
 }
 
-pub fn drawCircle(screen: *Screen, position: Vec2, radius: f32, style: Cell, filling: bool) void {
+pub fn drawCircle(screen: *Screen, position: *const Vec2, radius: f32, style: *const Cell, filling: bool) void {
     var x: f32 = 0;
     var y = radius;
     var d = 3 - 2 * radius;
 
-    drawCirc(screen, position, .{ .x = x, .y = y }, style);
-
     while (y >= x) {
+        drawCirc(screen, position, &vec2(x, y), style);
+
         if (d > 0) {
             y -= 1;
             d = d + 4 * (x - y) + 10;
@@ -154,7 +161,7 @@ pub fn drawCircle(screen: *Screen, position: Vec2, radius: f32, style: Cell, fil
 
         x += 1;
 
-        drawCirc(screen, position, .{ .x = x, .y = y }, style);
+        drawCirc(screen, position, &vec2(x, y), style);
     }
 
     _ = filling;
@@ -203,8 +210,8 @@ pub const ParticleEffect = struct {
     }
 };
 
-pub fn image(content: []const u8) Image {
-    _ = content;
+pub fn imageFromStr(str: *const []u21) Image {
+    return Image{ .canvas = str.* };
 }
 
 pub const Flip = enum(u8) {
@@ -213,23 +220,46 @@ pub const Flip = enum(u8) {
     none,
 };
 
-pub const Image = struct {
-    pub fn draw(screen: *Screen, position: Vec2, rotation: f32, flip: Flip, style: Cell) void {
-        _ = screen;
-        _ = position;
+const Image = struct {
+    canvas: []u21,
+
+    pub fn draw(self: *const Image, screen: *Screen, position: *const Vec2, rotation: f32, flip: Flip, style: *const Cell) void {
+        switch (flip) {
+            .vertical => {
+                var temp_canvas = self.canvas;
+                for (0..temp_canvas.len, temp_canvas.len..0) |i, j| {
+                    temp_canvas[i] = self.canvas[j];
+                }
+                self.canvas = temp_canvas;
+            },
+            .horizontal => {},
+            else => {},
+        }
+
+        var x: f32 = 0.0;
+        var y: f32 = 0.0;
+        for (self.canvas) |char| {
+            style.char = char;
+            screen.writeCellF(position.x() + x, position.y() + y, style);
+            x += 1.0;
+            y += 1.0;
+            if (std.meta.eql(char, '\n')) {
+                y += 1.0;
+                x = 0.0;
+            }
+        }
+
         _ = rotation;
-        _ = style;
-        _ = flip;
     }
 };
 
-fn drawCirc(screen: *Screen, pos: Vec2, edge: Vec2, style: Cell) void {
-    screen.writeCell(@intFromFloat(@round(pos.x + edge.x)), @intFromFloat(@round(pos.y + edge.y)), style);
-    screen.writeCell(@intFromFloat(@round(pos.x - edge.x)), @intFromFloat(@round(pos.y + edge.y)), style);
-    screen.writeCell(@intFromFloat(@round(pos.x + edge.x)), @intFromFloat(@round(pos.y - edge.y)), style);
-    screen.writeCell(@intFromFloat(@round(pos.x - edge.x)), @intFromFloat(@round(pos.y - edge.y)), style);
-    screen.writeCell(@intFromFloat(@round(pos.x + edge.x)), @intFromFloat(@round(pos.y + edge.y)), style);
-    screen.writeCell(@intFromFloat(@round(pos.x - edge.x)), @intFromFloat(@round(pos.y + edge.y)), style);
-    screen.writeCell(@intFromFloat(@round(pos.x + edge.x)), @intFromFloat(@round(pos.y - edge.y)), style);
-    screen.writeCell(@intFromFloat(@round(pos.x - edge.x)), @intFromFloat(@round(pos.y - edge.y)), style);
+fn drawCirc(screen: *Screen, pos: *const Vec2, edge: *const Vec2, style: *const Cell) void {
+    screen.writeCellF(pos.x() + edge.x(), pos.y() + edge.y(), style);
+    screen.writeCellF(pos.x() - edge.x(), pos.y() + edge.y(), style);
+    screen.writeCellF(pos.x() + edge.x(), pos.y() - edge.y(), style);
+    screen.writeCellF(pos.x() - edge.x(), pos.y() - edge.y(), style);
+    screen.writeCellF(pos.x() + edge.x(), pos.y() + edge.y(), style);
+    screen.writeCellF(pos.x() - edge.x(), pos.y() + edge.y(), style);
+    screen.writeCellF(pos.x() + edge.x(), pos.y() - edge.y(), style);
+    screen.writeCellF(pos.x() - edge.x(), pos.y() - edge.y(), style);
 }

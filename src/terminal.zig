@@ -1,12 +1,10 @@
 const std = @import("std");
-const tbackend = @import("backend/main.zig");
-const LinuxTty = tbackend.LinuxTty;
-const Color = tbackend.Color;
-const Attribute = tbackend.Attribute;
+const cell_ = @import("cell.zig");
 const Screen = @import("Screen.zig");
-const Cell = @import("Cell.zig");
-const ScreenSize = tbackend.ScreenSize;
 const RawScreen = @import("RawScreen.zig");
+const Cell = cell_.Cell;
+const Attribute = cell_.Attribute;
+const Color = cell_.Color;
 
 pub fn Terminal(comptime T: type) type {
     return struct {
@@ -28,8 +26,8 @@ pub fn Terminal(comptime T: type) type {
             try backend_.newScreen();
             try backend_.flush();
             const screen_size = try backend_.screenSize();
-            const screen = try Screen.init(allocator, screen_size.width, screen_size.height);
-            const last_screen = try RawScreen.init(allocator, screen_size.width, screen_size.height);
+            const screen = try Screen.init(allocator, screen_size.cols, screen_size.rows);
+            const last_screen = try RawScreen.init(allocator, screen_size.cols, screen_size.rows);
             const delta = 1 / target_fps;
 
             return .{
@@ -67,10 +65,10 @@ pub fn Terminal(comptime T: type) type {
             const buf = &self.screen;
             const last_buf = &self.last_screen;
             var backend = &self.backend;
-            for (0..buf.size.height) |y| {
-                for (0..buf.size.width) |x| {
-                    const cell = buf.buf.items[y * buf.size.width + x];
-                    const last_cell = last_buf.buf.items[y * last_buf.size.width + x];
+            for (0..buf.size.rows) |y| {
+                for (0..buf.size.cols) |x| {
+                    const cell = buf.buf.items[y * buf.size.cols + x];
+                    const last_cell = last_buf.buf.items[y * last_buf.size.cols + x];
 
                     if (!std.meta.eql(cell, last_cell)) {
                         try backend.setCursor(@intCast(x), @intCast(y));
@@ -104,11 +102,11 @@ pub fn Terminal(comptime T: type) type {
         fn handleResize(self: *Terminal(T)) !void {
             const screen_size = try self.backend.screenSize();
             if (!std.meta.eql(screen_size, self.screen.size)) {
-                if (screen_size.width == 0 and screen_size.height == 0) {
+                if (screen_size.cols == 0 and screen_size.rows == 0) {
                     self.minimized = true;
                 }
-                try self.screen.resize(screen_size.width, screen_size.height);
-                try self.last_screen.resize(screen_size.width, screen_size.height);
+                try self.screen.resize(screen_size.cols, screen_size.rows);
+                try self.last_screen.resize(screen_size.cols, screen_size.rows);
                 try self.backend.clearScreen();
             }
             self.minimized = false;
@@ -124,6 +122,8 @@ pub fn Terminal(comptime T: type) type {
         }
     };
 }
+
+const LinuxTty = @import("backends/LinuxTty.zig");
 
 test "frame draw benchmark" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};

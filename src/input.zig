@@ -5,8 +5,8 @@ pub const Input = struct {
     _backend: InputBackend,
 
     pub fn init() !Input {
-        // if (std.posix.getenv("DISPLAY") != null) {
-        if (false) {
+        if (std.posix.getenv("DISPLAY") != null) {
+            // if (false) {
             return Input{ ._backend = .{ .x11 = try X11Input.init() } };
         } else {
             return Input{ ._backend = .{ .std = StdInput.init() } };
