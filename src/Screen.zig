@@ -91,7 +91,7 @@ pub inline fn readCell(self: *const Screen, x: usize, y: usize) Cell {
     }
 }
 
-pub fn clear(self: *Screen) void {
+pub inline fn clear(self: *Screen) void {
     @memset(self.buf.items, Cell{
         .char = ' ',
         .fg = .{ .indexed = .default },

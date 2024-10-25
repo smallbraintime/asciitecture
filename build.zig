@@ -10,8 +10,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     asciitecture_mod.linkSystemLibrary("c", .{});
-    // asciitecture_mod.linkSystemLibrary("libudev", .{});
     asciitecture_mod.linkSystemLibrary("X11", .{});
+    // asciitecture_mod.linkSystemLibrary("libudev", .{});
     const options = b.addOptions();
     const options_mod = options.createModule();
     asciitecture_mod.addImport("build_options", options_mod);

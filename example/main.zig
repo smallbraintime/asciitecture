@@ -42,17 +42,10 @@ pub fn main() !void {
     var is_falling = false;
     var start_jump = false;
 
-    // const image_literal = [_]u21{
-    //     //x x\n
-    //     // x \n
-    //     //x x\n
-    // };
-    // const image = graphics.imageFromStr(&image_literal);
-
     while (true) {
         graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .red }, .attr = null });
 
-        graphics.drawBezierCurve(&term.screen, &.{ vec2(-20.0, 10.0), vec2(-20.0, 20.0), vec2(20.0, 10.0), vec2(20.0, 20.0) }, &.{ .char = '●', .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .default }, .attr = null });
+        graphics.drawCubicSpline(&term.screen, &vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25), &.{ .char = '●', .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .default }, .attr = null });
 
         graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 45, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
 
@@ -63,11 +56,9 @@ pub fn main() !void {
 
         graphics.drawTriangle(&term.screen, .{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, &.{ .char = '●', .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .default }, .attr = null }, false);
 
-        graphics.drawCircle(&term.screen, &vec2(-30.0, -15.0), 3, &.{ .char = '●', .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = null }, false);
+        graphics.drawCircle(&term.screen, &vec2(-35.0, 2.0), 20, &.{ .char = '●', .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = null }, false);
 
         graphics.drawText(&term.screen, "Goodbye, World!", &text_pos, .{ .indexed = .green }, .{ .indexed = .black }, null);
-
-        // image.draw(&term.screen, &vec2(0.0, 0.0), 0, .none, &.{ .char = ' ', .fg = .{ .indexed = .white }, .bg = .{ .indexed = .red }, .attr = null });
 
         term.screen.writeCell(3, 4, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
         term.screen.writeCell(4, 4, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
@@ -130,26 +121,15 @@ pub fn main() !void {
         switch (kevent) {
             .press => |*kinput| {
                 if (kinput.eql(&.{ .key = 'w' })) {
-                    // textpos2 = textpos2.add(&vec2(0, -1));
                     start_jump = true;
                 }
-                if (kinput.eql(&.{ .key = Key.down })) {
-                    // textpos2 = textpos2.add(&vec2(0, 1));
-                }
                 if (kinput.eql(&.{ .key = 'd' })) {
-                    // textpos2 = textpos2.add(&vec2(1, 0));
-                    // view_pos = view_pos.add(&vec2(1, 0));
                     view_direction = 1;
                     view_is_moving = true;
                 }
                 if (kinput.eql(&.{ .key = 'a' })) {
-                    // textpos2 = textpos2.add(&vec2(-1, 0));
-                    // view_pos = view_pos.add(&vec2(-1, 0));
                     view_direction = -1;
                     view_is_moving = true;
-                }
-                if (kinput.eql(&.{ .key = Key.space })) {
-                    graphics.drawText(&term.screen, "something", &vec2(-20, -17), .{ .indexed = .white }, .{ .indexed = .black }, null);
                 }
                 if (kinput.eql(&.{ .key = 'q' })) break;
             },
@@ -165,27 +145,5 @@ pub fn main() !void {
         if (view_is_moving) {
             view_pos = view_pos.add(&vec2(1 * view_direction, 0));
         }
-
-        // var b: [100]u8 = undefined;
-        // var uni: [20]u8 = undefined;
-        // const c = try std.unicode.utf8Encode(input.key, &uni);
-        // const in = try std.fmt.bufPrint(&b, "input: {s}", .{uni[0..c]});
-        // graphics.drawText(&term.screen, in, &textpos2, .{ .indexed = .white }, .{ .indexed = .black }, null);
     }
 }
-
-// const input = @import("asciitecture").input;
-//
-// pub fn main() !void {
-//     var in = input.Input.init();
-//     while (true) {
-//         switch (in.nextEvent()) {
-//             .press => |*kevent| {
-//                 var buf: [20]u8 = undefined;
-//                 const n = try std.unicode.utf8Encode(kevent.key, &buf);
-//                 std.debug.print("{s}", .{buf[0..n]});
-//             },
-//             .release => {},
-//         }
-//     }
-// }

@@ -5,15 +5,16 @@ a simple ascii graphics library
 ```zig build example```
 
 ### Todo
-- Improve rendering pipeline
-- Add key handling (event handling)
-- Fix graphics and add more
-- Add frame transition system (screen melting)
-- Add possibility to render two characters as one cell(pixel)
-- Add tests
+[ ] Improve key handling 
+[ ] Improve graphics and add more
+[ ] Add frame transition system (screen melting)
+[ ] Add possibility to render two characters as one cell and with correct ratio (in_ratio arg)
+[ ] Add tests
 
-- Add object collision checks
-- Add simple light source
-- Add animation system
-- Add list widget
-- Add text area widget
+[ ] Add object collision checks
+[ ] Add simple light source
+[ ] Add animation system
+[ ] Add list widget
+[ ] Add text area widget
+[ ] Screen resizing handled by a signal
+[ ] Add WindowsTty

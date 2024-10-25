@@ -59,6 +59,10 @@ pub const Vec2 = struct {
     }
 };
 
+pub fn pow(x: f32, n: f32) f32 {
+    return std.math.pow(f32, x, n);
+}
+
 test "addition" {
     try std.testing.expectEqual(vec2(15, 10), vec2(5, 1).add(&vec2(10, 9)));
 }
