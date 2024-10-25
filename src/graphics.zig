@@ -188,37 +188,15 @@ pub fn drawText(screen: *Screen, content: []const u8, pos: *const Vec2, fg: Colo
     }
 }
 
-pub const Particle = struct {
-    style: Cell,
-    lifetime: f32,
-    velocity: Vec2,
-    position: Vec2,
+pub fn drawParticles(screen: *Screen, position: *const Vec2, width: f32, height: f32, quantity: usize, style: *const Cell) void {
+    var rng = std.rand.DefaultPrng.init(@intCast(std.time.microTimestamp()));
+    var prng = rng.random();
 
-    pub fn render(self: *const Particle, screen: *Screen) void {
-        _ = self;
-        _ = screen;
+    for (0..quantity) |_| {
+        const x = prng.intRangeAtMost(i32, @intFromFloat(@trunc(position.x())), @intFromFloat(@trunc(position.x() + width)));
+        const y = prng.intRangeAtMost(i32, @intFromFloat(@trunc(position.y())), @intFromFloat(@trunc(position.y() + height)));
+        screen.writeCellF(@floatFromInt(x), @floatFromInt(y), style);
     }
-};
-
-pub const ParticleEffect = struct {
-    particles: std.ArrayList(*Particle),
-    duration: f32,
-    elapsedTime: f32,
-    emissionRate: f32,
-    particleLifetime: f32,
-    startStyle: Cell,
-    endStyle: Cell,
-    isActive: bool,
-    postion: Vec2,
-
-    pub fn render(self: *const ParticleEffect, screen: *Screen) void {
-        _ = self;
-        _ = screen;
-    }
-};
-
-pub fn spriteFromStr(str: *const [][]u21) Sprite {
-    return Sprite{ .image = str.* };
 }
 
 pub const Flip = enum(u8) {
@@ -227,29 +205,32 @@ pub const Flip = enum(u8) {
     none,
 };
 
-const Sprite = struct {
-    image: [][]u21,
+pub fn spriteFromStr(str: []const u8) Sprite {
+    return Sprite{ .image = str };
+}
 
-    // pub fn draw(self: *const Sprite, screen: *Screen, position: *const Vec2, rotation: f32, flip: Flip, style: *const Cell) void {
-    //     switch (flip) {
-    //         .vertical => {},
-    //         .horizontal => {},
-    //         else => {},
-    //     }
-    //
-    //     var x: f32 = 0.0;
-    //     var y: f32 = 0.0;
-    //     for (self.canvas) |char| {
-    //         style.char = char;
-    //         screen.writeCellF(position.x() + x, position.y() + y, style);
-    //         x += 1.0;
-    //         y += 1.0;
-    //         if (std.meta.eql(char, '\n')) {
-    //             y += 1.0;
-    //             x = 0.0;
-    //         }
-    //     }
-    //
-    //     _ = rotation;
-    // }
+const Sprite = struct {
+    image: []const u8,
+
+    pub fn draw(self: *const Sprite, screen: *Screen, position: *const Vec2, rotation: f32, flip: Flip, fg: Color, bg: Color) void {
+        var x: f32 = 0.0;
+        var y: f32 = 0.0;
+        var style = Cell{ .char = 0, .bg = bg, .fg = fg, .attr = null };
+
+        for (self.image) |c| {
+            if (c != ' ' or c != '\n') {
+                style.char = @intCast(c);
+                screen.writeCellF(position.x() + x, position.y() + y, &style);
+            }
+
+            x += 1.0;
+            if (c == '\n') {
+                y += 1.0;
+                x = 0.0;
+            }
+        }
+
+        _ = rotation;
+        _ = flip;
+    }
 };

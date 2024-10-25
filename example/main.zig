@@ -42,7 +42,22 @@ pub fn main() !void {
     var is_falling = false;
     var start_jump = false;
 
+    const image =
+        \\  XXX  
+        \\  XXX  
+        \\   X   
+        \\XXXXXXX
+        \\   X   
+        \\  X X  
+        \\ X   X 
+        \\X     X
+    ;
+
     while (true) {
+        graphics.drawParticles(&term.screen, &vec2(-70, 15), 7, 7, 15, &.{ .char = '●', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .default }, .attr = null });
+
+        graphics.spriteFromStr(image).draw(&term.screen, &vec2(0, 27), 0, .none, .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .{ .indexed = .default });
+
         graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .red }, .attr = null });
 
         graphics.drawCubicSpline(&term.screen, &vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25), &.{ .char = '●', .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .default }, .attr = null });
@@ -56,7 +71,7 @@ pub fn main() !void {
 
         graphics.drawTriangle(&term.screen, .{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, &.{ .char = '●', .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .default }, .attr = null }, false);
 
-        graphics.drawCircle(&term.screen, &vec2(-35.0, 2.0), 20, &.{ .char = '●', .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = null }, false);
+        graphics.drawCircle(&term.screen, &vec2(-35.0, 2.0), 15, &.{ .char = '●', .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = null }, false);
 
         graphics.drawText(&term.screen, "Goodbye, World!", &text_pos, .{ .indexed = .green }, .{ .indexed = .black }, null);
 
@@ -74,11 +89,11 @@ pub fn main() !void {
 
         var buf1: [100]u8 = undefined;
         const delta_time = try std.fmt.bufPrint(&buf1, "delta_time:{d:.20}", .{term.delta_time});
-        graphics.drawText(&term.screen, delta_time, &vec2(-20.0, -20.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
+        graphics.drawText(&term.screen, delta_time, &vec2(-20.0, 22.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
 
         var buf2: [100]u8 = undefined;
         const fps = try std.fmt.bufPrint(&buf2, "fps:{d:.2}", .{term.fps});
-        graphics.drawText(&term.screen, fps, &vec2(-20.0, -19.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
+        graphics.drawText(&term.screen, fps, &vec2(-20.0, 23.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
 
         // const rot1 = vec2(50.0, 20.0).rotate(90, &vec2(0, 0));
         // const rot2 = vec2(-50.0, -20.0).rotate(90, &vec2(0, 0));
