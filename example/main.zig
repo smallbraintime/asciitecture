@@ -1,11 +1,13 @@
 const std = @import("std");
 const at = @import("asciitecture");
 const graphics = at.graphics;
-const input = at.input;
+// const input = at.input;
 const LinuxTty = at.LinuxTty;
-const Input = input.Input;
-const Key = input.Key;
+// const Input = input.Input;
+// const Key = input.Key;
 const vec2 = at.math.vec2;
+const Input = at.newInput.Input;
+const Key = at.newInput.Key;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -28,8 +30,8 @@ pub fn main() !void {
         };
     }
 
-    var event = try Input.init();
-    defer event.deinit();
+    var input = Input.init(gpa.allocator());
+    defer input.deinit();
 
     var rect_posx: f32 = 0;
     var rect_speed: f32 = 1;
@@ -54,7 +56,9 @@ pub fn main() !void {
     ;
 
     while (true) {
-        graphics.drawParticles(&term.screen, &vec2(-70, 15), 7, 7, 15, &.{ .char = '●', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .default }, .attr = null });
+        graphics.drawParticles(&term.screen, &vec2(-62, 17), 10, 5, 3, &.{ .char = '●', .fg = .{ .indexed = .cyan }, .bg = .{ .indexed = .default }, .attr = null });
+        graphics.drawParticles(&term.screen, &vec2(-70, 15), 15, 10, 5, &.{ .char = '●', .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .default }, .attr = null });
+        graphics.drawParticles(&term.screen, &vec2(-75, 10), 30, 20, 2, &.{ .char = '●', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .default }, .attr = null });
 
         graphics.spriteFromStr(image).draw(&term.screen, &vec2(0, 27), 0, .none, .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .{ .indexed = .default });
 
@@ -132,31 +136,46 @@ pub fn main() !void {
         if (rect_posx == 60) rect_speed *= -1.0;
         if (rect_posx == 0) rect_speed *= -1.0;
 
-        const kevent = event.nextEvent();
-        switch (kevent) {
-            .press => |*kinput| {
-                if (kinput.eql(&.{ .key = 'w' })) {
-                    start_jump = true;
-                }
-                if (kinput.eql(&.{ .key = 'd' })) {
-                    view_direction = 1;
-                    view_is_moving = true;
-                }
-                if (kinput.eql(&.{ .key = 'a' })) {
-                    view_direction = -1;
-                    view_is_moving = true;
-                }
-                if (kinput.eql(&.{ .key = 'q' })) break;
-            },
-            .release => |*kinput| {
-                if (kinput.eql(&.{ .key = 'd' })) {
-                    view_is_moving = false;
-                }
-                if (kinput.eql(&.{ .key = 'a' })) {
-                    view_is_moving = false;
-                }
-            },
+        view_is_moving = false;
+        if (input.contains(&.{ .key = 'w' })) {
+            start_jump = true;
         }
+        if (input.contains(&.{ .key = 'd' })) {
+            view_direction = 1;
+            view_is_moving = true;
+        }
+        if (input.contains(&.{ .key = 'a' })) {
+            view_direction = -1;
+            view_is_moving = true;
+        }
+        if (input.contains(&.{ .key = 'q' })) {
+            break;
+        }
+        // const kevent = event.nextEvent();
+        // switch (kevent) {
+        //     .press => |*kinput| {
+        //         if (kinput.eql(&.{ .key = 'w' })) {
+        //             start_jump = true;
+        //         }
+        //         if (kinput.eql(&.{ .key = 'd' })) {
+        //             view_direction = 1;
+        //             view_is_moving = true;
+        //         }
+        //         if (kinput.eql(&.{ .key = 'a' })) {
+        //             view_direction = -1;
+        //             view_is_moving = true;
+        //         }
+        //         if (kinput.eql(&.{ .key = 'q' })) break;
+        //     },
+        //     .release => |*kinput| {
+        //         if (kinput.eql(&.{ .key = 'd' })) {
+        //             view_is_moving = false;
+        //         }
+        //         if (kinput.eql(&.{ .key = 'a' })) {
+        //             view_is_moving = false;
+        //         }
+        //     },
+        // }
         if (view_is_moving) {
             view_pos = view_pos.add(&vec2(1 * view_direction, 0));
         }

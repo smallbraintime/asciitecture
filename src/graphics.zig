@@ -189,7 +189,9 @@ pub fn drawText(screen: *Screen, content: []const u8, pos: *const Vec2, fg: Colo
 }
 
 pub fn drawParticles(screen: *Screen, position: *const Vec2, width: f32, height: f32, quantity: usize, style: *const Cell) void {
-    var rng = std.rand.DefaultPrng.init(@intCast(std.time.microTimestamp()));
+    var rn: [1]u8 = undefined;
+    std.posix.getrandom(&rn) catch unreachable;
+    var rng = std.rand.DefaultPrng.init(@intCast(rn[0]));
     var prng = rng.random();
 
     for (0..quantity) |_| {
