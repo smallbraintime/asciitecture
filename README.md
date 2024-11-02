@@ -5,7 +5,6 @@ a simple ascii graphics library
 ```zig build example```
 
 ### Todo
-- [ ] Improve key handling 
 - [ ] Improve graphics (add rotation and ratio)
 - [ ] Add frame transition system (screen melting)
 - [ ] Add tests and docs
@@ -17,4 +16,4 @@ a simple ascii graphics library
 - [ ] Add text area widget
 
 - [ ] Screen resizing handled by a signal
-- [ ] Add WindowsTty
+- [ ] Add Windows support

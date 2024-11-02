@@ -1,12 +1,16 @@
 const std = @import("std");
-const x11 = @cImport(@cInclude("X11/Xlib.h"));
+const x11 = @cImport({
+    @cInclude("X11/Xlib.h");
+    @cInclude("X11/keysymdef.h");
+    @cInclude("X11/extensions/Xrandr.h");
+});
 
 pub const Input = struct {
     _backend: InputBackend,
 
     pub fn init() !Input {
-        // if (std.posix.getenv("DISPLAY") != null) {
-        if (false) {
+        if (std.posix.getenv("DISPLAY") != null) {
+            // if (false) {
             return Input{ ._backend = .{ .x11 = try X11Input.init() } };
         } else {
             return Input{ ._backend = .{ .std = StdInput.init() } };
@@ -24,7 +28,7 @@ pub const Input = struct {
         }
     }
 
-    pub fn nextEvent(self: *Input) KeyEvent {
+    pub fn nextEvent(self: *Input) ?KeyEvent {
         switch (self._backend) {
             .x11 => |*be| {
                 return be.nextEvent() catch |err| {
@@ -51,66 +55,205 @@ pub const KeyEvent = union(enum) {
 };
 
 pub const KeyInput = struct {
-    key: u21,
-    ctrl: bool = false,
-    shift: bool = false,
-    alt: bool = false,
+    key: Key,
+    mod: KeyMod = .{},
 
     pub fn eql(a: *const KeyInput, b: *const KeyInput) bool {
-        return std.meta.eql(a.key, b.key);
+        return @intFromEnum(a.key) == @intFromEnum(b.key) and a.mod.ctrl == b.mod.ctrl and a.mod.alt == b.mod.alt and a.mod.shift == b.mod.shift;
     }
 };
 
+pub const KeyMod = packed struct(u8) {
+    shift: bool = false,
+    ctrl: bool = false,
+    alt: bool = false,
+    _padding: u5 = undefined,
+};
+
+pub const Key = enum {
+    a,
+    b,
+    c,
+    d,
+    e,
+    f,
+    g,
+    h,
+    i,
+    j,
+    k,
+    l,
+    m,
+    n,
+    o,
+    p,
+    q,
+    r,
+    s,
+    t,
+    u,
+    v,
+    w,
+    x,
+    y,
+    z,
+    zero,
+    one,
+    two,
+    three,
+    four,
+    five,
+    six,
+    seven,
+    eight,
+    nine,
+    tab,
+    enter,
+    escape,
+    space,
+    backspace,
+    insert,
+    delete,
+    left,
+    right,
+    up,
+    down,
+    f1,
+    f2,
+    f3,
+    f4,
+    f5,
+    f6,
+    f7,
+    f8,
+    f9,
+    f10,
+    f11,
+    f12,
+    shift,
+    control,
+    alt,
+    unknown,
+};
+
 const X11Input = struct {
-    _dpy: *x11.Display,
-    _ev: x11.XEvent = undefined,
+    _display: *x11.Display,
 
     pub fn init() !X11Input {
-        var dpy: *x11.Display = undefined;
-        if (x11.XOpenDisplay(null)) |new_dpy| {
-            dpy = new_dpy;
-        } else {
-            return error.X11Error;
-        }
+        const dpy = x11.XOpenDisplay(null) orelse return error.X11Error;
+        var focused: x11.Window = undefined;
+        var revert: i32 = undefined;
+        _ = x11.XGetInputFocus(dpy, &focused, &revert);
+        _ = x11.XSelectInput(dpy, focused, x11.KeyPressMask | x11.KeyReleaseMask | x11.FocusChangeMask);
         _ = x11.XAutoRepeatOff(dpy);
-        if (x11.XGrabKeyboard(
-            dpy,
-            x11.DefaultRootWindow(dpy),
-            x11.True,
-            x11.GrabModeAsync,
-            x11.GrabModeAsync,
-            x11.CurrentTime,
-        ) > 0) {
-            return error.X11Error;
-        }
-        return X11Input{ ._dpy = dpy };
+        _ = x11.XSynchronize(dpy, 1);
+        return .{ ._display = dpy };
     }
 
-    pub fn nextEvent(self: *X11Input) !KeyEvent {
-        if (x11.XPending(self._dpy) > 0) {
-            _ = x11.XNextEvent(self._dpy, &self._ev);
-            switch (self._ev.type) {
+    pub fn nextEvent(self: *X11Input) !?KeyEvent {
+        if (x11.XPending(self._display) > 0) {
+            var event: x11.XEvent = undefined;
+            _ = x11.XNextEvent(self._display, &event);
+            switch (event.type) {
                 x11.KeyPress => {
-                    const key_code = @as(*x11.XKeyPressedEvent, @ptrCast(&self._ev)).keycode;
-                    const str_key = x11.XKeysymToString(x11.XKeycodeToKeysym(self._dpy, @intCast(key_code), 0));
-                    return KeyEvent{ .press = .{ .key = try std.unicode.utf8Decode(std.mem.span(str_key)) } };
+                    var keysym: x11.KeySym = undefined;
+                    _ = x11.XLookupString(&event.xkey, null, 0, &keysym, null);
+                    return .{ .press = .{ .key = toKey(keysym), .mod = toMod(event.xkey.state) } };
                 },
                 x11.KeyRelease => {
-                    const key_code = @as(*x11.XKeyReleasedEvent, @ptrCast(&self._ev)).keycode;
-                    const str_key = x11.XKeysymToString(x11.XKeycodeToKeysym(self._dpy, @intCast(key_code), 0));
-                    return KeyEvent{ .release = .{ .key = try std.unicode.utf8Decode(std.mem.span(str_key)) } };
+                    var keysym: x11.KeySym = undefined;
+                    _ = x11.XLookupString(&event.xkey, null, 0, &keysym, null);
+                    return .{ .release = .{ .key = toKey(keysym), .mod = toMod(event.xkey.state) } };
                 },
-                else => return KeyEvent{ .press = .{ .key = Key.none } },
+                x11.FocusOut => {
+                    _ = x11.XAutoRepeatOn(self._display);
+                },
+                x11.FocusIn => {
+                    _ = x11.XAutoRepeatOff(self._display);
+                },
+                else => {},
             }
-        } else {
-            return KeyEvent{ .press = .{ .key = Key.none } };
         }
+        return null;
+    }
+
+    fn toMod(mods: x11.KeySym) KeyMod {
+        return .{
+            .shift = mods & x11.ShiftMask != 0,
+            .ctrl = mods & x11.ControlMask != 0,
+            .alt = mods & x11.Mod1Mask != 0,
+        };
+    }
+
+    fn toKey(key: x11.KeySym) Key {
+        return switch (key) {
+            x11.XK_a, x11.XK_A => .a,
+            x11.XK_b, x11.XK_B => .b,
+            x11.XK_c, x11.XK_C => .c,
+            x11.XK_d, x11.XK_D => .d,
+            x11.XK_e, x11.XK_E => .e,
+            x11.XK_f, x11.XK_F => .f,
+            x11.XK_g, x11.XK_G => .g,
+            x11.XK_h, x11.XK_H => .h,
+            x11.XK_i, x11.XK_I => .i,
+            x11.XK_j, x11.XK_J => .j,
+            x11.XK_k, x11.XK_K => .k,
+            x11.XK_l, x11.XK_L => .l,
+            x11.XK_m, x11.XK_M => .m,
+            x11.XK_n, x11.XK_N => .n,
+            x11.XK_o, x11.XK_O => .o,
+            x11.XK_p, x11.XK_P => .p,
+            x11.XK_q, x11.XK_Q => .q,
+            x11.XK_r, x11.XK_R => .r,
+            x11.XK_s, x11.XK_S => .s,
+            x11.XK_t, x11.XK_T => .t,
+            x11.XK_u, x11.XK_U => .u,
+            x11.XK_v, x11.XK_V => .v,
+            x11.XK_w, x11.XK_W => .w,
+            x11.XK_x, x11.XK_X => .x,
+            x11.XK_y, x11.XK_Y => .y,
+            x11.XK_z, x11.XK_Z => .z,
+            x11.XK_0 => .zero,
+            x11.XK_1 => .one,
+            x11.XK_2 => .two,
+            x11.XK_3 => .three,
+            x11.XK_4 => .four,
+            x11.XK_5 => .five,
+            x11.XK_6 => .six,
+            x11.XK_7 => .seven,
+            x11.XK_8 => .eight,
+            x11.XK_9 => .nine,
+            x11.XK_F1 => .f1,
+            x11.XK_F2 => .f2,
+            x11.XK_F3 => .f3,
+            x11.XK_F4 => .f4,
+            x11.XK_F5 => .f5,
+            x11.XK_F6 => .f6,
+            x11.XK_F7 => .f7,
+            x11.XK_F8 => .f8,
+            x11.XK_F9 => .f9,
+            x11.XK_F10 => .f10,
+            x11.XK_F11 => .f11,
+            x11.XK_F12 => .f12,
+            x11.XK_Return => .enter,
+            x11.XK_Escape => .escape,
+            x11.XK_Tab => .tab,
+            x11.XK_Shift_L, x11.XK_Shift_R => .shift,
+            x11.XK_Control_L, x11.XK_Control_R => .control,
+            x11.XK_Alt_L, x11.XK_Alt_R => .alt,
+            x11.XK_Left => .left,
+            x11.XK_Right => .right,
+            x11.XK_Up => .up,
+            x11.XK_Down => .down,
+            x11.XK_space => .space,
+            x11.XK_BackSpace => .backspace,
+            else => .unknown,
+        };
     }
 
     pub fn deinit(self: *X11Input) !void {
-        _ = x11.XAutoRepeatOn(self._dpy);
-        _ = x11.XUngrabKeyboard(self._dpy, x11.CurrentTime);
-        _ = x11.XCloseDisplay(self._dpy);
+        _ = x11.XAutoRepeatOn(self._display);
+        _ = x11.XCloseDisplay(self._display);
     }
 };
 
@@ -118,78 +261,111 @@ const StdInput = struct {
     stdin: std.fs.File.Reader,
 
     pub fn init() StdInput {
-        return StdInput{
+        return .{
             .stdin = std.io.getStdIn().reader(),
         };
     }
 
-    pub fn nextEvent(self: *StdInput) !KeyEvent {
-        var buf: [4]u8 = undefined;
+    pub fn nextEvent(self: *StdInput) !?KeyEvent {
+        var buf: [3]u8 = undefined;
         const c = try self.stdin.read(&buf);
-        const view = try std.unicode.Utf8View.init(buf[0..c]);
-        var iter = view.iterator();
+        return .{ .press = try toKeyInput(buf[0..c]) orelse return null };
+    }
 
-        var input = KeyInput{ .key = undefined };
+    fn toKeyInput(buf: []const u8) !?KeyInput {
+        const view = try std.unicode.Utf8View.init(buf);
+        var iter = view.iterator();
+        if (iter.bytes.len == 0) return null;
+
+        var input = KeyInput{ .key = .unknown, .mod = .{ .alt = false, .shift = false, .ctrl = false } };
         if (iter.nextCodepoint()) |c0| switch (c0) {
             '\x1b' => {
+                input.key = .escape;
                 if (iter.nextCodepoint()) |c1| switch (c1) {
                     '[' => {
                         switch (buf[2]) {
-                            'A' => input.key = Key.up,
-                            'B' => input.key = Key.down,
-                            'C' => input.key = Key.right,
-                            'D' => input.key = Key.left,
-                            else => input.key = Key.none,
+                            'A' => input.key = .up,
+                            'B' => input.key = .down,
+                            'C' => input.key = .right,
+                            'D' => input.key = .left,
+                            '1' => {
+                                if (iter.nextCodepoint()) |c2| switch (c2) {
+                                    '5' => input.key = .f5,
+                                    '7' => input.key = .f6,
+                                    '8' => input.key = .f7,
+                                    '9' => input.key = .f8,
+                                    '1' => {
+                                        if (iter.nextCodepoint()) |c3| switch (c3) {
+                                            '0' => input.key = .f9,
+                                            '1' => input.key = .f10,
+                                            '3' => input.key = .f11,
+                                            '4' => input.key = .f12,
+                                            else => {},
+                                        };
+                                    },
+                                    else => {},
+                                };
+                            },
+                            else => {},
                         }
                     },
-                    else => input.key = Key.none,
-                } else {
-                    input.key = Key.none;
-                }
+                    'O' => {
+                        switch (buf[2]) {
+                            'P' => input.key = .f1,
+                            'Q' => input.key = .f2,
+                            'R' => input.key = .f3,
+                            'S' => input.key = .f4,
+                            else => {},
+                        }
+                    },
+                    else => {},
+                };
             },
-            else => input.key = c0,
-        } else {
-            input.key = Key.none;
-        }
-        return KeyEvent{ .press = input };
+            '\x09' => input.key = Key.tab,
+            '\x0D' => input.key = Key.enter,
+            '\x08' => input.key = Key.backspace,
+            '\x20' => input.key = Key.space,
+            'a' => input.key = .a,
+            'b' => input.key = .b,
+            'c' => input.key = .c,
+            'd' => input.key = .d,
+            'e' => input.key = .e,
+            'f' => input.key = .f,
+            'g' => input.key = .g,
+            'h' => input.key = .h,
+            'i' => input.key = .i,
+            'j' => input.key = .j,
+            'k' => input.key = .k,
+            'l' => input.key = .l,
+            'm' => input.key = .m,
+            'n' => input.key = .n,
+            'o' => input.key = .o,
+            'p' => input.key = .p,
+            'q' => input.key = .q,
+            'r' => input.key = .r,
+            's' => input.key = .s,
+            't' => input.key = .t,
+            'u' => input.key = .u,
+            'v' => input.key = .v,
+            'w' => input.key = .w,
+            'x' => input.key = .x,
+            'y' => input.key = .y,
+            'z' => input.key = .z,
+            '1' => input.key = .one,
+            '2' => input.key = .two,
+            '3' => input.key = .three,
+            '4' => input.key = .four,
+            '5' => input.key = .five,
+            '6' => input.key = .six,
+            '7' => input.key = .seven,
+            '8' => input.key = .eight,
+            '9' => input.key = .nine,
+            '0' => input.key = .zero,
+            else => {},
+        };
+        input.mod.shift = (buf[0] >= 'A' and buf[0] <= 'Z');
+        return input;
     }
-};
-
-pub const Key = struct {
-    pub const none: u8 = 0;
-    pub const tab: u8 = 0x09;
-    pub const enter: u8 = 0x0D;
-    pub const escape: u8 = 0x1B;
-    pub const space: u8 = 0x20;
-    pub const backspace: u8 = 0x08;
-    pub const insert: u8 = 0x2D;
-    pub const delete: u8 = 0x2E;
-    pub const left: u8 = 0x25;
-    pub const right: u8 = 0x27;
-    pub const up: u8 = 0x26;
-    pub const down: u8 = 0x28;
-    pub const page_up: u8 = 0x21;
-    pub const page_down: u8 = 0x22;
-    pub const home: u8 = 0x24;
-    pub const end: u8 = 0x23;
-    pub const caps_lock: u8 = 0x14;
-    pub const scroll_lock: u8 = 0x91;
-    pub const num_lock: u8 = 0x90;
-    pub const print_screen: u8 = 0x2C;
-    pub const pause: u8 = 0x13;
-    pub const menu: u8 = 0x5D;
-    pub const f1: u8 = 0x70;
-    pub const f2: u8 = 0x71;
-    pub const f3: u8 = 0x72;
-    pub const f4: u8 = 0x73;
-    pub const f5: u8 = 0x74;
-    pub const f6: u8 = 0x75;
-    pub const f7: u8 = 0x76;
-    pub const f8: u8 = 0x77;
-    pub const f9: u8 = 0x78;
-    pub const f10: u8 = 0x79;
-    pub const f11: u8 = 0x7A;
-    pub const f12: u8 = 0x7B;
 };
 
 // deprecated and overkilled previous idea

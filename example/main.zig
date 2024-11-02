@@ -1,13 +1,10 @@
 const std = @import("std");
 const at = @import("asciitecture");
 const graphics = at.graphics;
-// const input = at.input;
 const LinuxTty = at.LinuxTty;
-// const Input = input.Input;
-// const Key = input.Key;
+const Input = at.input.Input;
+const Key = at.input.Key;
 const vec2 = at.math.vec2;
-const Input = at.newInput.Input;
-const Key = at.newInput.Key;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -30,7 +27,7 @@ pub fn main() !void {
         };
     }
 
-    var input = Input.init(gpa.allocator());
+    var input = try Input.init();
     defer input.deinit();
 
     var rect_posx: f32 = 0;
@@ -136,46 +133,35 @@ pub fn main() !void {
         if (rect_posx == 60) rect_speed *= -1.0;
         if (rect_posx == 0) rect_speed *= -1.0;
 
-        view_is_moving = false;
-        if (input.contains(&.{ .key = 'w' })) {
-            start_jump = true;
+        if (input.nextEvent()) |event| {
+            switch (event) {
+                .press => |*kinput| {
+                    if (kinput.eql(&.{ .key = .space })) {
+                        start_jump = true;
+                    }
+                    if (kinput.eql(&.{ .key = .d })) {
+                        view_direction = 1;
+                        view_is_moving = true;
+                    }
+                    if (kinput.eql(&.{ .key = .a })) {
+                        view_direction = -1;
+                        view_is_moving = true;
+                    }
+                    if (kinput.eql(&.{ .key = .b, .mod = .{ .ctrl = true, .shift = true, .alt = true } })) break;
+                    if (kinput.eql(&.{ .key = .f12 })) break;
+                    if (kinput.eql(&.{ .key = .escape })) break;
+                    if (kinput.eql(&.{ .key = .q })) break;
+                },
+                .release => |*kinput| {
+                    if (kinput.eql(&.{ .key = .d })) {
+                        view_is_moving = false;
+                    }
+                    if (kinput.eql(&.{ .key = .a })) {
+                        view_is_moving = false;
+                    }
+                },
+            }
         }
-        if (input.contains(&.{ .key = 'd' })) {
-            view_direction = 1;
-            view_is_moving = true;
-        }
-        if (input.contains(&.{ .key = 'a' })) {
-            view_direction = -1;
-            view_is_moving = true;
-        }
-        if (input.contains(&.{ .key = 'q' })) {
-            break;
-        }
-        // const kevent = event.nextEvent();
-        // switch (kevent) {
-        //     .press => |*kinput| {
-        //         if (kinput.eql(&.{ .key = 'w' })) {
-        //             start_jump = true;
-        //         }
-        //         if (kinput.eql(&.{ .key = 'd' })) {
-        //             view_direction = 1;
-        //             view_is_moving = true;
-        //         }
-        //         if (kinput.eql(&.{ .key = 'a' })) {
-        //             view_direction = -1;
-        //             view_is_moving = true;
-        //         }
-        //         if (kinput.eql(&.{ .key = 'q' })) break;
-        //     },
-        //     .release => |*kinput| {
-        //         if (kinput.eql(&.{ .key = 'd' })) {
-        //             view_is_moving = false;
-        //         }
-        //         if (kinput.eql(&.{ .key = 'a' })) {
-        //             view_is_moving = false;
-        //         }
-        //     },
-        // }
         if (view_is_moving) {
             view_pos = view_pos.add(&vec2(1 * view_direction, 0));
         }
