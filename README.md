@@ -5,8 +5,8 @@ a simple ascii graphics library
 ```zig build example```
 
 ### Todo
-- [ ] Improve graphics (add rotation and ratio)
 - [ ] Add frame transition system (screen melting)
+- [ ] Improve graphics (add rotation and ratio)
 - [ ] Add tests and docs
 
 - [ ] Add object collision checks

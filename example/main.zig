@@ -5,6 +5,7 @@ const LinuxTty = at.LinuxTty;
 const Input = at.input.Input;
 const Key = at.input.Key;
 const vec2 = at.math.vec2;
+const extra = at.extra;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -53,6 +54,8 @@ pub fn main() !void {
     ;
 
     while (true) {
+        extra.waveAnim(&term.screen, &vec2(0, 0), .{ .r = 0, .g = 0, .b = 255 });
+
         graphics.drawParticles(&term.screen, &vec2(-62, 17), 10, 5, 3, &.{ .char = '●', .fg = .{ .indexed = .cyan }, .bg = .{ .indexed = .default }, .attr = null });
         graphics.drawParticles(&term.screen, &vec2(-70, 15), 15, 10, 5, &.{ .char = '●', .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .default }, .attr = null });
         graphics.drawParticles(&term.screen, &vec2(-75, 10), 30, 20, 2, &.{ .char = '●', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .default }, .attr = null });
@@ -90,11 +93,11 @@ pub fn main() !void {
 
         var buf1: [100]u8 = undefined;
         const delta_time = try std.fmt.bufPrint(&buf1, "delta_time:{d:.20}", .{term.delta_time});
-        graphics.drawText(&term.screen, delta_time, &vec2(-20.0, 22.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
+        graphics.drawText(&term.screen, delta_time, &(vec2(-100.0, 25.0).add(&view_pos)), .{ .indexed = .white }, .{ .indexed = .black }, null);
 
         var buf2: [100]u8 = undefined;
         const fps = try std.fmt.bufPrint(&buf2, "fps:{d:.2}", .{term.fps});
-        graphics.drawText(&term.screen, fps, &vec2(-20.0, 23.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
+        graphics.drawText(&term.screen, fps, &(vec2(-100.0, 26.0).add(&view_pos)), .{ .indexed = .white }, .{ .indexed = .black }, null);
 
         // const rot1 = vec2(50.0, 20.0).rotate(90, &vec2(0, 0));
         // const rot2 = vec2(-50.0, -20.0).rotate(90, &vec2(0, 0));
