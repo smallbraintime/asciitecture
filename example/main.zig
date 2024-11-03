@@ -64,7 +64,7 @@ pub fn main() !void {
 
         graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .red }, .attr = null });
 
-        graphics.drawCubicSpline(&term.screen, &vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25), &.{ .char = '●', .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .default }, .attr = null });
+        graphics.drawCubicSpline(&term.screen, &vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25), &.{ .char = '—', .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .default }, .attr = null });
 
         graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 45, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
 

@@ -5,6 +5,7 @@ a simple ascii graphics library
 ```zig build example```
 
 ### Todo
+- [ ] Fix probably broken raw mode, view rendering and input handling in raw term
 - [ ] Add frame transition system (screen melting)
 - [ ] Improve graphics (add rotation and ratio)
 - [ ] Add tests and docs

@@ -115,11 +115,6 @@ pub fn Terminal(comptime T: type) type {
         fn calcFps(self: *Terminal(T)) void {
             self.fps = 1.0 / self.delta_time;
         }
-
-        pub fn transition(self: *Terminal(T), animation: fn (*Screen) void) void {
-            _ = self;
-            _ = animation;
-        }
     };
 }
 
