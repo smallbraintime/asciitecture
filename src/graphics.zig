@@ -4,6 +4,7 @@ const math = @import("math.zig");
 const Screen = @import("Screen.zig");
 const Cell = cell.Cell;
 const Color = cell.Color;
+const Style = cell.Style;
 const Attribute = cell.Attribute;
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
@@ -80,12 +81,12 @@ pub fn drawPrettyRectangle(screen: *Screen, width: f32, height: f32, position: *
     const bottom_left = vec2(position.x(), position.y() + height - 1);
     const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
 
-    var horizontal_border = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
-    var vertical_border = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
-    var top_left_edge = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
-    var top_right_edge = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
-    var bottom_left_edge = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
-    var bottom_right_edge = Cell{ .fg = fg, .bg = .{ .indexed = .default }, .attr = null, .char = undefined };
+    var horizontal_border = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
+    var vertical_border = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
+    var top_left_edge = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
+    var top_right_edge = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
+    var bottom_left_edge = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
+    var bottom_right_edge = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
 
     switch (borders) {
         .plain => {
@@ -174,17 +175,15 @@ pub fn drawCircle(screen: *Screen, position: *const Vec2, radius: f32, style: *c
     _ = filling;
 }
 
-pub fn drawText(screen: *Screen, content: []const u8, pos: *const Vec2, fg: Color, bg: Color, attr: ?Attribute) void {
-    var style = Cell{
-        .fg = fg,
-        .bg = bg,
-        .attr = attr,
+pub fn drawText(screen: *Screen, content: []const u8, pos: *const Vec2, style: *const Style) void {
+    var curr_char = Cell{
         .char = ' ',
+        .style = style.*,
     };
 
     for (0..content.len) |i| {
-        style.char = content[i];
-        screen.writeCellF(pos.x() + @as(f32, @floatFromInt(i)), pos.y(), &style);
+        curr_char.char = content[i];
+        screen.writeCellF(pos.x() + @as(f32, @floatFromInt(i)), pos.y(), &curr_char);
     }
 }
 
@@ -214,15 +213,15 @@ pub fn spriteFromStr(str: []const u8) Sprite {
 const Sprite = struct {
     image: []const u8,
 
-    pub fn draw(self: *const Sprite, screen: *Screen, position: *const Vec2, rotation: f32, flip: Flip, fg: Color, bg: Color) void {
+    pub fn draw(self: *const Sprite, screen: *Screen, position: *const Vec2, rotation: f32, flip: Flip, style: *const Style) void {
         var x: f32 = 0.0;
         var y: f32 = 0.0;
-        var style = Cell{ .char = 0, .bg = bg, .fg = fg, .attr = null };
+        var style_cell = Cell{ .char = 0, .style = style.* };
 
         for (self.image) |c| {
             if (c != ' ' or c != '\n') {
-                style.char = @intCast(c);
-                screen.writeCellF(position.x() + x, position.y() + y, &style);
+                style_cell.char = @intCast(c);
+                screen.writeCellF(position.x() + x, position.y() + y, &style_cell);
             }
 
             x += 1.0;

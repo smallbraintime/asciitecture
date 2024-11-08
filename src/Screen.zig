@@ -23,9 +23,11 @@ pub fn init(allocator: std.mem.Allocator, cols: usize, rows: usize) !Screen {
     try buf.appendNTimes(
         .{
             .char = ' ',
-            .fg = .{ .indexed = .default },
-            .bg = .{ .indexed = .default },
-            .attr = null,
+            .style = .{
+                .fg = .{ .indexed = .default },
+                .bg = .{ .indexed = .default },
+                .attr = .none,
+            },
         },
         capacity,
     );
@@ -92,12 +94,11 @@ pub inline fn readCell(self: *const Screen, x: usize, y: usize) Cell {
 }
 
 pub inline fn clear(self: *Screen) void {
-    @memset(self.buf.items, Cell{
-        .char = ' ',
+    @memset(self.buf.items, Cell{ .char = ' ', .style = .{
         .fg = .{ .indexed = .default },
         .bg = .{ .indexed = .default },
-        .attr = null,
-    });
+        .attr = .none,
+    } });
 }
 
 inline fn worldToScreen(self: *const Screen, pos: *const Vec2) Vec2 {

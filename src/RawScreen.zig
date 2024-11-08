@@ -13,9 +13,11 @@ pub fn init(allocator: std.mem.Allocator, cols: usize, rows: usize) !RawScreen {
     try buf.appendNTimes(
         .{
             .char = undefined,
-            .fg = .{ .indexed = undefined },
-            .bg = .{ .indexed = undefined },
-            .attr = null,
+            .style = .{
+                .fg = .{ .indexed = undefined },
+                .bg = .{ .indexed = undefined },
+                .attr = .none,
+            },
         },
         capacity,
     );
@@ -38,12 +40,11 @@ pub fn resize(self: *RawScreen, cols: usize, rows: usize) !void {
     self.size.cols = cols;
     self.size.rows = rows;
     try self.buf.resize(cols * rows);
-    @memset(self.buf.items, Cell{
-        .char = undefined,
+    @memset(self.buf.items, Cell{ .char = undefined, .style = .{
         .fg = .{ .indexed = undefined },
         .bg = .{ .indexed = undefined },
-        .attr = null,
-    });
+        .attr = .none,
+    } });
 }
 
 pub fn deinit(self: *RawScreen) !void {

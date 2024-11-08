@@ -72,10 +72,10 @@ pub fn Terminal(comptime T: type) type {
 
                     if (!std.meta.eql(cell, last_cell)) {
                         try backend.setCursor(@intCast(x), @intCast(y));
-                        try backend.setFg(cell.fg);
-                        try backend.setBg(cell.bg);
-                        if (cell.attr) |attr| {
-                            try backend.setAttr(attr);
+                        try backend.setFg(cell.style.fg);
+                        try backend.setBg(cell.style.bg);
+                        if (cell.style.attr != .none) {
+                            try backend.setAttr(cell.style.attr);
                         }
                         try backend.putChar(cell.char);
                     }

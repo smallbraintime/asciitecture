@@ -1,8 +1,12 @@
 pub const Cell = struct {
     char: u21,
+    style: Style,
+};
+
+pub const Style = struct {
     fg: Color,
     bg: Color,
-    attr: ?Attribute,
+    attr: Attribute,
 };
 
 pub const RgbColor = struct {
@@ -42,4 +46,5 @@ pub const Attribute = enum(u8) {
     noReverse = 27,
     hidden = 8,
     noHidden = 28,
+    none = 255,
 };

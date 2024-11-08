@@ -56,48 +56,48 @@ pub fn main() !void {
     while (true) {
         extra.waveAnim(&term.screen, &vec2(0, 0), .{ .r = 0, .g = 0, .b = 255 });
 
-        graphics.drawParticles(&term.screen, &vec2(-62, 17), 10, 5, 3, &.{ .char = '●', .fg = .{ .indexed = .cyan }, .bg = .{ .indexed = .default }, .attr = null });
-        graphics.drawParticles(&term.screen, &vec2(-70, 15), 15, 10, 5, &.{ .char = '●', .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .default }, .attr = null });
-        graphics.drawParticles(&term.screen, &vec2(-75, 10), 30, 20, 2, &.{ .char = '●', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .default }, .attr = null });
+        graphics.drawParticles(&term.screen, &vec2(-62, 17), 10, 5, 3, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .cyan }, .bg = .{ .indexed = .default }, .attr = .none } });
+        graphics.drawParticles(&term.screen, &vec2(-70, 15), 15, 10, 5, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .default }, .attr = .none } });
+        graphics.drawParticles(&term.screen, &vec2(-75, 10), 30, 20, 2, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .default }, .attr = .none } });
 
-        graphics.spriteFromStr(image).draw(&term.screen, &vec2(0, 27), 0, .none, .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .{ .indexed = .default });
+        graphics.spriteFromStr(image).draw(&term.screen, &vec2(0, 27), 0, .none, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .default }, .attr = .none });
 
-        graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .red }, .attr = null });
+        graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .default }, .bg = .{ .indexed = .red }, .attr = .none } });
 
-        graphics.drawCubicSpline(&term.screen, &vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25), &.{ .char = '—', .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .default }, .attr = null });
+        graphics.drawCubicSpline(&term.screen, &vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25), &.{ .char = '—', .style = .{ .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .default }, .attr = .none } });
 
-        graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 45, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
+        graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 45, &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .default }, .bg = .{ .indexed = .cyan }, .attr = .none } }, false);
 
         graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-30.0, -5.0), .plain, .{ .indexed = .black });
         graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-20.0, -5.0), .thick, .{ .indexed = .black });
         graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-10.0, -5.0), .rounded, .{ .indexed = .black });
         graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(0.0, -5.0), .double_line, .{ .indexed = .black });
 
-        graphics.drawTriangle(&term.screen, .{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, &.{ .char = '●', .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .default }, .attr = null }, false);
+        graphics.drawTriangle(&term.screen, .{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .default }, .attr = .none } }, false);
 
-        graphics.drawCircle(&term.screen, &vec2(-35.0, 2.0), 15, &.{ .char = '●', .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = null }, false);
+        graphics.drawCircle(&term.screen, &vec2(-35.0, 2.0), 15, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = .none } }, false);
 
-        graphics.drawText(&term.screen, "Goodbye, World!", &text_pos, .{ .indexed = .green }, .{ .indexed = .black }, null);
+        graphics.drawText(&term.screen, "Goodbye, World!", &text_pos, &.{ .fg = .{ .indexed = .green }, .bg = .{ .indexed = .black }, .attr = .none });
 
-        term.screen.writeCell(3, 4, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
-        term.screen.writeCell(4, 4, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
-        term.screen.writeCell(5, 5, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
-        term.screen.writeCell(6, 5, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
-        term.screen.writeCell(5, 3, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
-        term.screen.writeCell(6, 3, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
-        term.screen.writeCell(7, 4, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
-        term.screen.writeCell(8, 4, &.{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .char = ' ', .attr = null });
+        term.screen.writeCell(3, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
+        term.screen.writeCell(4, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
+        term.screen.writeCell(5, 5, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
+        term.screen.writeCell(6, 5, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
+        term.screen.writeCell(5, 3, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
+        term.screen.writeCell(6, 3, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
+        term.screen.writeCell(7, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
+        term.screen.writeCell(8, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
 
-        graphics.drawLine(&term.screen, &view_pos, &vec2(view_pos.x(), view_pos.y() + 2), &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .black }, .attr = null });
-        term.screen.writeCellF(view_pos.x(), view_pos.y() - 1, &.{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = null, .char = '@' });
+        graphics.drawLine(&term.screen, &view_pos, &vec2(view_pos.x(), view_pos.y() + 2), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .black }, .attr = .none } });
+        term.screen.writeCellF(view_pos.x(), view_pos.y() - 1, &.{ .char = '@', .style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = .none } });
 
         var buf1: [100]u8 = undefined;
         const delta_time = try std.fmt.bufPrint(&buf1, "delta_time:{d:.20}", .{term.delta_time});
-        graphics.drawText(&term.screen, delta_time, &(vec2(-100.0, 25.0).add(&view_pos)), .{ .indexed = .white }, .{ .indexed = .black }, null);
+        graphics.drawText(&term.screen, delta_time, &(vec2(-100.0, 25.0).add(&view_pos)), &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none });
 
         var buf2: [100]u8 = undefined;
         const fps = try std.fmt.bufPrint(&buf2, "fps:{d:.2}", .{term.fps});
-        graphics.drawText(&term.screen, fps, &(vec2(-100.0, 26.0).add(&view_pos)), .{ .indexed = .white }, .{ .indexed = .black }, null);
+        graphics.drawText(&term.screen, fps, &(vec2(-100.0, 26.0).add(&view_pos)), &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none });
 
         // const rot1 = vec2(50.0, 20.0).rotate(90, &vec2(0, 0));
         // const rot2 = vec2(-50.0, -20.0).rotate(90, &vec2(0, 0));
@@ -139,28 +139,25 @@ pub fn main() !void {
         if (input.nextEvent()) |event| {
             switch (event) {
                 .press => |*kinput| {
-                    if (kinput.eql(&.{ .key = .space })) {
-                        start_jump = true;
+                    switch (kinput.key) {
+                        .space => start_jump = true,
+                        .d => {
+                            view_direction = 1;
+                            view_is_moving = true;
+                        },
+                        .a => {
+                            view_direction = -1;
+                            view_is_moving = true;
+                        },
+                        .escape => break,
+                        else => {},
                     }
-                    if (kinput.eql(&.{ .key = .d })) {
-                        view_direction = 1;
-                        view_is_moving = true;
-                    }
-                    if (kinput.eql(&.{ .key = .a })) {
-                        view_direction = -1;
-                        view_is_moving = true;
-                    }
-                    if (kinput.eql(&.{ .key = .b, .mod = .{ .ctrl = true, .shift = true, .alt = true } })) break;
-                    if (kinput.eql(&.{ .key = .f12 })) break;
-                    if (kinput.eql(&.{ .key = .escape })) break;
-                    if (kinput.eql(&.{ .key = .q })) break;
                 },
                 .release => |*kinput| {
-                    if (kinput.eql(&.{ .key = .d })) {
-                        view_is_moving = false;
-                    }
-                    if (kinput.eql(&.{ .key = .a })) {
-                        view_is_moving = false;
+                    switch (kinput.key) {
+                        .d => view_is_moving = false,
+                        .a => view_is_moving = false,
+                        else => {},
                     }
                 },
             }
