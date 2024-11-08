@@ -2,6 +2,7 @@ const std = @import("std");
 const math = @import("math.zig");
 const cell = @import("cell.zig");
 const ScreenSize = @import("util.zig").ScreenSize;
+const Buffer = @import("Buffer.zig");
 const Cell = cell.Cell;
 const Color = cell.Color;
 const Attribute = cell.Attribute;
@@ -10,7 +11,7 @@ const vec2 = math.vec2;
 
 const Screen = @This();
 
-buf: std.ArrayList(Cell),
+buffer: Buffer,
 size: ScreenSize,
 ref_size: ScreenSize,
 scale_vec: Vec2,
@@ -18,28 +19,15 @@ center: Vec2,
 view: View,
 
 pub fn init(allocator: std.mem.Allocator, cols: usize, rows: usize) !Screen {
-    const capacity = rows * cols;
-    var buf = try std.ArrayList(Cell).initCapacity(allocator, capacity);
-    try buf.appendNTimes(
-        .{
-            .char = ' ',
-            .style = .{
-                .fg = .{ .indexed = .default },
-                .bg = .{ .indexed = .default },
-                .attr = .none,
-            },
-        },
-        capacity,
-    );
-    try buf.ensureTotalCapacity(capacity);
+    const buf = try Buffer.init(allocator, cols, rows);
 
     var screen = Screen{
-        .buf = buf,
+        .buffer = buf,
         .size = .{
             .cols = cols,
             .rows = rows,
         },
-        .ref_size = ScreenSize{ .cols = cols, .rows = rows },
+        .ref_size = .{ .cols = cols, .rows = rows },
         .scale_vec = vec2(1, 1),
         .center = Vec2.fromInt(cols, rows).div(&vec2(2, 2)),
         .view = undefined,
@@ -49,12 +37,16 @@ pub fn init(allocator: std.mem.Allocator, cols: usize, rows: usize) !Screen {
     return screen;
 }
 
+pub fn deinit(self: *Screen) void {
+    self.buffer.deinit();
+}
+
 pub fn resize(self: *Screen, cols: usize, rows: usize) !void {
     self.size.cols = cols;
     self.size.rows = rows;
     self.center = Vec2.fromInt(cols, rows).div(&vec2(2, 2));
     self.scale_vec = Vec2.fromInt(cols, rows).div(&Vec2.fromInt(self.ref_size.cols, self.ref_size.rows));
-    try self.buf.resize(cols * rows);
+    try self.buffer.buf.resize(cols * rows);
 }
 
 pub inline fn setView(self: *Screen, pos: *const Vec2) void {
@@ -71,7 +63,7 @@ pub inline fn setView(self: *Screen, pos: *const Vec2) void {
 pub inline fn writeCell(self: *Screen, x: usize, y: usize, style: *const Cell) void {
     const fit_to_screen = x >= 0 and x < self.size.cols and y >= 0 and y < self.size.rows;
     if (fit_to_screen) {
-        self.buf.items[y * self.size.cols + x] = style.*;
+        self.buffer.buf.items[y * self.size.cols + x] = style.*;
     }
 }
 
@@ -81,20 +73,20 @@ pub inline fn writeCellF(self: *Screen, x: f32, y: f32, style: *const Cell) void
     if (fit_to_screen) {
         const ix: usize = @intFromFloat(@round(screen_pos.x()));
         const iy: usize = @intFromFloat(@round(screen_pos.y()));
-        self.buf.items[iy * self.size.cols + ix] = style.*;
+        self.buffer.buf.items[iy * self.size.cols + ix] = style.*;
     }
 }
 
 pub inline fn readCell(self: *const Screen, x: usize, y: usize) Cell {
     if (x >= 0 and x < self.size.cols and y >= 0 and y < self.size.rows) {
-        return self.buf.items[y * self.size.cols + x];
+        return self.buffer.buf.items[y * self.size.cols + x];
     } else {
         @panic("Screen index out of bound");
     }
 }
 
 pub inline fn clear(self: *Screen) void {
-    @memset(self.buf.items, Cell{ .char = ' ', .style = .{
+    @memset(self.buffer.buf.items, Cell{ .char = ' ', .style = .{
         .fg = .{ .indexed = .default },
         .bg = .{ .indexed = .default },
         .attr = .none,

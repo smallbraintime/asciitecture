@@ -1,7 +1,7 @@
 const std = @import("std");
 const cell_ = @import("cell.zig");
 const Screen = @import("Screen.zig");
-const RawScreen = @import("RawScreen.zig");
+const Buffer = @import("Buffer.zig");
 const Cell = cell_.Cell;
 const Attribute = cell_.Attribute;
 const Color = cell_.Color;
@@ -9,7 +9,7 @@ const Color = cell_.Color;
 pub fn Terminal(comptime T: type) type {
     return struct {
         screen: Screen,
-        last_screen: RawScreen,
+        last_screen: Buffer,
         backend: T,
         target_delta: f32,
         delta_time: f32,
@@ -27,12 +27,11 @@ pub fn Terminal(comptime T: type) type {
             try backend_.flush();
             const screen_size = try backend_.screenSize();
             const screen = try Screen.init(allocator, screen_size.cols, screen_size.rows);
-            const last_screen = try RawScreen.init(allocator, screen_size.cols, screen_size.rows);
             const delta = 1 / target_fps;
 
             return .{
                 .screen = screen,
-                .last_screen = last_screen,
+                .last_screen = try screen.buffer.clone(),
                 .backend = backend_,
                 .target_delta = delta,
                 .delta_time = delta,
@@ -44,13 +43,13 @@ pub fn Terminal(comptime T: type) type {
         }
 
         pub fn deinit(self: *Terminal(T)) !void {
+            self.screen.deinit();
+            self.last_screen.deinit();
+            try self.backend.normalMode();
             try self.backend.showCursor();
             try self.backend.clearScreen();
             try self.backend.endScreen();
-            try self.backend.normalMode();
             try self.backend.flush();
-            self.screen.buf.deinit();
-            self.last_screen.buf.deinit();
         }
 
         pub fn draw(self: *Terminal(T)) !void {
@@ -67,7 +66,7 @@ pub fn Terminal(comptime T: type) type {
             var backend = &self.backend;
             for (0..buf.size.rows) |y| {
                 for (0..buf.size.cols) |x| {
-                    const cell = buf.buf.items[y * buf.size.cols + x];
+                    const cell = buf.buffer.buf.items[y * buf.size.cols + x];
                     const last_cell = last_buf.buf.items[y * last_buf.size.cols + x];
 
                     if (!std.meta.eql(cell, last_cell)) {
@@ -81,7 +80,7 @@ pub fn Terminal(comptime T: type) type {
                     }
                 }
             }
-            try self.last_screen.replace(&self.screen.buf.items);
+            try self.last_screen.replace(&self.screen.buffer.buf.items);
             try backend.flush();
             self.screen.clear();
 
@@ -106,7 +105,6 @@ pub fn Terminal(comptime T: type) type {
                     self.minimized = true;
                 }
                 try self.screen.resize(screen_size.cols, screen_size.rows);
-                try self.last_screen.resize(screen_size.cols, screen_size.rows);
                 try self.backend.clearScreen();
             }
             self.minimized = false;
