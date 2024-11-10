@@ -20,7 +20,7 @@ buf: std.io.BufferedWriter(4096, std.fs.File.Writer),
 pub fn init() !LinuxTty {
     const handle = stdout.handle;
 
-    return LinuxTty{
+    return .{
         .orig_termios = try posix.tcgetattr(handle),
         .handle = handle,
         .buf = std.io.bufferedWriter(stdout.writer()),
@@ -62,7 +62,7 @@ pub inline fn screenSize(self: *const LinuxTty) !ScreenSize {
     return ScreenSize{ .cols = ws.ws_col, .rows = ws.ws_row };
 }
 
-pub fn rawMode(self: *LinuxTty) !void {
+pub fn enterRawMode(self: *LinuxTty) !void {
     const orig_termios = try posix.tcgetattr(self.handle);
     var termios = orig_termios;
 
@@ -86,10 +86,10 @@ pub fn rawMode(self: *LinuxTty) !void {
     termios.cc[@intFromEnum(posix.V.TIME)] = 0;
 
     try posix.tcsetattr(self.handle, .FLUSH, termios);
-    self.orig_termios = termios;
+    self.orig_termios = orig_termios;
 }
 
-pub fn normalMode(self: *const LinuxTty) !void {
+pub fn exitRawMode(self: *const LinuxTty) !void {
     try posix.tcsetattr(self.handle, .FLUSH, self.orig_termios);
 }
 

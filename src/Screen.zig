@@ -46,7 +46,7 @@ pub fn resize(self: *Screen, cols: usize, rows: usize) !void {
     self.size.rows = rows;
     self.center = Vec2.fromInt(cols, rows).div(&vec2(2, 2));
     self.scale_vec = Vec2.fromInt(cols, rows).div(&Vec2.fromInt(self.ref_size.cols, self.ref_size.rows));
-    try self.buffer.buf.resize(cols * rows);
+    try self.buffer.resize(cols, rows);
 }
 
 pub inline fn setView(self: *Screen, pos: *const Vec2) void {
@@ -69,11 +69,14 @@ pub inline fn writeCell(self: *Screen, x: usize, y: usize, style: *const Cell) v
 
 pub inline fn writeCellF(self: *Screen, x: f32, y: f32, style: *const Cell) void {
     const screen_pos = self.worldToScreen(&vec2(x, y));
-    const fit_to_screen = screen_pos.x() >= 0 and screen_pos.x() <= @as(f32, @floatFromInt(self.size.cols - 1)) and screen_pos.y() >= 0 and screen_pos.y() < @as(f32, @floatFromInt(self.size.rows - 1));
-    if (fit_to_screen) {
+    const is_unisigned = screen_pos.x() >= 0 and screen_pos.y() >= 0;
+    if (is_unisigned) {
         const ix: usize = @intFromFloat(@round(screen_pos.x()));
         const iy: usize = @intFromFloat(@round(screen_pos.y()));
-        self.buffer.buf.items[iy * self.size.cols + ix] = style.*;
+        const fit_to_screen = ix < self.size.cols and iy < self.size.rows;
+        if (fit_to_screen) {
+            self.buffer.buf.items[iy * self.size.cols + ix] = style.*;
+        }
     }
 }
 

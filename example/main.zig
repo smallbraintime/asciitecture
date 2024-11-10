@@ -29,8 +29,13 @@ pub fn main() !void {
     }
 
     var input = try Input.init();
-    defer input.deinit();
+    defer {
+        input.deinit() catch |err| {
+            @panic(@errorName(err));
+        };
+    }
 
+    // game state
     var rect_posx: f32 = 0;
     var rect_speed: f32 = 1;
     var text_pos = vec2(0, 0);

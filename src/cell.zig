@@ -9,6 +9,11 @@ pub const Style = struct {
     attr: Attribute,
 };
 
+pub const Color = union(enum) {
+    indexed: IndexedColor,
+    rgb: RgbColor,
+};
+
 pub const RgbColor = struct {
     r: u8,
     g: u8,
@@ -25,11 +30,6 @@ pub const IndexedColor = enum(u8) {
     cyan,
     white,
     default,
-};
-
-pub const Color = union(enum) {
-    indexed: IndexedColor,
-    rgb: RgbColor,
 };
 
 pub const Attribute = enum(u8) {

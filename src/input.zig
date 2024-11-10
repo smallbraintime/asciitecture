@@ -10,20 +10,15 @@ pub const Input = struct {
 
     pub fn init() !Input {
         if (std.posix.getenv("DISPLAY") != null) {
-            // if (false) {
-            return Input{ ._backend = .{ .x11 = try X11Input.init() } };
+            return .{ ._backend = .{ .x11 = try X11Input.init() } };
         } else {
-            return Input{ ._backend = .{ .std = StdInput.init() } };
+            return .{ ._backend = .{ .std = StdInput.init() } };
         }
     }
 
-    pub fn deinit(self: *Input) void {
+    pub fn deinit(self: *Input) !void {
         switch (self._backend) {
-            .x11 => |*be| {
-                be.deinit() catch {
-                    @panic("Failed to deinit X11Input");
-                };
-            },
+            .x11 => |*be| try be.deinit(),
             else => {},
         }
     }

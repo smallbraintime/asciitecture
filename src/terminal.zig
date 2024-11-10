@@ -16,12 +16,11 @@ pub fn Terminal(comptime T: type) type {
         speed: f32,
         fps: f32,
         minimized: bool,
-
         _current_time: i128,
 
         pub fn init(allocator: std.mem.Allocator, target_fps: f32, speed: f32) !Terminal(T) {
             var backend_ = try T.init();
-            try backend_.rawMode();
+            try backend_.enterRawMode();
             try backend_.hideCursor();
             try backend_.newScreen();
             try backend_.flush();
@@ -45,7 +44,7 @@ pub fn Terminal(comptime T: type) type {
         pub fn deinit(self: *Terminal(T)) !void {
             self.screen.deinit();
             self.last_screen.deinit();
-            try self.backend.normalMode();
+            try self.backend.exitRawMode();
             try self.backend.showCursor();
             try self.backend.clearScreen();
             try self.backend.endScreen();
@@ -105,6 +104,7 @@ pub fn Terminal(comptime T: type) type {
                     self.minimized = true;
                 }
                 try self.screen.resize(screen_size.cols, screen_size.rows);
+                try self.last_screen.resize(screen_size.cols, screen_size.rows);
                 try self.backend.clearScreen();
             }
             self.minimized = false;

@@ -5,7 +5,7 @@ a simple ascii graphics library
 ```zig build example```
 
 ### Todo
-- [ ] Fix probably broken raw mode, view rendering and input handling in raw term
+- [ ] Fix input handling in raw term
 - [ ] Add frame transition system (screen melting)
 - [ ] Improve graphics (add rotation and ratio)
 - [ ] Add tests and docs
@@ -15,6 +15,7 @@ a simple ascii graphics library
 - [ ] Add animation system
 - [ ] Add list widget
 - [ ] Add text area widget
+- [ ] Drawing only within view constraints
 
 - [ ] Screen resizing handled by a signal
 - [ ] Add Windows support

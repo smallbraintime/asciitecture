@@ -40,6 +40,17 @@ pub fn replace(self: *Buffer, buf: *[]const Cell) !void {
     @memcpy(self.buf.items, buf.*);
 }
 
+pub fn resize(self: *Buffer, cols: usize, rows: usize) !void {
+    self.size.cols = cols;
+    self.size.rows = rows;
+    try self.buf.resize(cols * rows);
+    @memset(self.buf.items, Cell{ .char = undefined, .style = .{
+        .fg = .{ .indexed = undefined },
+        .bg = .{ .indexed = undefined },
+        .attr = .none,
+    } });
+}
+
 pub fn deinit(self: *Buffer) void {
     self.buf.deinit();
 }
