@@ -6,8 +6,10 @@ const Input = at.input.Input;
 const Key = at.input.Key;
 const vec2 = at.math.vec2;
 const extra = at.extra;
+const widgets = at.widgets;
 
 pub fn main() !void {
+    // init
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
         const result = gpa.deinit();
@@ -27,6 +29,7 @@ pub fn main() !void {
             @panic(@errorName(err));
         };
     }
+    errdefer term.deinit() catch unreachable;
 
     var input = try Input.init();
     defer {
@@ -34,6 +37,7 @@ pub fn main() !void {
             @panic(@errorName(err));
         };
     }
+    errdefer input.deinit() catch unreachable;
 
     // game state
     var rect_posx: f32 = 0;
@@ -46,7 +50,6 @@ pub fn main() !void {
     const max_jump: f32 = 0;
     var is_falling = false;
     var start_jump = false;
-
     const image =
         \\  XXX  
         \\  XXX  
@@ -58,6 +61,39 @@ pub fn main() !void {
         \\X     X
     ;
 
+    // text area popup
+    var text_entered = false;
+    var text_area = try widgets.TextArea.init(gpa.allocator(), .{
+        .pos = vec2(0, 0),
+        .width = 10,
+        .height = 3,
+        .text_style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .default }, .attr = .bold },
+        .cursor_style = .{ .indexed = .green },
+        .border = .plain,
+        .border_style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = .bold },
+    });
+    defer text_area.deinit();
+
+    while (!text_entered) {
+        text_area.draw(&term.screen);
+
+        if (input.nextEvent()) |event| {
+            switch (event) {
+                .press => |*kinput| {
+                    switch (kinput.key) {
+                        .enter => text_entered = true,
+                        .escape => return,
+                        else => try text_area.input(kinput),
+                    }
+                },
+                else => {},
+            }
+        }
+
+        try term.draw();
+    }
+
+    // main loop
     while (true) {
         extra.waveAnim(&term.screen, &vec2(0, 0), .{ .r = 0, .g = 0, .b = 255 });
 
@@ -113,8 +149,6 @@ pub fn main() !void {
 
         // graphics.drawLine(&term.screen, &rot1, &rot2, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .green }, .attr = null });
         // graphics.drawLine(&term.screen, &vec2(-20.0, 50.0), &vec2(20.0, -50.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .green }, .attr = null });
-
-        try term.draw();
 
         term.screen.setView(&view_pos);
         rect_posx += rect_speed;

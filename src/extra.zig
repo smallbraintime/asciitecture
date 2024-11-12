@@ -66,6 +66,9 @@ pub fn screenMeltingTransition(screen: *Screen, old_buffer: []const Cell, new_bu
         }
     }
 
+    state.unused_cols.?.deinit();
+    state.falling_cols.?.deinit();
+    state.cols_positions.?.deinit();
     state.unused_cols = null;
     state.falling_cols = null;
     state.cols_positions = null;

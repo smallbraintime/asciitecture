@@ -18,6 +18,8 @@ orig_termios: posix.termios,
 buf: std.io.BufferedWriter(4096, std.fs.File.Writer),
 
 pub fn init() !LinuxTty {
+    if (builtin.os.tag != .linux) @panic("System not supported");
+
     const handle = stdout.handle;
 
     return .{
