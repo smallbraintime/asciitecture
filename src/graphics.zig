@@ -224,10 +224,11 @@ const Sprite = struct {
                 screen.writeCellF(position.x() + x, position.y() + y, &style_cell);
             }
 
-            x += 1.0;
             if (c == '\n') {
                 y += 1.0;
                 x = 0.0;
+            } else {
+                x += 1.0;
             }
         }
 

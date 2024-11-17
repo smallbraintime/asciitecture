@@ -14,7 +14,6 @@ a simple ascii graphics library
 - [ ] Add light source
 - [ ] Add animation system
 - [ ] Add list widget
-- [ ] Add text area widget
 - [ ] Drawing only within view constraints
 
 - [ ] Screen resizing handled by a signal

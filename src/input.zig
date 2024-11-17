@@ -9,11 +9,10 @@ pub const Input = struct {
     _backend: InputBackend,
 
     pub fn init() !Input {
-        if (std.posix.getenv("DISPLAY") != null) {
-            return .{ ._backend = .{ .x11 = try X11Input.init() } };
-        } else {
+        if (std.posix.getenv("DISPLAY") != null)
+            return .{ ._backend = .{ .x11 = try X11Input.init() } }
+        else
             return .{ ._backend = .{ .std = StdInput.init() } };
-        }
     }
 
     pub fn deinit(self: *Input) !void {
@@ -26,14 +25,12 @@ pub const Input = struct {
     pub fn nextEvent(self: *Input) ?KeyEvent {
         switch (self._backend) {
             .x11 => |*be| {
-                return be.nextEvent() catch |err| {
+                return be.nextEvent() catch |err|
                     @panic(@errorName(err));
-                };
             },
             .std => |*be| {
-                return be.nextEvent() catch |err| {
+                return be.nextEvent() catch |err|
                     @panic(@errorName(err));
-                };
             },
         }
     }

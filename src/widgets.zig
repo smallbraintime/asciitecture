@@ -12,53 +12,93 @@ const KeyInput = @import("input.zig").KeyInput;
 pub const List = struct {};
 
 pub const TextArea = struct {
-    buffer: std.ArrayList(u8),
     area_pos: Vec2,
     width: usize,
-    height: usize,
     text_style: Style,
     cursor_style: Color,
     border: graphics.Border,
     border_style: Style,
     hidden_cursor: bool,
+    _buffer: std.ArrayList(u8),
     _cursor_pos: usize,
     _viewport: struct { begin: usize, end: usize },
 
-    pub fn init(allocator: std.mem.Allocator, config: struct { pos: Vec2, width: usize, height: usize, text_style: Style, cursor_style: Color, border: graphics.Border, border_style: Style }) !TextArea {
+    pub fn init(
+        allocator: std.mem.Allocator,
+        config: struct {
+            pos: Vec2,
+            width: usize,
+            text_style: Style,
+            cursor_style: Color,
+            border: graphics.Border,
+            border_style: Style,
+        },
+    ) !TextArea {
         return .{
-            .buffer = std.ArrayList(u8).init(allocator),
             .area_pos = config.pos,
             .width = config.width,
-            .height = config.height,
             .text_style = config.text_style,
             .cursor_style = config.cursor_style,
             .border = config.border,
             .border_style = config.border_style,
             .hidden_cursor = false,
+            ._buffer = std.ArrayList(u8).init(allocator),
             ._cursor_pos = 0,
             ._viewport = .{ .begin = 0, .end = 0 },
         };
     }
 
+    pub fn buffer(self: *const TextArea) []const u8 {
+        return self._buffer.items;
+    }
+
     pub fn cursorLeft(self: *TextArea) void {
         if (self._cursor_pos > 0) {
-            if (self._viewport.begin > 0) {
-                if (self._cursor_pos == self._viewport.begin) {
+            if (self._cursor_pos == self._viewport.begin) {
+                if (self._viewport.begin > 0)
                     self._viewport.begin -= 1;
+                if (self._viewport.end - self._viewport.begin - 1 == self.width - 2)
                     self._viewport.end -= 1;
-                }
             }
             self._cursor_pos -= 1;
         }
     }
 
     pub fn cursorRight(self: *TextArea) void {
-        if (self._cursor_pos < self.buffer.items.len) {
-            if (self._cursor_pos == self._viewport.end) {
-                self._viewport.begin += 1;
-                self._viewport.end += 1;
+        if (self._cursor_pos < self._buffer.items.len) {
+            if (self._cursor_pos == self._viewport.end - 1) {
+                if (self._viewport.end >= self.width - 2)
+                    self._viewport.begin += 1;
+                if (self._viewport.end != self._buffer.items.len)
+                    self._viewport.end += 1;
             }
             self._cursor_pos += 1;
+        }
+    }
+
+    pub fn putChar(self: *TextArea, char: u8) !void {
+        if (self._cursor_pos == 0 or self._cursor_pos > self._buffer.items.len)
+            try self._buffer.append(char)
+        else
+            try self._buffer.insert(self._cursor_pos, char);
+        if (self._cursor_pos == self._viewport.end) {
+            if (self._viewport.end - self._viewport.begin < self.width - 2)
+                self._viewport.end += 1;
+            if (self._viewport.end - self._viewport.begin == self.width - 2)
+                self._viewport.begin += 1;
+        }
+        if (self._cursor_pos < self._viewport.end) self._cursor_pos += 1;
+    }
+
+    pub fn delChar(self: *TextArea) void {
+        if (self._cursor_pos > 0) {
+            if (self._cursor_pos == self._viewport.begin or self._cursor_pos == self._viewport.end) {
+                if (self._viewport.begin > 0)
+                    self._viewport.begin -= 1;
+            }
+            self._viewport.end -= 1;
+            self._cursor_pos -= 1;
+            _ = self._buffer.orderedRemove(self._cursor_pos);
         }
     }
 
@@ -70,25 +110,9 @@ pub const TextArea = struct {
         self.cursor_hidden = false;
     }
 
-    pub fn putChar(self: *TextArea, char: u8) !void {
-        if (self._cursor_pos == 0 or self._cursor_pos > self.buffer.items.len)
-            try self.buffer.append(char)
-        else
-            try self.buffer.insert(self._cursor_pos, char);
-        self._viewport.end += 1;
-        if (self._viewport.end - self._viewport.begin == self.width - 2) self._viewport.begin += 1;
-        if (self._cursor_pos < self._viewport.end) self._cursor_pos += 1;
-    }
-
-    pub fn delChar(self: *TextArea) void {
-        self.cursorLeft();
-        _ = self.buffer.orderedRemove(self._cursor_pos);
-    }
-
     pub fn input(self: *TextArea, key_input: *const KeyInput) !void {
         if (key_input.mod.shift) {
             switch (key_input.key) {
-                .enter => try self.putChar('\n'),
                 .a => try self.putChar('A'),
                 .b => try self.putChar('B'),
                 .c => try self.putChar('C'),
@@ -166,22 +190,22 @@ pub const TextArea = struct {
     }
 
     pub fn draw(self: *TextArea, screen: *Screen) void {
-        graphics.drawPrettyRectangle(screen, @floatFromInt(self.width), @floatFromInt(self.height), &self.area_pos, self.border, self.border_style.fg);
+        graphics.drawPrettyRectangle(screen, @floatFromInt(self.width), 3, &self.area_pos, self.border, self.border_style.fg);
         var cursor_style = self.text_style;
         cursor_style.bg = self.cursor_style;
 
-        if (self.buffer.items.len > 0)
-            graphics.drawText(screen, self.buffer.items[self._viewport.begin..self._viewport.end], &self.area_pos.add(&vec2(1, 1)), &self.text_style);
+        if (self._buffer.items.len > 0)
+            graphics.drawText(screen, self._buffer.items[self._viewport.begin..self._viewport.end], &self.area_pos.add(&vec2(1, 1)), &self.text_style);
 
         if (!self.hidden_cursor) {
             if (self._cursor_pos == self._viewport.end or self._viewport.end == 0)
                 graphics.drawText(screen, " ", &self.area_pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)), &cursor_style)
             else
-                graphics.drawText(screen, self.buffer.items[self._cursor_pos .. self._cursor_pos + 1], &self.area_pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)), &cursor_style);
+                graphics.drawText(screen, self._buffer.items[self._cursor_pos .. self._cursor_pos + 1], &self.area_pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)), &cursor_style);
         }
     }
 
     pub fn deinit(self: TextArea) void {
-        self.deinit();
+        self._buffer.deinit();
     }
 };

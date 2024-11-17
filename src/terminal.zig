@@ -69,6 +69,8 @@ pub fn Terminal(comptime T: type) type {
                     const last_cell = last_buf.buf.items[y * last_buf.size.cols + x];
 
                     if (!std.meta.eql(cell, last_cell)) {
+                        if (last_cell.style.attr != .none)
+                            try backend.setAttr(.reset);
                         try backend.setCursor(@intCast(x), @intCast(y));
                         try backend.setFg(cell.style.fg);
                         try backend.setBg(cell.style.bg);

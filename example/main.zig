@@ -11,33 +11,15 @@ const widgets = at.widgets;
 pub fn main() !void {
     // init
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer {
-        const result = gpa.deinit();
-        if (result == .leak) {
-            @panic("memory leak occured");
-        }
-    }
+    defer if (gpa.deinit() == .leak) @panic("memory leak occured");
 
     var term = try at.Terminal(LinuxTty).init(gpa.allocator(), 75, 1);
-    defer {
-        term.deinit() catch |err| {
-            @panic(@errorName(err));
-        };
-    }
-    errdefer {
-        term.deinit() catch |err| {
-            @panic(@errorName(err));
-        };
-    }
-    errdefer term.deinit() catch unreachable;
+    defer term.deinit() catch |err| @panic(@errorName(err));
+    errdefer term.deinit() catch |err| @panic(@errorName(err));
 
     var input = try Input.init();
-    defer {
-        input.deinit() catch |err| {
-            @panic(@errorName(err));
-        };
-    }
-    errdefer input.deinit() catch unreachable;
+    defer input.deinit() catch |err| @panic(@errorName(err));
+    errdefer input.deinit() catch |err| @panic(@errorName(err));
 
     // game state
     var rect_posx: f32 = 0;
@@ -50,23 +32,24 @@ pub fn main() !void {
     const max_jump: f32 = 0;
     var is_falling = false;
     var start_jump = false;
+    var name: [30]u8 = undefined;
+    var name_len: usize = 0;
     const image =
-        \\  XXX  
+        \\  @X@  
         \\  XXX  
         \\   X   
-        \\XXXXXXX
+        \\#XXXXX#
         \\   X   
         \\  X X  
         \\ X   X 
-        \\X     X
+        \\#     #
     ;
 
-    // text area popup
+    // text area segment
     var text_entered = false;
     var text_area = try widgets.TextArea.init(gpa.allocator(), .{
         .pos = vec2(0, 0),
         .width = 10,
-        .height = 3,
         .text_style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .default }, .attr = .bold },
         .cursor_style = .{ .indexed = .green },
         .border = .plain,
@@ -76,12 +59,17 @@ pub fn main() !void {
 
     while (!text_entered) {
         text_area.draw(&term.screen);
-
+        try term.draw();
         if (input.nextEvent()) |event| {
             switch (event) {
                 .press => |*kinput| {
                     switch (kinput.key) {
-                        .enter => text_entered = true,
+                        .enter => {
+                            const buffer = text_area.buffer();
+                            name_len = buffer.len;
+                            @memcpy(name[0..name_len], buffer);
+                            text_entered = true;
+                        },
                         .escape => return,
                         else => try text_area.input(kinput),
                     }
@@ -89,8 +77,6 @@ pub fn main() !void {
                 else => {},
             }
         }
-
-        try term.draw();
     }
 
     // main loop
@@ -131,6 +117,7 @@ pub fn main() !void {
 
         graphics.drawLine(&term.screen, &view_pos, &vec2(view_pos.x(), view_pos.y() + 2), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .black }, .attr = .none } });
         term.screen.writeCellF(view_pos.x(), view_pos.y() - 1, &.{ .char = '@', .style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = .none } });
+        graphics.drawText(&term.screen, name[0..name_len], &view_pos.add(&vec2(-5, -5)), &.{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .default }, .attr = .none });
 
         var buf1: [100]u8 = undefined;
         const delta_time = try std.fmt.bufPrint(&buf1, "delta_time:{d:.20}", .{term.delta_time});
@@ -174,6 +161,8 @@ pub fn main() !void {
         if (text_pos.y() >= height / 2 or text_pos.y() <= (-height / 2) + 1.0) text_speed = text_speed.mul(&vec2(1.0, -1.0));
         if (rect_posx == 60) rect_speed *= -1.0;
         if (rect_posx == 0) rect_speed *= -1.0;
+
+        try term.draw();
 
         if (input.nextEvent()) |event| {
             switch (event) {
