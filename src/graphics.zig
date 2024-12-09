@@ -75,18 +75,18 @@ pub const Border = enum(u8) {
     rounded,
 };
 
-pub fn drawPrettyRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, borders: Border, fg: Color) void {
+pub fn drawPrettyRectangle(screen: *Screen, width: f32, height: f32, position: *const Vec2, borders: Border, style: *const Style, filling: ?Color) void {
     const top_left = position;
     const top_right = vec2(position.x() + width - 1, position.y());
     const bottom_left = vec2(position.x(), position.y() + height - 1);
     const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
 
-    var horizontal_border = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
-    var vertical_border = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
-    var top_left_edge = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
-    var top_right_edge = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
-    var bottom_left_edge = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
-    var bottom_right_edge = Cell{ .style = .{ .fg = fg, .bg = .{ .indexed = .default }, .attr = .none }, .char = undefined };
+    var horizontal_border = Cell{ .char = undefined, .style = style.* };
+    var vertical_border = Cell{ .char = undefined, .style = style.* };
+    var top_left_edge = Cell{ .char = undefined, .style = style.* };
+    var top_right_edge = Cell{ .char = undefined, .style = style.* };
+    var bottom_left_edge = Cell{ .char = undefined, .style = style.* };
+    var bottom_right_edge = Cell{ .char = undefined, .style = style.* };
 
     switch (borders) {
         .plain => {
@@ -132,6 +132,8 @@ pub fn drawPrettyRectangle(screen: *Screen, width: f32, height: f32, position: *
     screen.writeCellF(top_right.x(), top_right.y(), &top_right_edge);
     screen.writeCellF(bottom_left.x(), bottom_left.y(), &bottom_left_edge);
     screen.writeCellF(bottom_right.x(), bottom_right.y(), &bottom_right_edge);
+
+    _ = filling;
 }
 
 pub fn drawTriangle(screen: *Screen, verticies: [3]*const Vec2, rotation: f32, style: *const Cell, filling: bool) void {
@@ -153,14 +155,14 @@ pub fn drawCircle(screen: *Screen, position: *const Vec2, radius: f32, style: *c
     var d = 3 - 2 * radius;
 
     while (y > x) {
-        screen.writeCellF(x + position.x(), y + position.y(), style);
-        screen.writeCellF(y + position.x(), x + position.y(), style);
-        screen.writeCellF(-y + position.x(), x + position.y(), style);
-        screen.writeCellF(-x + position.x(), y + position.y(), style);
-        screen.writeCellF(-x + position.x(), -y + position.y(), style);
-        screen.writeCellF(-y + position.x(), -x + position.y(), style);
-        screen.writeCellF(y + position.x(), -x + position.y(), style);
-        screen.writeCellF(x + position.x(), -y + position.y(), style);
+        screen.writeCellF(x + position.x(), y * 0.5 + position.y(), style);
+        screen.writeCellF(y + position.x(), x * 0.5 + position.y(), style);
+        screen.writeCellF(-y + position.x(), x * 0.5 + position.y(), style);
+        screen.writeCellF(-x + position.x(), y * 0.5 + position.y(), style);
+        screen.writeCellF(-x + position.x(), -y * 0.5 + position.y(), style);
+        screen.writeCellF(-y + position.x(), -x * 0.5 + position.y(), style);
+        screen.writeCellF(y + position.x(), -x * 0.5 + position.y(), style);
+        screen.writeCellF(x + position.x(), -y * 0.5 + position.y(), style);
 
         if (d > 0) {
             d = d + 4 * (x - y) + 10;

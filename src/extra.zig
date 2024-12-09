@@ -79,13 +79,13 @@ pub fn waveAnim(screen: *Screen, position: *const Vec2, bg: RgbColor) void {
         var n: f32 = 1;
         var timer: u32 = 0;
     };
-    if (@as(usize, @intFromFloat(counter.n)) > screen.size.cols * 2 or @as(usize, @intFromFloat(counter.n)) > screen.size.rows * 2) {
+    if (@as(usize, @intFromFloat(counter.n)) > screen.buffer.size.cols * 2 or @as(usize, @intFromFloat(counter.n)) > screen.buffer.size.rows * 2) {
         counter.n = 1;
         counter.timer = 0;
     }
     var style = Cell{ .style = .{
         .bg = .{ .rgb = bg },
-        .fg = .{ .indexed = .default },
+        .fg = screen.bg,
         .attr = .none,
     }, .char = ' ' };
     var layer: f32 = 0;

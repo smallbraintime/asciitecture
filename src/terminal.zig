@@ -60,17 +60,16 @@ pub fn Terminal(comptime T: type) type {
         }
 
         fn drawFrame(self: *Terminal(T)) !void {
-            const buf = &self.screen;
+            const screen = &self.screen;
             const last_buf = &self.last_screen;
             var backend = &self.backend;
-            for (0..buf.size.rows) |y| {
-                for (0..buf.size.cols) |x| {
-                    const cell = buf.buffer.buf.items[y * buf.size.cols + x];
+            for (0..screen.buffer.size.rows) |y| {
+                for (0..screen.buffer.size.cols) |x| {
+                    const cell = screen.buffer.buf.items[y * screen.buffer.size.cols + x];
                     const last_cell = last_buf.buf.items[y * last_buf.size.cols + x];
 
                     if (!std.meta.eql(cell, last_cell)) {
-                        if (last_cell.style.attr != .none)
-                            try backend.setAttr(.reset);
+                        try backend.setAttr(.reset);
                         try backend.setCursor(@intCast(x), @intCast(y));
                         try backend.setFg(cell.style.fg);
                         try backend.setBg(cell.style.bg);
@@ -83,7 +82,7 @@ pub fn Terminal(comptime T: type) type {
             }
             try self.last_screen.replace(&self.screen.buffer.buf.items);
             try backend.flush();
-            self.screen.clear();
+            self.screen.clearColor();
 
             const new_time = std.time.nanoTimestamp();
             const draw_time = @as(f32, @floatFromInt(new_time - self._current_time)) / std.time.ns_per_s;
@@ -101,7 +100,7 @@ pub fn Terminal(comptime T: type) type {
         // This should be handled by a signal
         fn handleResize(self: *Terminal(T)) !void {
             const screen_size = try self.backend.screenSize();
-            if (!std.meta.eql(screen_size, self.screen.size)) {
+            if (!std.meta.eql(screen_size, self.screen.buffer.size)) {
                 if (screen_size.cols == 0 and screen_size.rows == 0) {
                     self.minimized = true;
                 }
@@ -132,9 +131,9 @@ test "frame draw benchmark" {
 
     const graphics = @import("graphics.zig");
     const math = @import("math.zig");
-    graphics.drawLine(&term.screen, &math.vec2(50.0, 20.0), &math.vec2(-50.0, 20.0), &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .red }, .attr = null });
-    graphics.drawRectangle(&term.screen, 10, 10, &math.vec2(0.0, 0.0), 0, &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
-    graphics.drawRectangle(&term.screen, 10, 10, &math.vec2(-20, -20), 0, &.{ .char = ' ', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = null }, false);
+    graphics.drawLine(&term.screen, &math.vec2(50.0, 20.0), &math.vec2(-50.0, 20.0), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .red }, .attr = .none } });
+    graphics.drawRectangle(&term.screen, 10, 10, &math.vec2(0.0, 0.0), 0, &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = .none } }, false);
+    graphics.drawRectangle(&term.screen, 10, 10, &math.vec2(-20, -20), 0, &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = .none } }, false);
 
     try term.draw();
     const start = std.time.microTimestamp();

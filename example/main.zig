@@ -46,35 +46,37 @@ pub fn main() !void {
     ;
 
     // text area segment
-    var text_entered = false;
-    var text_area = try widgets.TextArea.init(gpa.allocator(), .{
-        .pos = vec2(0, 0),
-        .width = 10,
-        .text_style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .default }, .attr = .bold },
-        .cursor_style = .{ .indexed = .green },
-        .border = .plain,
-        .border_style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = .bold },
-    });
-    defer text_area.deinit();
+    {
+        var text_entered = false;
+        var text_area = try widgets.TextArea.init(gpa.allocator(), .{
+            .pos = vec2(0, 0),
+            .width = 10,
+            .text_style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .black }, .attr = .bold },
+            .cursor_style = .{ .indexed = .green },
+            .border = .plain,
+            .border_style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .black }, .attr = .bold },
+        });
+        defer text_area.deinit();
 
-    while (!text_entered) {
-        text_area.draw(&term.screen);
-        try term.draw();
-        if (input.nextEvent()) |event| {
-            switch (event) {
-                .press => |*kinput| {
-                    switch (kinput.key) {
-                        .enter => {
-                            const buffer = text_area.buffer();
-                            name_len = buffer.len;
-                            @memcpy(name[0..name_len], buffer);
-                            text_entered = true;
-                        },
-                        .escape => return,
-                        else => try text_area.input(kinput),
-                    }
-                },
-                else => {},
+        while (!text_entered) {
+            text_area.draw(&term.screen);
+            try term.draw();
+            if (input.nextEvent()) |event| {
+                switch (event) {
+                    .press => |*kinput| {
+                        switch (kinput.key) {
+                            .enter => {
+                                const buffer = text_area.buffer();
+                                name_len = buffer.len;
+                                @memcpy(name[0..name_len], buffer);
+                                text_entered = true;
+                            },
+                            .escape => return,
+                            else => try text_area.input(kinput),
+                        }
+                    },
+                    else => {},
+                }
             }
         }
     }
@@ -83,59 +85,59 @@ pub fn main() !void {
     while (true) {
         extra.waveAnim(&term.screen, &vec2(0, 0), .{ .r = 0, .g = 0, .b = 255 });
 
-        graphics.drawParticles(&term.screen, &vec2(-62, 17), 10, 5, 3, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .cyan }, .bg = .{ .indexed = .default }, .attr = .none } });
-        graphics.drawParticles(&term.screen, &vec2(-70, 15), 15, 10, 5, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .default }, .attr = .none } });
-        graphics.drawParticles(&term.screen, &vec2(-75, 10), 30, 20, 2, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .default }, .attr = .none } });
+        graphics.drawParticles(&term.screen, &vec2(-62, 17), 10, 5, 3, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .cyan }, .bg = .{ .indexed = .black }, .attr = .none } });
+        graphics.drawParticles(&term.screen, &vec2(-70, 15), 15, 10, 5, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .black }, .attr = .none } });
+        graphics.drawParticles(&term.screen, &vec2(-75, 10), 30, 20, 2, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .black }, .attr = .none } });
 
-        graphics.spriteFromStr(image).draw(&term.screen, &vec2(0, 27), 0, .none, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .default }, .attr = .none });
+        graphics.spriteFromStr(image).draw(&term.screen, &vec2(0, 27), 0, .none, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black }, .attr = .none });
 
-        graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .default }, .bg = .{ .indexed = .red }, .attr = .none } });
+        graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .red }, .attr = .none } });
 
-        graphics.drawCubicSpline(&term.screen, &vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25), &.{ .char = '—', .style = .{ .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .default }, .attr = .none } });
+        graphics.drawCubicSpline(&term.screen, &vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25), &.{ .char = '—', .style = .{ .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .black }, .attr = .none } });
 
-        graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 45, &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .default }, .bg = .{ .indexed = .cyan }, .attr = .none } }, false);
+        graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 45, &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .cyan }, .attr = .none } }, false);
 
-        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-30.0, -5.0), .plain, .{ .indexed = .black });
-        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-20.0, -5.0), .thick, .{ .indexed = .black });
-        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-10.0, -5.0), .rounded, .{ .indexed = .black });
-        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(0.0, -5.0), .double_line, .{ .indexed = .black });
+        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-30.0, -5.0), .plain, &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none }, null);
+        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-20.0, -5.0), .thick, &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none }, null);
+        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-10.0, -5.0), .rounded, &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none }, null);
+        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(0.0, -5.0), .double_line, &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none }, null);
 
-        graphics.drawTriangle(&term.screen, .{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .default }, .attr = .none } }, false);
+        graphics.drawTriangle(&term.screen, .{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .black }, .attr = .none } }, false);
 
-        graphics.drawCircle(&term.screen, &vec2(-35.0, 2.0), 15, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = .none } }, false);
+        graphics.drawCircle(&term.screen, &vec2(-35.0, 2.0), 15, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .black }, .attr = .none } }, false);
 
         graphics.drawText(&term.screen, "Goodbye, World!", &text_pos, &.{ .fg = .{ .indexed = .green }, .bg = .{ .indexed = .black }, .attr = .none });
 
-        term.screen.writeCell(3, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
-        term.screen.writeCell(4, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
-        term.screen.writeCell(5, 5, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
-        term.screen.writeCell(6, 5, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
-        term.screen.writeCell(5, 3, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
-        term.screen.writeCell(6, 3, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
-        term.screen.writeCell(7, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
-        term.screen.writeCell(8, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .black }, .fg = .{ .indexed = .default }, .attr = .none } });
+        term.screen.writeCell(3, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
+        term.screen.writeCell(4, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
+        term.screen.writeCell(5, 5, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
+        term.screen.writeCell(6, 5, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
+        term.screen.writeCell(5, 3, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
+        term.screen.writeCell(6, 3, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
+        term.screen.writeCell(7, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
+        term.screen.writeCell(8, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
 
-        graphics.drawLine(&term.screen, &view_pos, &vec2(view_pos.x(), view_pos.y() + 2), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .black }, .attr = .none } });
-        term.screen.writeCellF(view_pos.x(), view_pos.y() - 1, &.{ .char = '@', .style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .default }, .attr = .none } });
-        graphics.drawText(&term.screen, name[0..name_len], &view_pos.add(&vec2(-5, -5)), &.{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .default }, .attr = .none });
+        graphics.drawLine(&term.screen, &view_pos, &vec2(view_pos.x(), view_pos.y() + 2), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .bright_white }, .bg = .{ .indexed = .bright_white }, .attr = .none } });
+        term.screen.writeCellF(view_pos.x(), view_pos.y() - 1, &.{ .char = '@', .style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .black }, .attr = .none } });
+        graphics.drawText(&term.screen, name[0..name_len], &view_pos.add(&vec2(-5, -5)), &.{ .fg = .{ .indexed = .bright_magenta }, .bg = .{ .indexed = .white }, .attr = .dim });
 
         var buf1: [100]u8 = undefined;
         const delta_time = try std.fmt.bufPrint(&buf1, "delta_time:{d:.20}", .{term.delta_time});
-        graphics.drawText(&term.screen, delta_time, &(vec2(-100.0, 25.0).add(&view_pos)), &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none });
+        graphics.drawText(&term.screen, delta_time, &(vec2(-100.0, 25.0).add(&view_pos)), &.{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .white }, .attr = .bold });
 
         var buf2: [100]u8 = undefined;
         const fps = try std.fmt.bufPrint(&buf2, "fps:{d:.2}", .{term.fps});
-        graphics.drawText(&term.screen, fps, &(vec2(-100.0, 26.0).add(&view_pos)), &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none });
+        graphics.drawText(&term.screen, fps, &(vec2(-100.0, 26.0).add(&view_pos)), &.{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .white }, .attr = .bold });
 
         // const rot1 = vec2(50.0, 20.0).rotate(90, &vec2(0, 0));
         // const rot2 = vec2(-50.0, -20.0).rotate(90, &vec2(0, 0));
 
         // var buf3: [100]u8 = undefined;
         // const rot = try std.fmt.bufPrint(&buf3, "rot:{} {}", .{ rot1, rot2 });
-        // graphics.drawText(&term.screen, rot, &vec2(-20.0, -16.0), .{ .indexed = .white }, .{ .indexed = .black }, null);
+        // graphics.drawText(&term.screen, rot, &vec2(-20.0, -16.0), .{ .indexed = .black }, .{ .indexed = .black }, null);
 
-        // graphics.drawLine(&term.screen, &rot1, &rot2, &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .green }, .attr = null });
-        // graphics.drawLine(&term.screen, &vec2(-20.0, 50.0), &vec2(20.0, -50.0), &.{ .char = ' ', .fg = .{ .indexed = .default }, .bg = .{ .indexed = .green }, .attr = null });
+        // graphics.drawLine(&term.screen, &rot1, &rot2, &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .green }, .attr = null });
+        // graphics.drawLine(&term.screen, &vec2(-20.0, 50.0), &vec2(20.0, -50.0), &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .green }, .attr = null });
 
         term.screen.setView(&view_pos);
         rect_posx += rect_speed;

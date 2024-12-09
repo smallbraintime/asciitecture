@@ -9,10 +9,77 @@ const Color = cell.Color;
 const Style = cell.Style;
 const KeyInput = @import("input.zig").KeyInput;
 
-pub const List = struct {};
+pub const List = struct {
+    pos: Vec2,
+    width: usize,
+    height: usize,
+    padding: usize,
+    border: graphics.Border,
+    border_style: Style,
+    padding_filling: Color,
+    element_style: Style,
+    element_filling: Color,
+    highlight_style: struct {
+        border_style: Style,
+        filling: Color,
+    },
+    selected_item: usize,
+    _items: std.ArrayList([]const u8),
+
+    pub fn init(
+        allocator: std.mem.Allocator,
+        config: struct {
+            pos: Vec2,
+            width: usize,
+            height: usize,
+            padding: usize,
+            border: graphics.Border,
+            border_style: Style,
+            element_style: Style,
+            element_filling: Color,
+            highlight_style: struct {
+                border_style: Style,
+                filling: Color,
+            },
+        },
+    ) List {
+        return .{
+            .pos = config.pos,
+            .width = config.width,
+            .height = config.height,
+            .padding = config.padding,
+            .border = config.border,
+            .border_style = config.border_style,
+            .element_style = config.element_style,
+            .element_filling = config.element_filling,
+            .highlight_style = config.highlight_style,
+            .selected_item = 0,
+            ._items = std.ArrayList([]const u8).init(allocator),
+        };
+    }
+
+    pub fn draw(self: *const List, screen: *Screen) void {
+        graphics.drawPrettyRectangle(screen, self.width, self.height, &self.pos, self.border, self.highlight_style, null);
+        // for (0..self._items.items.len) |i| {}
+    }
+
+    pub fn next(self: *const List) void {
+        if (self.selected_item < self._items.items.len)
+            self.selected_item += 1;
+    }
+
+    pub fn previous(self: *const List) void {
+        if (self.selected_item > 0)
+            self.selected_item += 1;
+    }
+
+    pub fn deinit(self: *const List) void {
+        self._items.deinit();
+    }
+};
 
 pub const TextArea = struct {
-    area_pos: Vec2,
+    pos: Vec2,
     width: usize,
     text_style: Style,
     cursor_style: Color,
@@ -35,7 +102,7 @@ pub const TextArea = struct {
         },
     ) !TextArea {
         return .{
-            .area_pos = config.pos,
+            .pos = config.pos,
             .width = config.width,
             .text_style = config.text_style,
             .cursor_style = config.cursor_style,
@@ -48,32 +115,28 @@ pub const TextArea = struct {
         };
     }
 
+    pub fn deinit(self: TextArea) void {
+        self._buffer.deinit();
+    }
+
+    pub fn draw(self: *const TextArea, screen: *Screen) void {
+        graphics.drawPrettyRectangle(screen, @floatFromInt(self.width), 3, &self.pos, self.border, &self.border_style, null);
+        var cursor_style = self.text_style;
+        cursor_style.bg = self.cursor_style;
+
+        if (self._buffer.items.len > 0)
+            graphics.drawText(screen, self._buffer.items[self._viewport.begin..self._viewport.end], &self.pos.add(&vec2(1, 1)), &self.text_style);
+
+        if (!self.hidden_cursor) {
+            if (self._cursor_pos == self._viewport.end or self._viewport.end == 0)
+                graphics.drawText(screen, " ", &self.pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)), &cursor_style)
+            else
+                graphics.drawText(screen, self._buffer.items[self._cursor_pos .. self._cursor_pos + 1], &self.pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)), &cursor_style);
+        }
+    }
+
     pub fn buffer(self: *const TextArea) []const u8 {
         return self._buffer.items;
-    }
-
-    pub fn cursorLeft(self: *TextArea) void {
-        if (self._cursor_pos > 0) {
-            if (self._cursor_pos == self._viewport.begin) {
-                if (self._viewport.begin > 0)
-                    self._viewport.begin -= 1;
-                if (self._viewport.end - self._viewport.begin - 1 == self.width - 2)
-                    self._viewport.end -= 1;
-            }
-            self._cursor_pos -= 1;
-        }
-    }
-
-    pub fn cursorRight(self: *TextArea) void {
-        if (self._cursor_pos < self._buffer.items.len) {
-            if (self._cursor_pos == self._viewport.end - 1) {
-                if (self._viewport.end >= self.width - 2)
-                    self._viewport.begin += 1;
-                if (self._viewport.end != self._buffer.items.len)
-                    self._viewport.end += 1;
-            }
-            self._cursor_pos += 1;
-        }
     }
 
     pub fn putChar(self: *TextArea, char: u8) !void {
@@ -99,6 +162,30 @@ pub const TextArea = struct {
             self._viewport.end -= 1;
             self._cursor_pos -= 1;
             _ = self._buffer.orderedRemove(self._cursor_pos);
+        }
+    }
+
+    pub fn cursorLeft(self: *TextArea) void {
+        if (self._cursor_pos > 0) {
+            if (self._cursor_pos == self._viewport.begin) {
+                if (self._viewport.begin > 0)
+                    self._viewport.begin -= 1;
+                if (self._viewport.end - self._viewport.begin - 1 == self.width - 2)
+                    self._viewport.end -= 1;
+            }
+            self._cursor_pos -= 1;
+        }
+    }
+
+    pub fn cursorRight(self: *TextArea) void {
+        if (self._cursor_pos < self._buffer.items.len) {
+            if (self._cursor_pos == self._viewport.end - 1) {
+                if (self._viewport.end >= self.width - 2)
+                    self._viewport.begin += 1;
+                if (self._viewport.end != self._buffer.items.len)
+                    self._viewport.end += 1;
+            }
+            self._cursor_pos += 1;
         }
     }
 
@@ -187,25 +274,5 @@ pub const TextArea = struct {
             .nine => try self.putChar('9'),
             else => {},
         }
-    }
-
-    pub fn draw(self: *TextArea, screen: *Screen) void {
-        graphics.drawPrettyRectangle(screen, @floatFromInt(self.width), 3, &self.area_pos, self.border, self.border_style.fg);
-        var cursor_style = self.text_style;
-        cursor_style.bg = self.cursor_style;
-
-        if (self._buffer.items.len > 0)
-            graphics.drawText(screen, self._buffer.items[self._viewport.begin..self._viewport.end], &self.area_pos.add(&vec2(1, 1)), &self.text_style);
-
-        if (!self.hidden_cursor) {
-            if (self._cursor_pos == self._viewport.end or self._viewport.end == 0)
-                graphics.drawText(screen, " ", &self.area_pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)), &cursor_style)
-            else
-                graphics.drawText(screen, self._buffer.items[self._cursor_pos .. self._cursor_pos + 1], &self.area_pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)), &cursor_style);
-        }
-    }
-
-    pub fn deinit(self: TextArea) void {
-        self._buffer.deinit();
     }
 };

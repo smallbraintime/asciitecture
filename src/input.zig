@@ -146,6 +146,9 @@ const X11Input = struct {
         if (x11.XPending(self._display) > 0) {
             var event: x11.XEvent = undefined;
             _ = x11.XNextEvent(self._display, &event);
+            var focused: x11.Window = undefined;
+            var revert: i32 = undefined;
+            _ = x11.XGetInputFocus(self._display, &focused, &revert);
             switch (event.type) {
                 x11.KeyPress => {
                     var keysym: x11.KeySym = undefined;

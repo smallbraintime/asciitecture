@@ -29,7 +29,14 @@ pub const IndexedColor = enum(u8) {
     magenta,
     cyan,
     white,
-    default,
+    bright_black,
+    bright_red,
+    bright_green,
+    bright_yellow,
+    bright_blue,
+    bright_magenta,
+    bright_cyan,
+    bright_white,
 };
 
 pub const Attribute = enum(u8) {
