@@ -1,11 +1,11 @@
 const Screen = @import("Screen.zig");
-const graphics = @import("graphics.zig");
+const Painter = @import("Painter.zig");
 const math = @import("math.zig");
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
-const cell = @import("cell.zig");
-const Cell = cell.Cell;
-const RgbColor = cell.RgbColor;
+const style = @import("style.zig");
+const Cell = style.Cell;
+const RgbColor = style.RgbColor;
 const std = @import("std");
 
 pub fn screenMeltingTransition(screen: *Screen, old_buffer: []const Cell, new_buffer: []const Cell, allocator: std.mem.Allocator) !void {
@@ -74,27 +74,29 @@ pub fn screenMeltingTransition(screen: *Screen, old_buffer: []const Cell, new_bu
     state.cols_positions = null;
 }
 
-pub fn waveAnim(screen: *Screen, position: *const Vec2, bg: RgbColor) void {
+pub fn waveAnim(painter: *Painter, position: *const Vec2, bg: RgbColor) void {
     const counter = struct {
         var n: f32 = 1;
         var timer: u32 = 0;
     };
-    if (@as(usize, @intFromFloat(counter.n)) > screen.buffer.size.cols * 2 or @as(usize, @intFromFloat(counter.n)) > screen.buffer.size.rows * 2) {
+    if (@as(usize, @intFromFloat(counter.n)) > painter.screen.buffer.size.cols * 2 or @as(usize, @intFromFloat(counter.n)) > painter.screen.buffer.size.rows * 2) {
         counter.n = 1;
         counter.timer = 0;
     }
-    var style = Cell{ .style = .{
+    var cell = Cell{
         .bg = .{ .rgb = bg },
-        .fg = screen.bg,
+        .fg = painter.screen.bg,
         .attr = .none,
-    }, .char = ' ' };
+        .char = ' ',
+    };
     var layer: f32 = 0;
     var brightness: u8 = 0;
     while (layer <= 24) {
         const radius = counter.n - 1;
         if (radius > 0) {
-            style.style.bg = .{ .rgb = .{ .r = @min(bg.r + @min(brightness, 255 - bg.r), 255), .g = @min(bg.g + @min(brightness, 255 - bg.g), 255), .b = @min(bg.b + @min(brightness, 255 - bg.b), 255) } };
-            graphics.drawCircle(screen, position, counter.n - layer, &style, false);
+            cell.bg = .{ .rgb = .{ .r = @min(bg.r + @min(brightness, 255 - bg.r), 255), .g = @min(bg.g + @min(brightness, 255 - bg.g), 255), .b = @min(bg.b + @min(brightness, 255 - bg.b), 255) } };
+            painter.setCell(&cell);
+            painter.drawCircle(position, counter.n - layer, null);
         }
         layer += 1;
         brightness += 10;

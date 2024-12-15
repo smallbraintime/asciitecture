@@ -1,12 +1,9 @@
 pub const Cell = struct {
-    char: u21,
-    style: Style,
-};
-
-pub const Style = struct {
     fg: Color,
     bg: Color,
+    char: u21,
     attr: Attribute,
+    is_text: bool = false,
 };
 
 pub const Color = union(enum) {
@@ -54,4 +51,26 @@ pub const Attribute = enum(u8) {
     hidden = 8,
     noHidden = 28,
     none = 255,
+};
+
+pub const Border = enum(u8) {
+    plain,
+    thick,
+    double_line,
+    rounded,
+};
+
+pub const Style = struct {
+    fg: Color,
+    bg: Color,
+    attr: Attribute = .none,
+
+    pub fn makeCell(self: *const Style) Cell {
+        return .{
+            .fg = self.fg,
+            .bg = self.bg,
+            .attr = self.attr,
+            .char = ' ',
+        };
+    }
 };

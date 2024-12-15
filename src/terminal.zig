@@ -1,5 +1,5 @@
 const std = @import("std");
-const cell_ = @import("cell.zig");
+const cell_ = @import("style.zig");
 const Screen = @import("Screen.zig");
 const Buffer = @import("Buffer.zig");
 const Cell = cell_.Cell;
@@ -71,10 +71,10 @@ pub fn Terminal(comptime T: type) type {
                     if (!std.meta.eql(cell, last_cell)) {
                         try backend.setAttr(.reset);
                         try backend.setCursor(@intCast(x), @intCast(y));
-                        try backend.setFg(cell.style.fg);
-                        try backend.setBg(cell.style.bg);
-                        if (cell.style.attr != .none) {
-                            try backend.setAttr(cell.style.attr);
+                        try backend.setFg(cell.fg);
+                        try backend.setBg(cell.bg);
+                        if (cell.attr != .none) {
+                            try backend.setAttr(cell.attr);
                         }
                         try backend.putChar(cell.char);
                     }
@@ -82,7 +82,7 @@ pub fn Terminal(comptime T: type) type {
             }
             try self.last_screen.replace(&self.screen.buffer.buf.items);
             try backend.flush();
-            self.screen.clearColor();
+            self.screen.clear();
 
             const new_time = std.time.nanoTimestamp();
             const draw_time = @as(f32, @floatFromInt(new_time - self._current_time)) / std.time.ns_per_s;
@@ -120,6 +120,9 @@ pub fn Terminal(comptime T: type) type {
 const LinuxTty = @import("backends/LinuxTty.zig");
 
 test "frame draw benchmark" {
+    const Painter = @import("Painter.zig");
+    const math = @import("math.zig");
+
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
         const result = gpa.deinit();
@@ -128,12 +131,14 @@ test "frame draw benchmark" {
         }
     }
     var term = try Terminal(LinuxTty).init(gpa.allocator(), 999, 1);
+    var painter = Painter.init(&term.screen);
 
-    const graphics = @import("graphics.zig");
-    const math = @import("math.zig");
-    graphics.drawLine(&term.screen, &math.vec2(50.0, 20.0), &math.vec2(-50.0, 20.0), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .red }, .attr = .none } });
-    graphics.drawRectangle(&term.screen, 10, 10, &math.vec2(0.0, 0.0), 0, &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = .none } }, false);
-    graphics.drawRectangle(&term.screen, 10, 10, &math.vec2(-20, -20), 0, &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = .none } }, false);
+    painter.setCell(&.{ .char = ' ', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .red }, .attr = .none } });
+    painter.drawLine(&math.vec2(50.0, 20.0), &math.vec2(-50.0, 20.0));
+    painter.setCell(&.{ .char = ' ', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = .none } });
+    painter.drawRectangle(10, 10, &math.vec2(0.0, 0.0), 0, false);
+    painter.setCell(&.{ .char = ' ', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .cyan }, .attr = .none } });
+    painter.drawRectangle(10, 10, &math.vec2(-20, -20), 0, false);
 
     try term.draw();
     const start = std.time.microTimestamp();

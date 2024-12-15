@@ -1,89 +1,91 @@
 const std = @import("std");
-const graphics = @import("graphics.zig");
+const Painter = @import("Painter.zig");
 const Screen = @import("Screen.zig");
 const math = @import("math.zig");
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
-const cell = @import("cell.zig");
-const Color = cell.Color;
-const Style = cell.Style;
+const style = @import("style.zig");
+const Color = style.Color;
 const KeyInput = @import("input.zig").KeyInput;
+const Border = style.Border;
+const Style = @import("style.zig").Style;
 
-pub const List = struct {
-    pos: Vec2,
-    width: usize,
-    height: usize,
-    padding: usize,
-    border: graphics.Border,
-    border_style: Style,
-    padding_filling: Color,
-    element_style: Style,
-    element_filling: Color,
-    highlight_style: struct {
-        border_style: Style,
-        filling: Color,
-    },
-    selected_item: usize,
-    _items: std.ArrayList([]const u8),
-
-    pub fn init(
-        allocator: std.mem.Allocator,
-        config: struct {
-            pos: Vec2,
-            width: usize,
-            height: usize,
-            padding: usize,
-            border: graphics.Border,
-            border_style: Style,
-            element_style: Style,
-            element_filling: Color,
-            highlight_style: struct {
-                border_style: Style,
-                filling: Color,
-            },
-        },
-    ) List {
-        return .{
-            .pos = config.pos,
-            .width = config.width,
-            .height = config.height,
-            .padding = config.padding,
-            .border = config.border,
-            .border_style = config.border_style,
-            .element_style = config.element_style,
-            .element_filling = config.element_filling,
-            .highlight_style = config.highlight_style,
-            .selected_item = 0,
-            ._items = std.ArrayList([]const u8).init(allocator),
-        };
-    }
-
-    pub fn draw(self: *const List, screen: *Screen) void {
-        graphics.drawPrettyRectangle(screen, self.width, self.height, &self.pos, self.border, self.highlight_style, null);
-        // for (0..self._items.items.len) |i| {}
-    }
-
-    pub fn next(self: *const List) void {
-        if (self.selected_item < self._items.items.len)
-            self.selected_item += 1;
-    }
-
-    pub fn previous(self: *const List) void {
-        if (self.selected_item > 0)
-            self.selected_item += 1;
-    }
-
-    pub fn deinit(self: *const List) void {
-        self._items.deinit();
-    }
-};
+// pub const List = struct {
+//     pos: Vec2,
+//     width: usize,
+//     height: usize,
+//     padding: usize,
+//     border: Border,
+//     border_style: Style,
+//     padding_filling: Color,
+//     element_style: Style,
+//     element_filling: Color,
+//     highlight_style: struct {
+//         border_style: Style,
+//         filling: Color,
+//     },
+//     selected_item: usize,
+//     _items: std.ArrayList([]const u8),
+//
+//     pub fn init(
+//         allocator: std.mem.Allocator,
+//         config: struct {
+//             pos: Vec2,
+//             width: usize,
+//             height: usize,
+//             padding: usize,
+//             border: Border,
+//             border_style: Style,
+//             element_style: Style,
+//             element_filling: Color,
+//             highlight_style: struct {
+//                 border_style: Style,
+//                 filling: Color,
+//             },
+//         },
+//     ) List {
+//         return .{
+//             .pos = config.pos,
+//             .width = config.width,
+//             .height = config.height,
+//             .padding = config.padding,
+//             .border = config.border,
+//             .border_style = config.border_style,
+//             .element_style = config.element_style,
+//             .element_filling = config.element_filling,
+//             .highlight_style = config.highlight_style,
+//             .selected_item = 0,
+//             ._items = std.ArrayList([]const u8).init(allocator),
+//         };
+//     }
+//
+//     pub fn draw(self: *const List, painter: *Painter) void {
+//         painter.setCell(&self.highlight_style);
+//         painter.drawPrettyRectangle(self.width, self.height, &self.pos, self.border, null);
+//         // for (0..self._items.items.len) |i| {}
+//     }
+//
+//     pub fn next(self: *const List) void {
+//         if (self.selected_item < self._items.items.len)
+//             self.selected_item += 1;
+//     }
+//
+//     pub fn previous(self: *const List) void {
+//         if (self.selected_item > 0)
+//             self.selected_item += 1;
+//     }
+//
+//     pub fn deinit(self: *const List) void {
+//         self._items.deinit();
+//     }
+// };
 
 pub const TextArea = struct {
     pos: Vec2,
     width: usize,
     text_style: Style,
     cursor_style: Color,
-    border: graphics.Border,
+    border: Border,
     border_style: Style,
     hidden_cursor: bool,
     _buffer: std.ArrayList(u8),
@@ -97,7 +99,7 @@ pub const TextArea = struct {
             width: usize,
             text_style: Style,
             cursor_style: Color,
-            border: graphics.Border,
+            border: Border,
             border_style: Style,
         },
     ) !TextArea {
@@ -119,19 +121,25 @@ pub const TextArea = struct {
         self._buffer.deinit();
     }
 
-    pub fn draw(self: *const TextArea, screen: *Screen) void {
-        graphics.drawPrettyRectangle(screen, @floatFromInt(self.width), 3, &self.pos, self.border, &self.border_style, null);
+    pub fn draw(self: *const TextArea, painter: *Painter) void {
+        painter.setCell(&self.border_style.makeCell());
+        painter.drawPrettyRectangle(@floatFromInt(self.width), 3, &self.pos, self.border, null);
         var cursor_style = self.text_style;
         cursor_style.bg = self.cursor_style;
 
-        if (self._buffer.items.len > 0)
-            graphics.drawText(screen, self._buffer.items[self._viewport.begin..self._viewport.end], &self.pos.add(&vec2(1, 1)), &self.text_style);
+        if (self._buffer.items.len > 0) {
+            painter.setCell(&self.text_style.makeCell());
+            painter.drawText(self._buffer.items[self._viewport.begin..self._viewport.end], &self.pos.add(&vec2(1, 1)));
+        }
 
         if (!self.hidden_cursor) {
-            if (self._cursor_pos == self._viewport.end or self._viewport.end == 0)
-                graphics.drawText(screen, " ", &self.pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)), &cursor_style)
-            else
-                graphics.drawText(screen, self._buffer.items[self._cursor_pos .. self._cursor_pos + 1], &self.pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)), &cursor_style);
+            if (self._cursor_pos == self._viewport.end or self._viewport.end == 0) {
+                painter.setCell(&cursor_style.makeCell());
+                painter.drawText(" ", &self.pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
+            } else {
+                painter.setCell(&cursor_style.makeCell());
+                painter.drawText(self._buffer.items[self._cursor_pos .. self._cursor_pos + 1], &self.pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
+            }
         }
     }
 

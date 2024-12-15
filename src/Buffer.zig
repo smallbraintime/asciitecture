@@ -1,5 +1,5 @@
 const std = @import("std");
-const Cell = @import("cell.zig").Cell;
+const Cell = @import("style.zig").Cell;
 const ScreenSize = @import("util.zig").ScreenSize;
 
 const Buffer = @This();
@@ -13,11 +13,9 @@ pub fn init(allocator: std.mem.Allocator, cols: usize, rows: usize) !Buffer {
     try buf.appendNTimes(
         .{
             .char = undefined,
-            .style = .{
-                .fg = .{ .indexed = undefined },
-                .bg = .{ .indexed = undefined },
-                .attr = .none,
-            },
+            .fg = .{ .indexed = undefined },
+            .bg = .{ .indexed = undefined },
+            .attr = .none,
         },
         capacity,
     );
@@ -44,11 +42,12 @@ pub fn resize(self: *Buffer, cols: usize, rows: usize) !void {
     self.size.cols = cols;
     self.size.rows = rows;
     try self.buf.resize(cols * rows);
-    @memset(self.buf.items, Cell{ .char = undefined, .style = .{
+    @memset(self.buf.items, Cell{
+        .char = undefined,
         .fg = .{ .indexed = undefined },
         .bg = .{ .indexed = undefined },
         .attr = .none,
-    } });
+    });
 }
 
 pub fn deinit(self: *Buffer) void {

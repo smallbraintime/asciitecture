@@ -1,15 +1,15 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const cell = @import("../cell.zig");
+const style = @import("../style.zig");
 const util = @import("../util.zig");
 const posix = std.posix;
 const stdout = std.io.getStdOut();
 const os = std.os;
 const ScreenSize = util.ScreenSize;
-const Color = cell.Color;
-const IndexedColor = cell.IndexedColor;
-const RgbColor = cell.RgbColor;
-const Attribute = cell.Attribute;
+const Color = style.Color;
+const IndexedColor = style.IndexedColor;
+const RgbColor = style.RgbColor;
+const Attribute = style.Attribute;
 
 const LinuxTty = @This();
 

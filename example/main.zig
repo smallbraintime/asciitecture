@@ -1,6 +1,5 @@
 const std = @import("std");
 const at = @import("asciitecture");
-const graphics = at.graphics;
 const LinuxTty = at.LinuxTty;
 const Input = at.input.Input;
 const Key = at.input.Key;
@@ -17,7 +16,9 @@ pub fn main() !void {
     defer term.deinit() catch |err| @panic(@errorName(err));
     errdefer term.deinit() catch |err| @panic(@errorName(err));
 
-    var input = try Input.init();
+    var painter = at.Painter.init(&term.screen);
+
+    var input = try Input.init(gpa.allocator());
     defer input.deinit() catch |err| @panic(@errorName(err));
     errdefer input.deinit() catch |err| @panic(@errorName(err));
 
@@ -28,22 +29,67 @@ pub fn main() !void {
     var text_speed = vec2(1, 1);
     var view_pos = vec2(0, 0);
     var view_direction: f32 = 1;
-    var view_is_moving = false;
+    var view_speed: f32 = 0.5;
     const max_jump: f32 = 0;
     var is_falling = false;
     var start_jump = false;
     var name: [30]u8 = undefined;
     var name_len: usize = 0;
-    const image =
-        \\  @X@  
-        \\  XXX  
-        \\   X   
-        \\#XXXXX#
-        \\   X   
-        \\  X X  
-        \\ X   X 
-        \\#     #
+
+    const idle =
+        \\ o
+        \\/|\
+        \\/ \
     ;
+    const walk_right =
+        \\ o
+        \\(|\
+        \\/ )
+    ;
+    const walk_right2 =
+        \\ o
+        \\(|\
+        \\ ) 
+    ;
+    const walk_right3 =
+        \\ o
+        \\\|(
+        \\/ )
+    ;
+    const walk_left =
+        \\ o
+        \\/|)
+        \\( \
+    ;
+    const walk_left2 =
+        \\ o
+        \\/|)
+        \\ ( 
+    ;
+    const walk_left3 =
+        \\ o
+        \\)|/
+        \\( \
+    ;
+    const jump =
+        \\\o/
+        \\ |
+        \\/ \
+    ;
+
+    var anim_right = at.Animation.init(gpa.allocator());
+    anim_right.setSpeed(0.03);
+    defer anim_right.deinit();
+    try anim_right.frames.append(&at.spriteFromStr(walk_right, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
+    try anim_right.frames.append(&at.spriteFromStr(walk_right2, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
+    try anim_right.frames.append(&at.spriteFromStr(walk_right3, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
+
+    var anim_left = at.Animation.init(gpa.allocator());
+    anim_left.setSpeed(0.03);
+    defer anim_left.deinit();
+    try anim_left.frames.append(&at.spriteFromStr(walk_left, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
+    try anim_left.frames.append(&at.spriteFromStr(walk_left2, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
+    try anim_left.frames.append(&at.spriteFromStr(walk_left3, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
 
     // text area segment
     {
@@ -59,23 +105,18 @@ pub fn main() !void {
         defer text_area.deinit();
 
         while (!text_entered) {
-            text_area.draw(&term.screen);
+            text_area.draw(&painter);
             try term.draw();
-            if (input.nextEvent()) |event| {
-                switch (event) {
-                    .press => |*kinput| {
-                        switch (kinput.key) {
-                            .enter => {
-                                const buffer = text_area.buffer();
-                                name_len = buffer.len;
-                                @memcpy(name[0..name_len], buffer);
-                                text_entered = true;
-                            },
-                            .escape => return,
-                            else => try text_area.input(kinput),
-                        }
+            if (input.nextEvent()) |key| {
+                switch (key.key) {
+                    .enter => {
+                        const buffer = text_area.buffer();
+                        name_len = buffer.len;
+                        @memcpy(name[0..name_len], buffer);
+                        text_entered = true;
                     },
-                    else => {},
+                    .escape => return,
+                    else => try text_area.input(&key),
                 }
             }
         }
@@ -83,61 +124,61 @@ pub fn main() !void {
 
     // main loop
     while (true) {
-        extra.waveAnim(&term.screen, &vec2(0, 0), .{ .r = 0, .g = 0, .b = 255 });
+        extra.waveAnim(&painter, &vec2(0, 0), .{ .r = 0, .g = 0, .b = 255 });
 
-        graphics.drawParticles(&term.screen, &vec2(-62, 17), 10, 5, 3, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .cyan }, .bg = .{ .indexed = .black }, .attr = .none } });
-        graphics.drawParticles(&term.screen, &vec2(-70, 15), 15, 10, 5, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .black }, .attr = .none } });
-        graphics.drawParticles(&term.screen, &vec2(-75, 10), 30, 20, 2, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .black }, .attr = .none } });
+        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .cyan }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.drawParticles(&vec2(-62, 17), 10, 5, 3);
+        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.drawParticles(&vec2(-70, 15), 15, 10, 5);
+        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.drawParticles(&vec2(-75, 10), 30, 20, 2);
 
-        graphics.spriteFromStr(image).draw(&term.screen, &vec2(0, 27), 0, .none, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .red }, .attr = .none });
+        painter.drawLine(&vec2(50.0, 20.0), &vec2(-50.0, 20.0));
 
-        graphics.drawLine(&term.screen, &vec2(50.0, 20.0), &vec2(-50.0, 20.0), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .red }, .attr = .none } });
+        painter.setCell(&.{ .char = '—', .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.drawCubicSpline(&vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25));
 
-        graphics.drawCubicSpline(&term.screen, &vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25), &.{ .char = '—', .style = .{ .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .black }, .attr = .none } });
+        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .cyan }, .attr = .none });
+        painter.drawRectangle(10, 10, &vec2(rect_posx, 0.0), 45, null);
 
-        graphics.drawRectangle(&term.screen, 10, 10, &vec2(rect_posx, 0.0), 45, &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .cyan }, .attr = .none } }, false);
+        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.drawPrettyRectangle(10, 10, &vec2(-30.0, -5.0), .plain, null);
+        painter.drawPrettyRectangle(10, 10, &vec2(-20.0, -5.0), .thick, null);
+        painter.drawPrettyRectangle(10, 10, &vec2(-10.0, -5.0), .rounded, null);
+        painter.drawPrettyRectangle(10, 10, &vec2(0.0, -5.0), .double_line, null);
 
-        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-30.0, -5.0), .plain, &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none }, null);
-        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-20.0, -5.0), .thick, &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none }, null);
-        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(-10.0, -5.0), .rounded, &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none }, null);
-        graphics.drawPrettyRectangle(&term.screen, 10, 10, &vec2(0.0, -5.0), .double_line, &.{ .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none }, null);
+        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.drawTriangle(.{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, null);
 
-        graphics.drawTriangle(&term.screen, .{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .black }, .attr = .none } }, false);
+        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.drawCircle(&vec2(-35.0, 2.0), 15, null);
 
-        graphics.drawCircle(&term.screen, &vec2(-35.0, 2.0), 15, &.{ .char = '●', .style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .black }, .attr = .none } }, false);
+        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .green }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.drawText("Goodbye, World!", &text_pos);
 
-        graphics.drawText(&term.screen, "Goodbye, World!", &text_pos, &.{ .fg = .{ .indexed = .green }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .bright_magenta }, .bg = .{ .indexed = .white }, .attr = .dim });
+        painter.drawText(name[0..name_len], &view_pos.add(&vec2(-5, -2)));
 
-        term.screen.writeCell(3, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
-        term.screen.writeCell(4, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
-        term.screen.writeCell(5, 5, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
-        term.screen.writeCell(6, 5, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
-        term.screen.writeCell(5, 3, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
-        term.screen.writeCell(6, 3, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
-        term.screen.writeCell(7, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
-        term.screen.writeCell(8, 4, &.{ .char = ' ', .style = .{ .bg = .{ .indexed = .white }, .fg = .{ .indexed = .black }, .attr = .none } });
-
-        graphics.drawLine(&term.screen, &view_pos, &vec2(view_pos.x(), view_pos.y() + 2), &.{ .char = ' ', .style = .{ .fg = .{ .indexed = .bright_white }, .bg = .{ .indexed = .bright_white }, .attr = .none } });
-        term.screen.writeCellF(view_pos.x(), view_pos.y() - 1, &.{ .char = '@', .style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .black }, .attr = .none } });
-        graphics.drawText(&term.screen, name[0..name_len], &view_pos.add(&vec2(-5, -5)), &.{ .fg = .{ .indexed = .bright_magenta }, .bg = .{ .indexed = .white }, .attr = .dim });
-
+        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .white }, .attr = .bold });
         var buf1: [100]u8 = undefined;
         const delta_time = try std.fmt.bufPrint(&buf1, "delta_time:{d:.20}", .{term.delta_time});
-        graphics.drawText(&term.screen, delta_time, &(vec2(-100.0, 25.0).add(&view_pos)), &.{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .white }, .attr = .bold });
+        painter.drawText(delta_time, &(vec2(-100.0, 25.0).add(&view_pos)));
 
+        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .white }, .attr = .bold });
         var buf2: [100]u8 = undefined;
         const fps = try std.fmt.bufPrint(&buf2, "fps:{d:.2}", .{term.fps});
-        graphics.drawText(&term.screen, fps, &(vec2(-100.0, 26.0).add(&view_pos)), &.{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .white }, .attr = .bold });
+        painter.drawText(fps, &(vec2(-100.0, 26.0).add(&view_pos)));
 
         // const rot1 = vec2(50.0, 20.0).rotate(90, &vec2(0, 0));
         // const rot2 = vec2(-50.0, -20.0).rotate(90, &vec2(0, 0));
 
         // var buf3: [100]u8 = undefined;
         // const rot = try std.fmt.bufPrint(&buf3, "rot:{} {}", .{ rot1, rot2 });
-        // graphics.drawText(&term.screen, rot, &vec2(-20.0, -16.0), .{ .indexed = .black }, .{ .indexed = .black }, null);
+        // painter.drawText(&term.screen, rot, &vec2(-20.0, -16.0), .{ .indexed = .black }, .{ .indexed = .black }, null);
 
-        // graphics.drawLine(&term.screen, &rot1, &rot2, &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .green }, .attr = null });
-        // graphics.drawLine(&term.screen, &vec2(-20.0, 50.0), &vec2(20.0, -50.0), &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .green }, .attr = null });
+        // painter.drawLine(&term.screen, &rot1, &rot2, &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .green }, .attr = null });
+        // painter.drawLine(&term.screen, &vec2(-20.0, 50.0), &vec2(20.0, -50.0), &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .green }, .attr = null });
 
         term.screen.setView(&view_pos);
         rect_posx += rect_speed;
@@ -148,6 +189,7 @@ pub fn main() !void {
         }
         if (view_pos.y() == 17) {
             is_falling = false;
+            view_speed = 0.5;
         }
         if (is_falling) {
             view_pos = view_pos.add(&vec2(0, 0.5));
@@ -155,6 +197,7 @@ pub fn main() !void {
         }
         if (start_jump) {
             view_pos = view_pos.add(&vec2(0, -0.5));
+            at.spriteFromStr(jump, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }).draw(&painter, &view_pos, 0);
         }
 
         const width: f32 = @floatFromInt(term.screen.ref_size.cols);
@@ -166,34 +209,25 @@ pub fn main() !void {
 
         try term.draw();
 
-        if (input.nextEvent()) |event| {
-            switch (event) {
-                .press => |*kinput| {
-                    switch (kinput.key) {
-                        .space => start_jump = true,
-                        .d => {
-                            view_direction = 1;
-                            view_is_moving = true;
-                        },
-                        .a => {
-                            view_direction = -1;
-                            view_is_moving = true;
-                        },
-                        .escape => break,
-                        else => {},
-                    }
-                },
-                .release => |*kinput| {
-                    switch (kinput.key) {
-                        .d => view_is_moving = false,
-                        .a => view_is_moving = false,
-                        else => {},
-                    }
-                },
-            }
+        if (!start_jump and (!input.contains(&.{ .key = .d }) and !input.contains(&.{ .key = .a }))) {
+            at.spriteFromStr(idle, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }).draw(&painter, &view_pos, 0);
         }
-        if (view_is_moving) {
-            view_pos = view_pos.add(&vec2(1 * view_direction, 0));
+        if (input.contains(&.{ .key = .d })) {
+            view_direction = 1;
+            view_pos = view_pos.add(&vec2(view_speed * view_direction, 0));
+            if (!start_jump) anim_right.drawNext(&painter, &view_pos, 0);
+        }
+        if (input.contains(&.{ .key = .a })) {
+            view_direction = -1;
+            view_pos = view_pos.add(&vec2(view_speed * view_direction, 0));
+            if (!start_jump) anim_left.drawNext(&painter, &view_pos, 0);
+        }
+        if (input.contains(&.{ .key = .space })) {
+            start_jump = true;
+            view_speed = 1.5;
+        }
+        if (input.contains(&.{ .key = .escape })) {
+            break;
         }
     }
 }

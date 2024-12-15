@@ -1,11 +1,11 @@
 const std = @import("std");
 const math = @import("math.zig");
-const cell = @import("cell.zig");
+const style = @import("style.zig");
 const ScreenSize = @import("util.zig").ScreenSize;
 const Buffer = @import("Buffer.zig");
-const Cell = cell.Cell;
-const Color = cell.Color;
-const Attribute = cell.Attribute;
+const Cell = style.Cell;
+const Color = style.Color;
+const Attribute = style.Attribute;
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
 
@@ -57,14 +57,14 @@ pub inline fn setView(self: *Screen, pos: *const Vec2) void {
     };
 }
 
-pub inline fn writeCell(self: *Screen, x: usize, y: usize, style: *const Cell) void {
+pub inline fn writeCell(self: *Screen, x: usize, y: usize, cell: *const Cell) void {
     const fit_to_screen = x >= 0 and x < self.buffer.size.cols and y >= 0 and y < self.buffer.size.rows;
     if (fit_to_screen) {
-        self.buffer.buf.items[y * self.buffer.size.cols + x] = style.*;
+        self.buffer.buf.items[y * self.buffer.size.cols + x] = cell.*;
     }
 }
 
-pub inline fn writeCellF(self: *Screen, x: f32, y: f32, style: *const Cell) void {
+pub inline fn writeCellF(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
     const screen_pos = self.worldToScreen(&vec2(x, y));
     const is_unsigned = screen_pos.x() >= 0 and screen_pos.y() >= 0;
     if (is_unsigned) {
@@ -72,7 +72,7 @@ pub inline fn writeCellF(self: *Screen, x: f32, y: f32, style: *const Cell) void
         const iy: usize = @intFromFloat(@round(screen_pos.y()));
         const fit_to_screen = ix < self.buffer.size.cols and iy < self.buffer.size.rows;
         if (fit_to_screen) {
-            self.buffer.buf.items[iy * self.buffer.size.cols + ix] = style.*;
+            self.buffer.buf.items[iy * self.buffer.size.cols + ix] = cell.*;
         }
     }
 }
@@ -89,15 +89,16 @@ pub inline fn setBackground(self: *Screen, color: Color) void {
     self.bg = color;
 }
 
-pub inline fn clearColor(self: *Screen) void {
-    @memset(self.buffer.buf.items, Cell{ .char = ' ', .style = .{
+pub inline fn clear(self: *Screen) void {
+    @memset(self.buffer.buf.items, Cell{
+        .char = ' ',
         .fg = self.bg,
         .bg = self.bg,
         .attr = .none,
-    } });
+    });
 }
 
-inline fn worldToScreen(self: *const Screen, pos: *const Vec2) Vec2 {
+pub inline fn worldToScreen(self: *const Screen, pos: *const Vec2) Vec2 {
     return vec2(self.center.x() + (pos.x() - self.view.pos.x()) * self.scale_vec.x(), self.center.y() + (pos.y() - self.view.pos.y()) * self.scale_vec.y());
 }
 
