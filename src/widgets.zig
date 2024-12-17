@@ -122,22 +122,22 @@ pub const TextArea = struct {
     }
 
     pub fn draw(self: *const TextArea, painter: *Painter) void {
-        painter.setCell(&self.border_style.makeCell());
+        painter.setCell(&self.border_style.cell());
         painter.drawPrettyRectangle(@floatFromInt(self.width), 3, &self.pos, self.border, null);
         var cursor_style = self.text_style;
         cursor_style.bg = self.cursor_style;
 
         if (self._buffer.items.len > 0) {
-            painter.setCell(&self.text_style.makeCell());
+            painter.setCell(&self.text_style.cell());
             painter.drawText(self._buffer.items[self._viewport.begin..self._viewport.end], &self.pos.add(&vec2(1, 1)));
         }
 
         if (!self.hidden_cursor) {
             if (self._cursor_pos == self._viewport.end or self._viewport.end == 0) {
-                painter.setCell(&cursor_style.makeCell());
+                painter.setCell(&cursor_style.cell());
                 painter.drawText(" ", &self.pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
             } else {
-                painter.setCell(&cursor_style.makeCell());
+                painter.setCell(&cursor_style.cell());
                 painter.drawText(self._buffer.items[self._cursor_pos .. self._cursor_pos + 1], &self.pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
             }
         }
@@ -234,6 +234,27 @@ pub const TextArea = struct {
                 .x => try self.putChar('X'),
                 .y => try self.putChar('Y'),
                 .z => try self.putChar('Z'),
+                .exclamation => try self.putChar('!'),
+                .at => try self.putChar('@'),
+                .hash => try self.putChar('#'),
+                .dollar => try self.putChar('$'),
+                .percent => try self.putChar('%'),
+                .caret => try self.putChar('^'),
+                .ampersand => try self.putChar('&'),
+                .asterisk => try self.putChar('*'),
+                .paren_left => try self.putChar('('),
+                .paren_right => try self.putChar(')'),
+                .underscore => try self.putChar('_'),
+                .plus => try self.putChar('+'),
+                .brace_left => try self.putChar('{'),
+                .brace_right => try self.putChar('}'),
+                .bar => try self.putChar('|'),
+                .colon => try self.putChar(':'),
+                .double_quote => try self.putChar('"'),
+                .less => try self.putChar('<'),
+                .greater => try self.putChar('>'),
+                .question => try self.putChar('?'),
+                .tilde => try self.putChar('~'),
                 else => {},
             }
             return;
@@ -279,6 +300,17 @@ pub const TextArea = struct {
             .six => try self.putChar('6'),
             .seven => try self.putChar('7'),
             .eight => try self.putChar('8'),
+            .minus => try self.putChar('-'),
+            .equal => try self.putChar('='),
+            .bracket_left => try self.putChar('['),
+            .bracket_right => try self.putChar(']'),
+            .backslash => try self.putChar('\\'),
+            .semicolon => try self.putChar(';'),
+            .apostrophe => try self.putChar('\''),
+            .comma => try self.putChar(','),
+            .period => try self.putChar('.'),
+            .slash => try self.putChar('/'),
+            .grave => try self.putChar('`'),
             .nine => try self.putChar('9'),
             else => {},
         }

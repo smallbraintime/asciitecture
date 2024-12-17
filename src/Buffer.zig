@@ -10,15 +10,7 @@ size: ScreenSize,
 pub fn init(allocator: std.mem.Allocator, cols: usize, rows: usize) !Buffer {
     const capacity = cols * rows;
     var buf = try std.ArrayList(Cell).initCapacity(allocator, capacity);
-    try buf.appendNTimes(
-        .{
-            .char = undefined,
-            .fg = .{ .indexed = undefined },
-            .bg = .{ .indexed = undefined },
-            .attr = .none,
-        },
-        capacity,
-    );
+    try buf.appendNTimes(.{ .fg = .none }, capacity);
     try buf.ensureTotalCapacity(capacity);
 
     return .{
@@ -43,10 +35,7 @@ pub fn resize(self: *Buffer, cols: usize, rows: usize) !void {
     self.size.rows = rows;
     try self.buf.resize(cols * rows);
     @memset(self.buf.items, Cell{
-        .char = undefined,
-        .fg = .{ .indexed = undefined },
-        .bg = .{ .indexed = undefined },
-        .attr = .none,
+        .fg = .none,
     });
 }
 

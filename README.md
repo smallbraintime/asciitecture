@@ -1,21 +1,19 @@
 # 🔺asciitecture
-a simple ascii graphics library
+a simple ascii graphics game library/engine
 
 ### Run Example
 ```zig build example```
 
 ### Todo
-- [ ] Multiplying by delta time
 - [ ] Implement NCS
-- [ ] Fix input handling (repeat without tearing)
 
-- [ ] Add frame transition system (screen melting)
-- [ ] Improve graphics (add rotation and ratio)
+- [ ] Improve graphics (add rotation, ratio and improve particle system, add text animation)
 - [ ] Add list widget
-- [ ] Add animation system
-- [ ] Add tests and docs
+- [ ] Add frame transition system (screen melting)
 
-- [ ] Add object collision checks
+- [ ] Add tests and docs
+- [ ] Add simple physics engine
+- [ ] Fix frame pacing
 - [ ] Drawing only within view constraints (clipping)
 
 - [ ] Screen resizing handled by a signal

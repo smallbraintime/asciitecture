@@ -149,7 +149,7 @@ pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *c
     const bottom_left = vec2(position.x(), position.y() + height - 1);
     const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
 
-    var horizontal_border = Cell{ .char = undefined, .fg = self.cell.fg, .bg = self.cell.bg, .attr = .none };
+    var horizontal_border = Cell{ .fg = self.cell.fg, .bg = self.cell.bg };
     var vertical_border = horizontal_border;
     var top_left_edge = horizontal_border;
     var top_right_edge = horizontal_border;

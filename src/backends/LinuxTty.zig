@@ -95,7 +95,7 @@ pub fn exitRawMode(self: *const LinuxTty) !void {
     try posix.tcsetattr(self.handle, .FLUSH, self.orig_termios);
 }
 
-pub inline fn setCursor(self: *LinuxTty, x: u16, y: u16) !void {
+pub inline fn setCursor(self: *LinuxTty, x: usize, y: usize) !void {
     try self.buf.writer().print("\x1b[{d};{d}H", .{ y, x });
 }
 
@@ -113,36 +113,22 @@ pub inline fn putChar(self: *LinuxTty, char: u21) !void {
     try self.buf.writer().print("{s}", .{encoded_char[0..len]});
 }
 
-pub inline fn setFg(self: *LinuxTty, color: Color) !void {
-    switch (color) {
-        .indexed => |*indexed| try setIndexedFg(self, indexed.*),
-        .rgb => |*rgb| try setRgbFg(self, rgb.*),
-    }
+pub inline fn setIndexedFg(self: *LinuxTty, color: u8) !void {
+    try self.buf.writer().print("\x1b[38;5;{d}m", .{color});
 }
 
-pub inline fn setBg(self: *LinuxTty, color: Color) !void {
-    switch (color) {
-        .indexed => |*indexed| try setIndexedBg(self, indexed.*),
-        .rgb => |*rgb| try setRgbBg(self, rgb.*),
-    }
+pub inline fn setIndexedBg(self: *LinuxTty, color: u8) !void {
+    try self.buf.writer().print("\x1b[48;5;{d}m", .{color});
 }
 
-pub inline fn setIndexedFg(self: *LinuxTty, color: IndexedColor) !void {
-    try self.buf.writer().print("\x1b[38;5;{d}m", .{@intFromEnum(color)});
+pub inline fn setRgbFg(self: *LinuxTty, r: u8, g: u8, b: u8) !void {
+    try self.buf.writer().print("\x1b[38;2;{d};{d};{d}m", .{ r, g, b });
 }
 
-pub inline fn setIndexedBg(self: *LinuxTty, color: IndexedColor) !void {
-    try self.buf.writer().print("\x1b[48;5;{d}m", .{@intFromEnum(color)});
+pub inline fn setRgbBg(self: *LinuxTty, r: u8, g: u8, b: u8) !void {
+    try self.buf.writer().print("\x1b[48;2;{d};{d};{d}m", .{ r, g, b });
 }
 
-pub inline fn setRgbFg(self: *LinuxTty, color: RgbColor) !void {
-    try self.buf.writer().print("\x1b[38;2;{d};{d};{d}m", .{ color.r, color.g, color.b });
-}
-
-pub inline fn setRgbBg(self: *LinuxTty, color: RgbColor) !void {
-    try self.buf.writer().print("\x1b[48;2;{d};{d};{d}m", .{ color.r, color.g, color.b });
-}
-
-pub inline fn setAttr(self: *LinuxTty, attr: Attribute) !void {
-    try self.buf.writer().print("\x1b[{d}m", .{@intFromEnum(attr)});
+pub inline fn setAttr(self: *LinuxTty, attribute: u8) !void {
+    try self.buf.writer().print("\x1b[{d}m", .{attribute});
 }

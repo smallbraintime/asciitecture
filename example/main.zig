@@ -24,18 +24,17 @@ pub fn main() !void {
 
     // game state
     var rect_posx: f32 = 0;
-    var rect_speed: f32 = 1;
+    var rect_speed: f32 = 25;
     var text_pos = vec2(0, 0);
-    var text_speed = vec2(1, 1);
+    var text_speed = vec2(50, 50);
     var view_pos = vec2(0, 0);
     var view_direction: f32 = 1;
-    var view_speed: f32 = 0.5;
+    var view_speed: f32 = 25;
     const max_jump: f32 = 0;
     var is_falling = false;
     var start_jump = false;
     var name: [30]u8 = undefined;
     var name_len: usize = 0;
-
     const idle =
         \\ o
         \\/|\
@@ -78,18 +77,18 @@ pub fn main() !void {
     ;
 
     var anim_right = at.Animation.init(gpa.allocator());
-    anim_right.setSpeed(0.03);
+    anim_right.setSpeed(2 * term.delta_time);
     defer anim_right.deinit();
-    try anim_right.frames.append(&at.spriteFromStr(walk_right, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
-    try anim_right.frames.append(&at.spriteFromStr(walk_right2, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
-    try anim_right.frames.append(&at.spriteFromStr(walk_right3, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
+    try anim_right.frames.append(&at.spriteFromStr(walk_right, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
+    try anim_right.frames.append(&at.spriteFromStr(walk_right2, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
+    try anim_right.frames.append(&at.spriteFromStr(walk_right3, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
 
     var anim_left = at.Animation.init(gpa.allocator());
-    anim_left.setSpeed(0.03);
+    anim_left.setSpeed(2 * term.delta_time);
     defer anim_left.deinit();
-    try anim_left.frames.append(&at.spriteFromStr(walk_left, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
-    try anim_left.frames.append(&at.spriteFromStr(walk_left2, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
-    try anim_left.frames.append(&at.spriteFromStr(walk_left3, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }));
+    try anim_left.frames.append(&at.spriteFromStr(walk_left, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
+    try anim_left.frames.append(&at.spriteFromStr(walk_left2, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
+    try anim_left.frames.append(&at.spriteFromStr(walk_left3, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
 
     // text area segment
     {
@@ -97,10 +96,10 @@ pub fn main() !void {
         var text_area = try widgets.TextArea.init(gpa.allocator(), .{
             .pos = vec2(0, 0),
             .width = 10,
-            .text_style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .black }, .attr = .bold },
+            .text_style = .{ .fg = .{ .indexed = .red }, .attr = .bold },
             .cursor_style = .{ .indexed = .green },
             .border = .plain,
-            .border_style = .{ .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .black }, .attr = .bold },
+            .border_style = .{ .fg = .{ .indexed = .magenta }, .attr = .bold },
         });
         defer text_area.deinit();
 
@@ -124,40 +123,40 @@ pub fn main() !void {
 
     // main loop
     while (true) {
-        extra.waveAnim(&painter, &vec2(0, 0), .{ .r = 0, .g = 0, .b = 255 });
+        // _ = extra.waveAnim(&painter, &view_pos, .{ .r = 0, .g = 0, .b = 255 });
 
-        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .cyan }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .cyan }, .attr = .none });
         painter.drawParticles(&vec2(-62, 17), 10, 5, 3);
-        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .blue }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .blue }, .attr = .none });
         painter.drawParticles(&vec2(-70, 15), 15, 10, 5);
-        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .red }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .red }, .attr = .none });
         painter.drawParticles(&vec2(-75, 10), 30, 20, 2);
 
         painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .red }, .attr = .none });
         painter.drawLine(&vec2(50.0, 20.0), &vec2(-50.0, 20.0));
 
-        painter.setCell(&.{ .char = '—', .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.setCell(&.{ .char = '—', .fg = .{ .rgb = .{ .r = 250, .g = 157, .b = 0 } }, .attr = .none });
         painter.drawCubicSpline(&vec2(0, 0), &vec2(10, 50), &vec2(50, -30), &vec2(100, 25));
 
         painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .cyan }, .attr = .none });
-        painter.drawRectangle(10, 10, &vec2(rect_posx, 0.0), 45, null);
+        painter.drawRectangle(10, 10, &vec2(rect_posx, 0.0), 0, null);
 
-        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .white }, .attr = .none });
         painter.drawPrettyRectangle(10, 10, &vec2(-30.0, -5.0), .plain, null);
         painter.drawPrettyRectangle(10, 10, &vec2(-20.0, -5.0), .thick, null);
         painter.drawPrettyRectangle(10, 10, &vec2(-10.0, -5.0), .rounded, null);
         painter.drawPrettyRectangle(10, 10, &vec2(0.0, -5.0), .double_line, null);
 
-        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .yellow }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .yellow }, .attr = .none });
         painter.drawTriangle(.{ &vec2(100.0, 15.0), &vec2(80.0, 40.0), &vec2(120.0, 40.0) }, 0, null);
 
-        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .magenta }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .magenta }, .attr = .none });
         painter.drawCircle(&vec2(-35.0, 2.0), 15, null);
 
-        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .green }, .bg = .{ .indexed = .black }, .attr = .none });
+        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .green }, .attr = .none });
         painter.drawText("Goodbye, World!", &text_pos);
 
-        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .bright_magenta }, .bg = .{ .indexed = .white }, .attr = .dim });
+        painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .bright_magenta }, .bg = .{ .indexed = .white }, .attr = .none });
         painter.drawText(name[0..name_len], &view_pos.add(&vec2(-5, -2)));
 
         painter.setCell(&.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .white }, .attr = .bold });
@@ -180,54 +179,53 @@ pub fn main() !void {
         // painter.drawLine(&term.screen, &rot1, &rot2, &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .green }, .attr = null });
         // painter.drawLine(&term.screen, &vec2(-20.0, 50.0), &vec2(20.0, -50.0), &.{ .char = ' ', .fg = .{ .indexed = .black }, .bg = .{ .indexed = .green }, .attr = null });
 
-        term.screen.setView(&view_pos);
         rect_posx += rect_speed;
-        text_pos = text_pos.add(&text_speed);
-        if (view_pos.y() <= max_jump) {
-            is_falling = true;
-            start_jump = false;
-        }
-        if (view_pos.y() == 17) {
-            is_falling = false;
-            view_speed = 0.5;
-        }
-        if (is_falling) {
-            view_pos = view_pos.add(&vec2(0, 0.5));
-            start_jump = false;
-        }
-        if (start_jump) {
-            view_pos = view_pos.add(&vec2(0, -0.5));
-            at.spriteFromStr(jump, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }).draw(&painter, &view_pos, 0);
-        }
-
+        text_pos = text_pos.add(&text_speed.mul(&vec2(term.delta_time, term.delta_time)));
         const width: f32 = @floatFromInt(term.screen.ref_size.cols);
         const height: f32 = @floatFromInt(term.screen.ref_size.rows);
         if (text_pos.x() >= (width / 2) - 14.0 or text_pos.x() <= (-width / 2) + 1.0) text_speed = text_speed.mul(&vec2(-1.0, 1.0));
         if (text_pos.y() >= height / 2 or text_pos.y() <= (-height / 2) + 1.0) text_speed = text_speed.mul(&vec2(1.0, -1.0));
-        if (rect_posx == 60) rect_speed *= -1.0;
-        if (rect_posx == 0) rect_speed *= -1.0;
+        if (@floor(rect_posx) == 60.0 or @round(rect_posx) == 0.0) rect_speed *= -1.0;
 
-        try term.draw();
+        term.screen.setView(&view_pos);
+        if (view_pos.y() <= max_jump) {
+            is_falling = true;
+            start_jump = false;
+        }
+        if (@floor(view_pos.y()) >= 17) {
+            is_falling = false;
+            view_speed = 25.0;
+        }
+        if (is_falling) {
+            view_pos = view_pos.add(&vec2(0, 25.0 * term.delta_time));
+            start_jump = false;
+        }
+        if (start_jump) {
+            view_pos = view_pos.add(&vec2(0, -25.0 * term.delta_time));
+            at.spriteFromStr(jump, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }).draw(&painter, &view_pos, 0);
+        }
 
         if (!start_jump and (!input.contains(&.{ .key = .d }) and !input.contains(&.{ .key = .a }))) {
             at.spriteFromStr(idle, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }).draw(&painter, &view_pos, 0);
         }
         if (input.contains(&.{ .key = .d })) {
             view_direction = 1;
-            view_pos = view_pos.add(&vec2(view_speed * view_direction, 0));
+            view_pos = view_pos.add(&vec2(view_speed * view_direction * term.delta_time, 0));
             if (!start_jump) anim_right.drawNext(&painter, &view_pos, 0);
         }
         if (input.contains(&.{ .key = .a })) {
             view_direction = -1;
-            view_pos = view_pos.add(&vec2(view_speed * view_direction, 0));
+            view_pos = view_pos.add(&vec2(view_speed * view_direction * term.delta_time, 0));
             if (!start_jump) anim_left.drawNext(&painter, &view_pos, 0);
         }
         if (input.contains(&.{ .key = .space })) {
             start_jump = true;
-            view_speed = 1.5;
+            view_speed = 100.0;
         }
         if (input.contains(&.{ .key = .escape })) {
             break;
         }
+
+        try term.draw();
     }
 }

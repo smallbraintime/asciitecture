@@ -1,14 +1,15 @@
 pub const Cell = struct {
     fg: Color,
-    bg: Color,
-    char: u21,
-    attr: Attribute,
+    bg: Color = .none,
+    char: u21 = ' ',
+    attr: Attribute = .none,
     is_text: bool = false,
 };
 
 pub const Color = union(enum) {
     indexed: IndexedColor,
     rgb: RgbColor,
+    none,
 };
 
 pub const RgbColor = struct {
@@ -62,10 +63,10 @@ pub const Border = enum(u8) {
 
 pub const Style = struct {
     fg: Color,
-    bg: Color,
+    bg: Color = .none,
     attr: Attribute = .none,
 
-    pub fn makeCell(self: *const Style) Cell {
+    pub fn cell(self: *const Style) Cell {
         return .{
             .fg = self.fg,
             .bg = self.bg,

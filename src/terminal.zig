@@ -1,10 +1,11 @@
 const std = @import("std");
-const cell_ = @import("style.zig");
+const style = @import("style.zig");
 const Screen = @import("Screen.zig");
 const Buffer = @import("Buffer.zig");
-const Cell = cell_.Cell;
-const Attribute = cell_.Attribute;
-const Color = cell_.Color;
+const Cell = style.Cell;
+const Attribute = style.Attribute;
+const Color = style.Color;
+const IndexedColor = style.IndexedColor;
 
 pub fn Terminal(comptime T: type) type {
     return struct {
@@ -17,6 +18,7 @@ pub fn Terminal(comptime T: type) type {
         fps: f32,
         minimized: bool,
         _current_time: i128,
+        _accumulator: f32,
 
         pub fn init(allocator: std.mem.Allocator, target_fps: f32, speed: f32) !Terminal(T) {
             var backend_ = try T.init();
@@ -38,6 +40,7 @@ pub fn Terminal(comptime T: type) type {
                 .fps = 0.0,
                 .minimized = false,
                 ._current_time = std.time.nanoTimestamp(),
+                ._accumulator = 0.0,
             };
         }
 
@@ -55,6 +58,18 @@ pub fn Terminal(comptime T: type) type {
             try self.handleResize();
             self.calcFps();
             if (!self.minimized) {
+                const new_time = std.time.nanoTimestamp();
+                const draw_time = @as(f32, @floatFromInt(new_time - self._current_time)) / std.time.ns_per_s;
+                self._current_time = new_time;
+
+                if (draw_time < self.target_delta) {
+                    const delayTime = self.target_delta - draw_time;
+                    std.time.sleep(@intFromFloat(delayTime * std.time.ns_per_s));
+                    self.delta_time = draw_time + delayTime;
+                } else {
+                    self.delta_time = draw_time;
+                }
+
                 try self.drawFrame();
             }
         }
@@ -69,12 +84,20 @@ pub fn Terminal(comptime T: type) type {
                     const last_cell = last_buf.buf.items[y * last_buf.size.cols + x];
 
                     if (!std.meta.eql(cell, last_cell)) {
-                        try backend.setAttr(.reset);
+                        try backend.setAttr(@intFromEnum(Attribute.reset));
                         try backend.setCursor(@intCast(x), @intCast(y));
-                        try backend.setFg(cell.fg);
-                        try backend.setBg(cell.bg);
+                        switch (cell.fg) {
+                            .indexed => |*indexed| try backend.setIndexedFg(@intFromEnum(indexed.*)),
+                            .rgb => |*rgb| try backend.setRgbFg(rgb.r, rgb.g, rgb.b),
+                            .none => try backend.setIndexedFg(@intFromEnum(IndexedColor.black)),
+                        }
+                        switch (cell.bg) {
+                            .indexed => |*indexed| try backend.setIndexedBg(@intFromEnum(indexed.*)),
+                            .rgb => |*rgb| try backend.setRgbBg(rgb.r, rgb.g, rgb.b),
+                            .none => try backend.setIndexedBg(@intFromEnum(IndexedColor.black)),
+                        }
                         if (cell.attr != .none) {
-                            try backend.setAttr(cell.attr);
+                            try backend.setAttr(@intFromEnum(cell.attr));
                         }
                         try backend.putChar(cell.char);
                     }
@@ -83,18 +106,6 @@ pub fn Terminal(comptime T: type) type {
             try self.last_screen.replace(&self.screen.buffer.buf.items);
             try backend.flush();
             self.screen.clear();
-
-            const new_time = std.time.nanoTimestamp();
-            const draw_time = @as(f32, @floatFromInt(new_time - self._current_time)) / std.time.ns_per_s;
-            self._current_time = new_time;
-
-            if (draw_time < self.target_delta) {
-                const delayTime = self.target_delta - draw_time;
-                std.time.sleep(@intFromFloat(delayTime * std.time.ns_per_s));
-                self.delta_time = draw_time + delayTime;
-            } else {
-                self.delta_time = draw_time;
-            }
         }
 
         // This should be handled by a signal

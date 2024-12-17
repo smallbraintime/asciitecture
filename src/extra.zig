@@ -74,7 +74,7 @@ pub fn screenMeltingTransition(screen: *Screen, old_buffer: []const Cell, new_bu
     state.cols_positions = null;
 }
 
-pub fn waveAnim(painter: *Painter, position: *const Vec2, bg: RgbColor) void {
+pub fn waveAnim(painter: *Painter, position: *const Vec2, bg: RgbColor) bool {
     const counter = struct {
         var n: f32 = 1;
         var timer: u32 = 0;
@@ -82,6 +82,7 @@ pub fn waveAnim(painter: *Painter, position: *const Vec2, bg: RgbColor) void {
     if (@as(usize, @intFromFloat(counter.n)) > painter.screen.buffer.size.cols * 2 or @as(usize, @intFromFloat(counter.n)) > painter.screen.buffer.size.rows * 2) {
         counter.n = 1;
         counter.timer = 0;
+        return true;
     }
     var cell = Cell{
         .bg = .{ .rgb = bg },
@@ -105,4 +106,6 @@ pub fn waveAnim(painter: *Painter, position: *const Vec2, bg: RgbColor) void {
         counter.n += 1;
     }
     counter.timer += 1;
+
+    return false;
 }

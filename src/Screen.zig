@@ -39,8 +39,6 @@ pub fn deinit(self: *Screen) void {
 }
 
 pub fn resize(self: *Screen, cols: usize, rows: usize) !void {
-    self.buffer.size.cols = cols;
-    self.buffer.size.rows = rows;
     self.center = Vec2.fromInt(cols, rows).div(&vec2(2, 2));
     self.scale_vec = Vec2.fromInt(cols, rows).div(&Vec2.fromInt(self.ref_size.cols, self.ref_size.rows));
     try self.buffer.resize(cols, rows);
@@ -60,7 +58,10 @@ pub inline fn setView(self: *Screen, pos: *const Vec2) void {
 pub inline fn writeCell(self: *Screen, x: usize, y: usize, cell: *const Cell) void {
     const fit_to_screen = x >= 0 and x < self.buffer.size.cols and y >= 0 and y < self.buffer.size.rows;
     if (fit_to_screen) {
-        self.buffer.buf.items[y * self.buffer.size.cols + x] = cell.*;
+        var new_cell = cell.*;
+        const index = y * self.buffer.size.cols + x;
+        if (new_cell.bg == .none) new_cell.bg = self.buffer[index].fg;
+        self.buffer.buf.items[index] = cell.*;
     }
 }
 
@@ -91,10 +92,8 @@ pub inline fn setBackground(self: *Screen, color: Color) void {
 
 pub inline fn clear(self: *Screen) void {
     @memset(self.buffer.buf.items, Cell{
-        .char = ' ',
         .fg = self.bg,
         .bg = self.bg,
-        .attr = .none,
     });
 }
 
