@@ -57,6 +57,16 @@ pub const Vec2 = struct {
 
         return vec2(new_x, new_y).add(around);
     }
+
+    pub inline fn len(self: *const Vec2, other: *const Vec2) f32 {
+        const dx = other.x() - self.x();
+        const dy = other.y() - self.y();
+        return @sqrt(dx * dx + dy * dy);
+    }
+
+    pub inline fn lerp(self: *const Vec2, other: *const Vec2, amount: f32) Vec2 {
+        return self.add(&other.sub(self).mul(&vec2(amount, amount)));
+    }
 };
 
 pub fn pow(x: f32, n: f32) f32 {
@@ -86,4 +96,10 @@ test "rotation" {
     const tested = vec2(5, 2).rotate(90, &vec2(3, 1));
     try std.testing.expectApproxEqRel(expected.x(), tested.x(), 0.1);
     try std.testing.expectApproxEqRel(expected.y(), tested.y(), 0.1);
+}
+test "len" {
+    try std.testing.expectEqual(5.0, vec2(1.0, 2.0).len(&vec2(4.0, 6.0)));
+}
+test "lerp" {
+    try std.testing.expectEqual(vec2(20.0, 30.0), vec2(10.0, 20.0).lerp(&vec2(30.0, 40.0), 0.5));
 }

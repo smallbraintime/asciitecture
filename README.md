@@ -5,11 +5,9 @@ a simple ascii graphics game library/engine
 ```zig build example```
 
 ### Todo
-- [ ] Implement NCS
-
 - [ ] Improve graphics (add rotation, ratio and improve particle system, add text animation)
-- [ ] Add list widget
 - [ ] Add frame transition system (screen melting)
+- [ ] Add local scaling to drawable objects
 
 - [ ] Add tests and docs
 - [ ] Add simple physics engine

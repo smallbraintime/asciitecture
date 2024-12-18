@@ -9,108 +9,126 @@ const Color = style.Color;
 const KeyInput = @import("input.zig").KeyInput;
 const Border = style.Border;
 const Style = @import("style.zig").Style;
+const Cell = style.Cell;
 
-// pub const List = struct {
-//     pos: Vec2,
-//     width: usize,
-//     height: usize,
-//     padding: usize,
-//     border: Border,
-//     border_style: Style,
-//     padding_filling: Color,
-//     element_style: Style,
-//     element_filling: Color,
-//     highlight_style: struct {
-//         border_style: Style,
-//         filling: Color,
-//     },
-//     selected_item: usize,
-//     _items: std.ArrayList([]const u8),
-//
-//     pub fn init(
-//         allocator: std.mem.Allocator,
-//         config: struct {
-//             pos: Vec2,
-//             width: usize,
-//             height: usize,
-//             padding: usize,
-//             border: Border,
-//             border_style: Style,
-//             element_style: Style,
-//             element_filling: Color,
-//             highlight_style: struct {
-//                 border_style: Style,
-//                 filling: Color,
-//             },
-//         },
-//     ) List {
-//         return .{
-//             .pos = config.pos,
-//             .width = config.width,
-//             .height = config.height,
-//             .padding = config.padding,
-//             .border = config.border,
-//             .border_style = config.border_style,
-//             .element_style = config.element_style,
-//             .element_filling = config.element_filling,
-//             .highlight_style = config.highlight_style,
-//             .selected_item = 0,
-//             ._items = std.ArrayList([]const u8).init(allocator),
-//         };
-//     }
-//
-//     pub fn draw(self: *const List, painter: *Painter) void {
-//         painter.setCell(&self.highlight_style);
-//         painter.drawPrettyRectangle(self.width, self.height, &self.pos, self.border, null);
-//         // for (0..self._items.items.len) |i| {}
-//     }
-//
-//     pub fn next(self: *const List) void {
-//         if (self.selected_item < self._items.items.len)
-//             self.selected_item += 1;
-//     }
-//
-//     pub fn previous(self: *const List) void {
-//         if (self.selected_item > 0)
-//             self.selected_item += 1;
-//     }
-//
-//     pub fn deinit(self: *const List) void {
-//         self._items.deinit();
-//     }
-// };
+pub const List = struct {
+    selected_item: usize,
+    items: std.ArrayList([]const u8),
+    style: ListConfig,
+
+    pub const ListConfig = struct {
+        width: usize,
+        height: usize,
+        padding: usize,
+        border: struct {
+            style: Style,
+            border: Border,
+        },
+        element: struct {
+            height: usize,
+            style: Style,
+            filling: Color = .none,
+        },
+        selection: struct {
+            element_style: Style,
+            text_style: Style,
+            filling: Color = .none,
+        },
+        text_style: Style,
+    };
+
+    pub fn init(
+        allocator: std.mem.Allocator,
+        style_config: *const ListConfig,
+    ) List {
+        return .{
+            .selected_item = 0,
+            .items = std.ArrayList([]const u8).init(allocator),
+            .style = style_config.*,
+        };
+    }
+
+    pub fn deinit(self: *List) void {
+        self.items.deinit();
+    }
+
+    pub fn draw(self: *const List, painter: *Painter, pos: *const Vec2) void {
+        painter.setCell(&self.style.border.style.cell());
+        painter.drawPrettyRectangle(@floatFromInt(self.style.width), @floatFromInt(self.style.height), pos, self.style.border.border, .none);
+
+        var current_pos = pos.*.add(&vec2(@floatFromInt(self.style.padding + 1), @floatFromInt(self.style.padding + 1)));
+        for (0..self.items.items.len) |i| {
+            var element_style: Cell = undefined;
+            var text_style: Cell = undefined;
+            if (self.selected_item == i) {
+                element_style = self.style.selection.element_style.cell();
+                text_style = self.style.selection.text_style.cell();
+            } else {
+                element_style = self.style.element.style.cell();
+                text_style = self.style.text_style.cell();
+            }
+
+            const element_width = self.style.width - 2 * self.style.padding - 2;
+            if (element_width > 1) {
+                painter.setCell(&element_style);
+                painter.drawPrettyRectangle(@floatFromInt(element_width), @floatFromInt(self.style.element.height), &current_pos, self.style.border.border, .none);
+
+                if (element_width > 2) {
+                    painter.setCell(&text_style);
+                    const text_len = self.items.items[i].len;
+                    const text_y: f32 = current_pos.y() + @as(f32, @floatFromInt(self.style.element.height / 2));
+                    if (text_len > element_width - 2) {
+                        const text_x = current_pos.x() + 1.0;
+                        painter.drawText(self.items.items[i][0 .. element_width - 2], &vec2(text_x, text_y));
+                    } else {
+                        const text_x = current_pos.x() + @as(f32, @floatFromInt(element_width - text_len)) / 2;
+                        painter.drawText(self.items.items[i], &vec2(text_x, text_y));
+                    }
+                }
+            }
+
+            current_pos = current_pos.add(&vec2(0, @floatFromInt(self.style.element.height + self.style.padding)));
+            if (current_pos.y() - pos.y() + @as(f32, @floatFromInt(self.style.element.height)) >= @as(f32, @floatFromInt(self.style.height))) break;
+        }
+    }
+
+    pub fn next(self: *List) void {
+        self.selected_item += 1;
+        if (self.selected_item > self.items.items.len - 1)
+            self.selected_item = 0;
+    }
+
+    pub fn previous(self: *List) void {
+        if (self.items.items.len > 0) {
+            if (self.selected_item == 0)
+                self.selected_item = self.items.items.len - 1
+            else
+                self.selected_item -= 1;
+        }
+    }
+};
 
 pub const TextArea = struct {
-    pos: Vec2,
-    width: usize,
-    text_style: Style,
-    cursor_style: Color,
-    border: Border,
-    border_style: Style,
-    hidden_cursor: bool,
+    style: TextAreaConfig,
     _buffer: std.ArrayList(u8),
     _cursor_pos: usize,
     _viewport: struct { begin: usize, end: usize },
 
+    pub const TextAreaConfig = struct {
+        width: usize,
+        text_style: Style,
+        cursor_style: Color,
+        border: Border,
+        border_style: Style,
+        hidden_cursor: bool = false,
+    };
+
     pub fn init(
         allocator: std.mem.Allocator,
-        config: struct {
-            pos: Vec2,
-            width: usize,
-            text_style: Style,
-            cursor_style: Color,
-            border: Border,
-            border_style: Style,
-        },
+        style_config: *const TextAreaConfig,
     ) !TextArea {
         return .{
-            .pos = config.pos,
-            .width = config.width,
-            .text_style = config.text_style,
-            .cursor_style = config.cursor_style,
-            .border = config.border,
-            .border_style = config.border_style,
-            .hidden_cursor = false,
+            .style = style_config.*,
             ._buffer = std.ArrayList(u8).init(allocator),
             ._cursor_pos = 0,
             ._viewport = .{ .begin = 0, .end = 0 },
@@ -121,24 +139,24 @@ pub const TextArea = struct {
         self._buffer.deinit();
     }
 
-    pub fn draw(self: *const TextArea, painter: *Painter) void {
-        painter.setCell(&self.border_style.cell());
-        painter.drawPrettyRectangle(@floatFromInt(self.width), 3, &self.pos, self.border, null);
-        var cursor_style = self.text_style;
-        cursor_style.bg = self.cursor_style;
+    pub fn draw(self: *const TextArea, painter: *Painter, pos: *const Vec2) void {
+        painter.setCell(&self.style.border_style.cell());
+        painter.drawPrettyRectangle(@floatFromInt(self.style.width), 3, pos, self.style.border, .none);
+        var cursor_style = self.style.text_style;
+        cursor_style.bg = self.style.cursor_style;
 
         if (self._buffer.items.len > 0) {
-            painter.setCell(&self.text_style.cell());
-            painter.drawText(self._buffer.items[self._viewport.begin..self._viewport.end], &self.pos.add(&vec2(1, 1)));
+            painter.setCell(&self.style.text_style.cell());
+            painter.drawText(self._buffer.items[self._viewport.begin..self._viewport.end], &pos.add(&vec2(1, 1)));
         }
 
-        if (!self.hidden_cursor) {
+        if (!self.style.hidden_cursor) {
             if (self._cursor_pos == self._viewport.end or self._viewport.end == 0) {
                 painter.setCell(&cursor_style.cell());
-                painter.drawText(" ", &self.pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
+                painter.drawText(" ", &pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
             } else {
                 painter.setCell(&cursor_style.cell());
-                painter.drawText(self._buffer.items[self._cursor_pos .. self._cursor_pos + 1], &self.pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
+                painter.drawText(self._buffer.items[self._cursor_pos .. self._cursor_pos + 1], &pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
             }
         }
     }
@@ -153,9 +171,9 @@ pub const TextArea = struct {
         else
             try self._buffer.insert(self._cursor_pos, char);
         if (self._cursor_pos == self._viewport.end) {
-            if (self._viewport.end - self._viewport.begin < self.width - 2)
+            if (self._viewport.end - self._viewport.begin < self.style.width - 2)
                 self._viewport.end += 1;
-            if (self._viewport.end - self._viewport.begin == self.width - 2)
+            if (self._viewport.end - self._viewport.begin == self.style.width - 2)
                 self._viewport.begin += 1;
         }
         if (self._cursor_pos < self._viewport.end) self._cursor_pos += 1;
@@ -178,7 +196,7 @@ pub const TextArea = struct {
             if (self._cursor_pos == self._viewport.begin) {
                 if (self._viewport.begin > 0)
                     self._viewport.begin -= 1;
-                if (self._viewport.end - self._viewport.begin - 1 == self.width - 2)
+                if (self._viewport.end - self._viewport.begin - 1 == self.style.width - 2)
                     self._viewport.end -= 1;
             }
             self._cursor_pos -= 1;
@@ -188,7 +206,7 @@ pub const TextArea = struct {
     pub fn cursorRight(self: *TextArea) void {
         if (self._cursor_pos < self._buffer.items.len) {
             if (self._cursor_pos == self._viewport.end - 1) {
-                if (self._viewport.end >= self.width - 2)
+                if (self._viewport.end >= self.style.width - 2)
                     self._viewport.begin += 1;
                 if (self._viewport.end != self._buffer.items.len)
                     self._viewport.end += 1;

@@ -20,9 +20,7 @@ pub const Sprite = struct {
         var x: f32 = 0.0;
         var y: f32 = 0.0;
 
-        painter.setFg(self.style.fg);
-        painter.setBg(self.style.bg);
-        painter.setAttr(self.style.attr);
+        painter.setCell(&self.style.cell());
         for (self.image) |c| {
             if (c != ' ' and c != '\n') {
                 painter.cell.char = @intCast(c);

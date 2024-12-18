@@ -16,18 +16,11 @@ const Painter = @This();
 
 screen: *Screen,
 cell: Cell,
-write_cell: *const fn (self: *Painter, x: f32, y: f32) void,
-
-pub const PaintingSpace = enum(u8) {
-    Buffer,
-    World,
-};
 
 pub fn init(screen: *Screen) Painter {
     return .{
         .screen = screen,
-        .cell = .{ .char = ' ', .fg = .{ .indexed = .white }, .bg = .{ .indexed = .black }, .attr = .none },
-        .write_cell = Painter.writeCellWorldSpace,
+        .cell = .{ .fg = .{ .indexed = .white } },
     };
 }
 
@@ -35,54 +28,8 @@ pub inline fn setCell(self: *Painter, new_cell: *const Cell) void {
     self.cell = new_cell.*;
 }
 
-pub inline fn setFg(self: *Painter, fg: Color) void {
-    self.cell.fg = fg;
-}
-
-pub inline fn setBg(self: *Painter, bg: Color) void {
-    self.cell.bg = bg;
-}
-
-pub inline fn setAttr(self: *Painter, attr: Attribute) void {
-    self.cell.attr = attr;
-}
-
-pub inline fn setChar(self: *Painter, char: u21) void {
-    self.cell.char = char;
-}
-
-pub inline fn setIsText(self: *Painter, is_text: bool) void {
-    self.cell.is_text = is_text;
-}
-
-pub fn setPaintingSpace(self: *Painter, space: PaintingSpace) void {
-    switch (space) {
-        .Buffer => self.write_cell = self.writeCellBufferSpace,
-        .World => self.write_cell = self.writeCellWorldSpace,
-    }
-}
-
 pub inline fn writeCell(self: *Painter, x: f32, y: f32) void {
-    self.write_cell(self, x, y);
-}
-
-fn writeCellBufferSpace(self: *Painter, x_ncs: f32, y_ncs: f32) void {
-    if (x_ncs >= -1.0 and x_ncs <= 1.0 and y_ncs >= -1.0 and y_ncs <= 1.0) {
-        const x = ((x_ncs + 1) / 2) * @as(f32, @floatFromInt(self.screen.buffer.size.cols));
-        const y = ((y_ncs + 1) / 2) * @as(f32, @floatFromInt(self.screen.buffer.size.rows));
-        self.screen.writeCell(@intFromFloat(x), @intFromFloat(y), &self.cell);
-    }
-}
-
-fn writeCellWorldSpace(self: *Painter, x_ws: f32, y_ws: f32) void {
-    // const x = x_ws - self.screen.view.pos.x();
-    // const y = y_ws - self.screen.view.pos.x();
-    // const ncs_x = 2.0 * (x / @as(f32, @floatFromInt(self.screen.buffer.size.cols))) - 1.0;
-    // const ncs_y = 2.0 * (y / @as(f32, @floatFromInt(self.screen.buffer.size.cols))) - 1.0;
-    self.screen.writeCellF(x_ws, y_ws, &self.cell);
-    // const x = x_ws / @as(f32, @floatFromInt(self.screen.buffer.size.cols));
-    // const y = y_ws / @as(f32, @floatFromInt(self.screen.buffer.size.cols));
-    // self.writeCell(x, y);
+    self.screen.writeCellF(x, y, &self.cell);
 }
 
 pub fn drawLine(self: *Painter, p0: *const Vec2, p1: *const Vec2) void {
@@ -127,7 +74,7 @@ fn cubic_bezier(t: f32, p0: f32, p1: f32, p2: f32, p3: f32) f32 {
     return pow(1 - t, 3) * p0 + 3 * pow(1 - t, 2) * t * p1 + 3 * (1 - t) * pow(t, 2) * p2 + pow(t, 3) * p3;
 }
 
-pub fn drawRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, rotation_angle: f32, filling: ?Color) void {
+pub fn drawRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, rotation_angle: f32, filling: Color) void {
     // const origin = vec2(position.x() + width / 2, position.y() + height / 2);
     const top_left = position;
     const top_right = vec2(position.x() + width - 1, position.y());
@@ -143,7 +90,7 @@ pub fn drawRectangle(self: *Painter, width: f32, height: f32, position: *const V
     _ = filling;
 }
 
-pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, borders: Border, filling: ?Color) void {
+pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, borders: Border, filling: Color) void {
     const top_left = position;
     const top_right = vec2(position.x() + width - 1, position.y());
     const bottom_left = vec2(position.x(), position.y() + height - 1);
@@ -212,11 +159,7 @@ pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *c
     _ = filling;
 }
 
-pub fn drawTriangle(self: *Painter, verticies: [3]*const Vec2, rotation: f32, filling: ?Color) void {
-    const p1 = verticies[0];
-    const p2 = verticies[1];
-    const p3 = verticies[2];
-
+pub fn drawTriangle(self: *Painter, p1: *const Vec2, p2: *const Vec2, p3: *const Vec2, rotation: f32, filling: Color) void {
     self.drawLine(p1, p2);
     self.drawLine(p2, p3);
     self.drawLine(p3, p1);
@@ -225,7 +168,7 @@ pub fn drawTriangle(self: *Painter, verticies: [3]*const Vec2, rotation: f32, fi
     _ = filling;
 }
 
-pub fn drawCircle(self: *Painter, position: *const Vec2, radius: f32, filling: ?Color) void {
+pub fn drawCircle(self: *Painter, position: *const Vec2, radius: f32, filling: Color) void {
     var x: f32 = 0;
     var y = radius;
     var d = 3 - 2 * radius;
