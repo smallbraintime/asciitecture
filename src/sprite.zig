@@ -65,19 +65,8 @@ pub const Animation = struct {
 
     pub fn drawNext(self: *Animation, painter: *Painter, position: *const Vec2, rotation: f32) void {
         if (self.frames.items.len == 0) return;
-        var index: usize = @intFromFloat(@round(self._counter));
-        if (self._reversed) {
-            if (index < 0) {
-                index = self.frames.items.len - 1;
-                self._counter = @floatFromInt(index);
-            }
-        } else {
-            if (index >= self.frames.items.len) {
-                index = 0;
-                self._counter = @floatFromInt(index);
-            }
-        }
+        const index: usize = @intFromFloat(@round(self._counter));
         self.frames.items[index].draw(painter, position, rotation);
-        self._counter += self._speed;
+        self._counter = @mod((self._counter + self._speed), @as(f32, @floatFromInt(self.frames.items.len - 1)));
     }
 };

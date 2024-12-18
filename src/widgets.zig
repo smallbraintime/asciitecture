@@ -12,7 +12,7 @@ const Style = @import("style.zig").Style;
 const Cell = style.Cell;
 
 pub const List = struct {
-    selected_item: usize,
+    selected_item: i16,
     items: std.ArrayList([]const u8),
     style: ListConfig,
 
@@ -23,6 +23,7 @@ pub const List = struct {
         border: struct {
             style: Style,
             border: Border,
+            filling: Color = .none,
         },
         element: struct {
             height: usize,
@@ -54,24 +55,27 @@ pub const List = struct {
 
     pub fn draw(self: *const List, painter: *Painter, pos: *const Vec2) void {
         painter.setCell(&self.style.border.style.cell());
-        painter.drawPrettyRectangle(@floatFromInt(self.style.width), @floatFromInt(self.style.height), pos, self.style.border.border, .none);
+        painter.drawPrettyRectangle(@floatFromInt(self.style.width), @floatFromInt(self.style.height), pos, self.style.border.border, self.style.border.filling);
 
         var current_pos = pos.*.add(&vec2(@floatFromInt(self.style.padding + 1), @floatFromInt(self.style.padding + 1)));
         for (0..self.items.items.len) |i| {
             var element_style: Cell = undefined;
             var text_style: Cell = undefined;
+            var element_filling: Color = undefined;
             if (self.selected_item == i) {
                 element_style = self.style.selection.element_style.cell();
                 text_style = self.style.selection.text_style.cell();
+                element_filling = self.style.selection.filling;
             } else {
                 element_style = self.style.element.style.cell();
                 text_style = self.style.text_style.cell();
+                element_filling = self.style.border.filling;
             }
 
             const element_width = self.style.width - 2 * self.style.padding - 2;
             if (element_width > 1) {
                 painter.setCell(&element_style);
-                painter.drawPrettyRectangle(@floatFromInt(element_width), @floatFromInt(self.style.element.height), &current_pos, self.style.border.border, .none);
+                painter.drawPrettyRectangle(@floatFromInt(element_width), @floatFromInt(self.style.element.height), &current_pos, self.style.border.border, element_filling);
 
                 if (element_width > 2) {
                     painter.setCell(&text_style);
@@ -93,18 +97,11 @@ pub const List = struct {
     }
 
     pub fn next(self: *List) void {
-        self.selected_item += 1;
-        if (self.selected_item > self.items.items.len - 1)
-            self.selected_item = 0;
+        self.selected_item = @mod((self.selected_item + 1), @as(i16, @intCast(self.items.items.len)));
     }
 
     pub fn previous(self: *List) void {
-        if (self.items.items.len > 0) {
-            if (self.selected_item == 0)
-                self.selected_item = self.items.items.len - 1
-            else
-                self.selected_item -= 1;
-        }
+        self.selected_item = @mod((self.selected_item - 1), @as(i16, @intCast(self.items.items.len)));
     }
 };
 
@@ -120,6 +117,7 @@ pub const TextArea = struct {
         cursor_style: Color,
         border: Border,
         border_style: Style,
+        filling: Color = .none,
         hidden_cursor: bool = false,
     };
 
@@ -141,7 +139,7 @@ pub const TextArea = struct {
 
     pub fn draw(self: *const TextArea, painter: *Painter, pos: *const Vec2) void {
         painter.setCell(&self.style.border_style.cell());
-        painter.drawPrettyRectangle(@floatFromInt(self.style.width), 3, pos, self.style.border, .none);
+        painter.drawPrettyRectangle(@floatFromInt(self.style.width), 3, pos, self.style.border, self.style.filling);
         var cursor_style = self.style.text_style;
         cursor_style.bg = self.style.cursor_style;
 
