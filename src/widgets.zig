@@ -11,22 +11,22 @@ const Border = style.Border;
 const Style = @import("style.zig").Style;
 const Cell = style.Cell;
 
-pub const List = struct {
+pub const Menu = struct {
     selected_item: i16,
     items: std.ArrayList([]const u8),
-    style: ListConfig,
+    style: MenuConfig,
 
-    pub const ListConfig = struct {
-        width: usize,
-        height: usize,
-        padding: usize,
+    pub const MenuConfig = struct {
+        width: f32,
+        height: f32,
+        orientation: Orientantion,
+        padding: f32,
         border: struct {
             style: Style,
             border: Border,
             filling: Color = .none,
         },
         element: struct {
-            height: usize,
             style: Style,
             filling: Color = .none,
         },
@@ -38,10 +38,12 @@ pub const List = struct {
         text_style: Style,
     };
 
-    pub fn init(
-        allocator: std.mem.Allocator,
-        style_config: *const ListConfig,
-    ) List {
+    pub const Orientantion = enum {
+        vertical,
+        horizontal,
+    };
+
+    pub fn init(allocator: std.mem.Allocator, style_config: *const MenuConfig) Menu {
         return .{
             .selected_item = 0,
             .items = std.ArrayList([]const u8).init(allocator),
@@ -49,15 +51,35 @@ pub const List = struct {
         };
     }
 
-    pub fn deinit(self: *List) void {
+    pub fn deinit(self: *Menu) void {
         self.items.deinit();
     }
 
-    pub fn draw(self: *const List, painter: *Painter, pos: *const Vec2) void {
-        painter.setCell(&self.style.border.style.cell());
-        painter.drawPrettyRectangle(@floatFromInt(self.style.width), @floatFromInt(self.style.height), pos, self.style.border.border, self.style.border.filling);
+    pub fn draw(self: *const Menu, painter: *Painter, pos: *const Vec2) void {
+        const items_len: f32 = @floatFromInt(self.items.items.len);
 
-        var current_pos = pos.*.add(&vec2(@floatFromInt(self.style.padding + 1), @floatFromInt(self.style.padding + 1)));
+        if (items_len == 0) return;
+        if (self.style.width < 3 + self.style.padding or self.style.height < 3 + self.style.padding) return;
+
+        painter.setCell(&self.style.border.style.cell());
+        painter.drawPrettyRectangle(self.style.width, self.style.height, pos, self.style.border.border, self.style.border.filling);
+        var element_width: f32 = undefined;
+        var element_height: f32 = undefined;
+        switch (self.style.orientation) {
+            .vertical => {
+                element_width = self.style.width - 2 * self.style.padding - 2;
+                element_height = @floor(((self.style.height - self.style.padding * items_len) - 3) / items_len);
+            },
+            .horizontal => {
+                element_width = @floor(((self.style.width - self.style.padding * items_len) - 3) / items_len);
+                element_height = self.style.height - 2 * self.style.padding - 2;
+            },
+        }
+        if (element_height < 3 or element_width < 3) return;
+
+        const element_center_y = element_height / 2;
+
+        var current_pos = pos.*.add(&vec2(self.style.padding + 1, self.style.padding + 1));
         for (0..self.items.items.len) |i| {
             var element_style: Cell = undefined;
             var text_style: Cell = undefined;
@@ -72,35 +94,32 @@ pub const List = struct {
                 element_filling = self.style.border.filling;
             }
 
-            const element_width = self.style.width - 2 * self.style.padding - 2;
-            if (element_width > 1) {
-                painter.setCell(&element_style);
-                painter.drawPrettyRectangle(@floatFromInt(element_width), @floatFromInt(self.style.element.height), &current_pos, self.style.border.border, element_filling);
+            painter.setCell(&element_style);
+            painter.drawPrettyRectangle(element_width, element_height, &current_pos, self.style.border.border, element_filling);
 
-                if (element_width > 2) {
-                    painter.setCell(&text_style);
-                    const text_len = self.items.items[i].len;
-                    const text_y: f32 = current_pos.y() + @as(f32, @floatFromInt(self.style.element.height / 2));
-                    if (text_len > element_width - 2) {
-                        const text_x = current_pos.x() + 1.0;
-                        painter.drawText(self.items.items[i][0 .. element_width - 2], &vec2(text_x, text_y));
-                    } else {
-                        const text_x = current_pos.x() + @as(f32, @floatFromInt(element_width - text_len)) / 2;
-                        painter.drawText(self.items.items[i], &vec2(text_x, text_y));
-                    }
-                }
+            const text_len: f32 = @floatFromInt(self.items.items[i].len);
+            const text_y: f32 = @floor(current_pos.y() + element_center_y);
+            painter.setCell(&text_style);
+            if (text_len > element_width - 2) {
+                const text_x = current_pos.x() + 1;
+                painter.drawText(self.items.items[i][0..@as(usize, @intFromFloat(@round(element_width - 2)))], &vec2(text_x, text_y));
+            } else {
+                const text_x = current_pos.x() + (element_width - text_len) / 2;
+                painter.drawText(self.items.items[i], &vec2(text_x, text_y));
             }
 
-            current_pos = current_pos.add(&vec2(0, @floatFromInt(self.style.element.height + self.style.padding)));
-            if (current_pos.y() - pos.y() + @as(f32, @floatFromInt(self.style.element.height)) >= @as(f32, @floatFromInt(self.style.height))) break;
+            switch (self.style.orientation) {
+                .vertical => current_pos = current_pos.add(&vec2(0, element_height + self.style.padding)),
+                .horizontal => current_pos = current_pos.add(&vec2(element_width + self.style.padding, 0)),
+            }
         }
     }
 
-    pub fn next(self: *List) void {
+    pub fn next(self: *Menu) void {
         self.selected_item = @mod((self.selected_item + 1), @as(i16, @intCast(self.items.items.len)));
     }
 
-    pub fn previous(self: *List) void {
+    pub fn previous(self: *Menu) void {
         self.selected_item = @mod((self.selected_item - 1), @as(i16, @intCast(self.items.items.len)));
     }
 };

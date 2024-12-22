@@ -11,6 +11,9 @@ const Vec2 = math.Vec2;
 const vec2 = math.vec2;
 const pow = math.pow;
 const Sprite = @import("sprite.zig");
+const Line = math.Line;
+const Rectangle = math.Rectangle;
+const Point = math.Point;
 
 const Painter = @This();
 
@@ -28,15 +31,19 @@ pub inline fn setCell(self: *Painter, new_cell: *const Cell) void {
     self.cell = new_cell.*;
 }
 
-pub inline fn writeCell(self: *Painter, x: f32, y: f32) void {
+pub inline fn drawCell(self: *Painter, x: f32, y: f32) void {
     self.screen.writeCellF(x, y, &self.cell);
 }
 
+pub inline fn drawPoint(self: *Painter, point: *const Point) void {
+    self.drawCell(point.p.x(), point.p.y());
+}
+
 pub fn drawLine(self: *Painter, p0: *const Vec2, p1: *const Vec2) void {
-    var x0 = p0.x();
-    var y0 = p0.y();
-    const x1 = p1.x();
-    const y1 = p1.y();
+    var x0 = @round(p0.x());
+    var y0 = @round(p0.y());
+    const x1 = @round(p1.x());
+    const y1 = @round(p1.y());
 
     const dx = @abs(x1 - x0);
     const dy = @abs(y1 - y0);
@@ -45,7 +52,7 @@ pub fn drawLine(self: *Painter, p0: *const Vec2, p1: *const Vec2) void {
     var err = dx - dy;
 
     while (true) {
-        self.writeCell(x0, y0);
+        self.drawCell(x0, y0);
         if (x0 == x1 and y0 == y1) break;
         const e2 = 2 * err;
         if (e2 > -dy) {
@@ -59,13 +66,17 @@ pub fn drawLine(self: *Painter, p0: *const Vec2, p1: *const Vec2) void {
     }
 }
 
+pub fn drawLineStruct(self: *Painter, line: *const Line) void {
+    self.drawLine(line.p1, line.p2);
+}
+
 pub fn drawCubicSpline(self: *Painter, p0: *const Vec2, p1: *const Vec2, p2: *const Vec2, p3: *const Vec2) void {
     const inc_val: f32 = 1.0 / 100.0;
     var t: f32 = 0;
     while (t <= 1.0) {
         const x = cubic_bezier(t, p0.x(), p1.x(), p2.x(), p3.x());
         const y = cubic_bezier(t, p0.y(), p1.y(), p2.y(), p3.y());
-        self.writeCell(x, y);
+        self.drawCell(x, y);
         t = t + inc_val;
     }
 }
@@ -90,11 +101,12 @@ pub fn drawRectangle(self: *Painter, width: f32, height: f32, position: *const V
     _ = filling;
 }
 
+pub fn drawRectangleStruct(self: *Painter, rectangle: *const Rectangle, rotation_angle: f32, filling: Color) void {
+    self.drawRectangle(rectangle.width, rectangle.height, rectangle.pos, rotation_angle, filling);
+}
+
 pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, borders: Border, filling: Color) void {
-    const top_left = position;
-    const top_right = vec2(position.x() + width - 1, position.y());
-    const bottom_left = vec2(position.x(), position.y() + height - 1);
-    const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
+    if (width < 2 or height < 2) return;
 
     var horizontal_border = Cell{ .fg = self.cell.fg, .bg = self.cell.bg };
     var vertical_border = horizontal_border;
@@ -138,6 +150,11 @@ pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *c
         },
     }
 
+    const top_left = vec2(@floor(position.x()), @floor(position.y()));
+    const top_right = vec2(@floor(position.x() + width - 1), @floor(position.y()));
+    const bottom_left = vec2(@floor(position.x()), @floor(position.y() + height - 1));
+    const bottom_right = vec2(@floor(position.x() + width - 1), @floor(position.y() + height - 1));
+
     self.setCell(&horizontal_border);
     self.drawLine(&top_left.add(&vec2(1, 0)), &top_right.sub(&vec2(1, 0)));
     self.setCell(&vertical_border);
@@ -148,15 +165,19 @@ pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *c
     self.drawLine(&bottom_left.sub(&vec2(0, 1)), &top_left.add(&vec2(0, 1)));
 
     self.setCell(&top_left_edge);
-    self.writeCell(top_left.x(), top_left.y());
+    self.drawCell(top_left.x(), top_left.y());
     self.setCell(&top_right_edge);
-    self.writeCell(top_right.x(), top_right.y());
+    self.drawCell(top_right.x(), top_right.y());
     self.setCell(&bottom_left_edge);
-    self.writeCell(bottom_left.x(), bottom_left.y());
+    self.drawCell(bottom_left.x(), bottom_left.y());
     self.setCell(&bottom_right_edge);
-    self.writeCell(bottom_right.x(), bottom_right.y());
+    self.drawCell(bottom_right.x(), bottom_right.y());
 
     _ = filling;
+}
+
+pub fn drawPrettyRectangleStruct(self: *Painter, rectangle: *const Rectangle, borders: Border, filling: Color) void {
+    self.drawPrettyRectangle(rectangle.width, rectangle.height, rectangle.pos, borders, filling);
 }
 
 pub fn drawTriangle(self: *Painter, p1: *const Vec2, p2: *const Vec2, p3: *const Vec2, rotation: f32, filling: Color) void {
@@ -174,14 +195,14 @@ pub fn drawCircle(self: *Painter, position: *const Vec2, radius: f32, filling: C
     var d = 3 - 2 * radius;
 
     while (y > x) {
-        self.writeCell(x + position.x(), y * 0.5 + position.y());
-        self.writeCell(y + position.x(), x * 0.5 + position.y());
-        self.writeCell(-y + position.x(), x * 0.5 + position.y());
-        self.writeCell(-x + position.x(), y * 0.5 + position.y());
-        self.writeCell(-x + position.x(), -y * 0.5 + position.y());
-        self.writeCell(-y + position.x(), -x * 0.5 + position.y());
-        self.writeCell(y + position.x(), -x * 0.5 + position.y());
-        self.writeCell(x + position.x(), -y * 0.5 + position.y());
+        self.drawCell(x + position.x(), y * 0.5 + position.y());
+        self.drawCell(y + position.x(), x * 0.5 + position.y());
+        self.drawCell(-y + position.x(), x * 0.5 + position.y());
+        self.drawCell(-x + position.x(), y * 0.5 + position.y());
+        self.drawCell(-x + position.x(), -y * 0.5 + position.y());
+        self.drawCell(-y + position.x(), -x * 0.5 + position.y());
+        self.drawCell(y + position.x(), -x * 0.5 + position.y());
+        self.drawCell(x + position.x(), -y * 0.5 + position.y());
 
         if (d > 0) {
             d = d + 4 * (x - y) + 10;
@@ -199,7 +220,7 @@ pub fn drawCircle(self: *Painter, position: *const Vec2, radius: f32, filling: C
 pub fn drawText(self: *Painter, content: []const u8, pos: *const Vec2) void {
     for (0..content.len) |i| {
         self.cell.char = content[i];
-        self.writeCell(pos.x() + @as(f32, @floatFromInt(i)), pos.y());
+        self.drawCell(pos.x() + @as(f32, @floatFromInt(i)), pos.y());
     }
 }
 
@@ -212,6 +233,6 @@ pub fn drawParticles(self: *Painter, position: *const Vec2, width: f32, height: 
     for (0..quantity) |_| {
         const x = prng.intRangeAtMost(i32, @intFromFloat(@trunc(position.x())), @intFromFloat(@trunc(position.x() + width)));
         const y = prng.intRangeAtMost(i32, @intFromFloat(@trunc(position.y())), @intFromFloat(@trunc(position.y() + height)));
-        self.writeCell(@floatFromInt(x), @floatFromInt(y));
+        self.drawCell(@floatFromInt(x), @floatFromInt(y));
     }
 }

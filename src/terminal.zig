@@ -6,6 +6,7 @@ const Cell = style.Cell;
 const Attribute = style.Attribute;
 const Color = style.Color;
 const IndexedColor = style.IndexedColor;
+const Painter = @import("Painter.zig");
 
 pub fn Terminal(comptime T: type) type {
     return struct {
@@ -52,6 +53,10 @@ pub fn Terminal(comptime T: type) type {
             try self.backend.clearScreen();
             try self.backend.endScreen();
             try self.backend.flush();
+        }
+
+        pub fn painter(self: *Terminal(T)) Painter {
+            return Painter.init(&self.screen);
         }
 
         pub fn draw(self: *Terminal(T)) !void {
@@ -131,7 +136,6 @@ pub fn Terminal(comptime T: type) type {
 const LinuxTty = @import("backends/LinuxTty.zig");
 
 test "frame draw benchmark" {
-    const Painter = @import("Painter.zig");
     const math = @import("math.zig");
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -142,7 +146,7 @@ test "frame draw benchmark" {
         }
     }
     var term = try Terminal(LinuxTty).init(gpa.allocator(), 999, 1);
-    var painter = Painter.init(&term.screen);
+    var painter = term.painter();
 
     painter.setCell(&.{ .char = ' ', .style = .{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .red }, .attr = .none } });
     painter.drawLine(&math.vec2(50.0, 20.0), &math.vec2(-50.0, 20.0));

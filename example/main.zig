@@ -16,7 +16,7 @@ pub fn main() !void {
     defer term.deinit() catch |err| @panic(@errorName(err));
     errdefer term.deinit() catch |err| @panic(@errorName(err));
 
-    var painter = at.Painter.init(&term.screen);
+    var painter = term.painter();
 
     var input = try Input.init(gpa.allocator());
     defer input.deinit() catch |err| @panic(@errorName(err));
@@ -92,9 +92,10 @@ pub fn main() !void {
 
     // menu list segment
     {
-        var list = widgets.List.init(gpa.allocator(), &.{
+        var list = widgets.Menu.init(gpa.allocator(), &.{
             .width = 50,
-            .height = 15,
+            .height = 21,
+            .orientation = .vertical,
             .padding = 1,
             .border = .{
                 .border = .rounded,
@@ -103,7 +104,6 @@ pub fn main() !void {
                 },
             },
             .element = .{
-                .height = 5,
                 .style = .{
                     .fg = .{ .indexed = .white },
                 },
@@ -120,7 +120,7 @@ pub fn main() !void {
         try list.items.append("exit");
 
         while (true) {
-            list.draw(&painter, &vec2(-25, -7));
+            list.draw(&painter, &vec2(-25, -12.5));
             try term.draw();
             if (input.nextEvent()) |key| {
                 switch (key.key) {
@@ -260,12 +260,12 @@ pub fn main() !void {
         if (input.contains(&.{ .key = .d })) {
             view_direction = 1;
             view_pos = view_pos.add(&vec2(view_speed * view_direction * term.delta_time, 0));
-            if (!start_jump) anim_right.drawNext(&painter, &view_pos, 0);
+            if (!start_jump) anim_right.draw(&painter, &view_pos, 0);
         }
         if (input.contains(&.{ .key = .a })) {
             view_direction = -1;
             view_pos = view_pos.add(&vec2(view_speed * view_direction * term.delta_time, 0));
-            if (!start_jump) anim_left.drawNext(&painter, &view_pos, 0);
+            if (!start_jump) anim_left.draw(&painter, &view_pos, 0);
         }
         if (input.contains(&.{ .key = .space })) {
             start_jump = true;

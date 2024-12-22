@@ -24,7 +24,7 @@ pub const Sprite = struct {
         for (self.image) |c| {
             if (c != ' ' and c != '\n') {
                 painter.cell.char = @intCast(c);
-                painter.writeCell(position.x() + x, position.y() + y);
+                painter.drawCell(position.x() + x, position.y() + y);
             }
 
             if (c == '\n') {
@@ -63,7 +63,7 @@ pub const Animation = struct {
         if (speed < 0) self._reversed = true;
     }
 
-    pub fn drawNext(self: *Animation, painter: *Painter, position: *const Vec2, rotation: f32) void {
+    pub fn draw(self: *Animation, painter: *Painter, position: *const Vec2, rotation: f32) void {
         if (self.frames.items.len == 0) return;
         const index: usize = @intFromFloat(@round(self._counter));
         self.frames.items[index].draw(painter, position, rotation);
