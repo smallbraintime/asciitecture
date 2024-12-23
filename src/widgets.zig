@@ -140,10 +140,7 @@ pub const TextArea = struct {
         hidden_cursor: bool = false,
     };
 
-    pub fn init(
-        allocator: std.mem.Allocator,
-        style_config: *const TextAreaConfig,
-    ) !TextArea {
+    pub fn init(allocator: std.mem.Allocator, style_config: *const TextAreaConfig) !TextArea {
         return .{
             .style = style_config.*,
             ._buffer = std.ArrayList(u8).init(allocator),
@@ -199,10 +196,13 @@ pub const TextArea = struct {
     pub fn delChar(self: *TextArea) void {
         if (self._cursor_pos > 0) {
             if (self._cursor_pos == self._viewport.begin or self._cursor_pos == self._viewport.end) {
-                if (self._viewport.begin > 0)
+                if (self._viewport.begin > 0) {
                     self._viewport.begin -= 1;
+                    self._viewport.end -= 1;
+                }
             }
-            self._viewport.end -= 1;
+            if (self._viewport.end == self._buffer.items.len)
+                self._viewport.end -= 1;
             self._cursor_pos -= 1;
             _ = self._buffer.orderedRemove(self._cursor_pos);
         }

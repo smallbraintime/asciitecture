@@ -35,6 +35,7 @@ pub fn main() !void {
     var start_jump = false;
     var name: [30]u8 = undefined;
     var name_len: usize = 0;
+
     const idle =
         \\ o
         \\/|\

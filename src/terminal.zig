@@ -8,7 +8,7 @@ const Color = style.Color;
 const IndexedColor = style.IndexedColor;
 const Painter = @import("Painter.zig");
 
-pub fn Terminal(comptime T: type) type {
+pub fn Terminal(comptime T: type) @TypeOf(type) {
     return struct {
         screen: Screen,
         last_screen: Buffer,
