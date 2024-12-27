@@ -24,16 +24,16 @@ pub const Menu = struct {
         border: struct {
             style: Style,
             border: Border,
-            filling: Color = .none,
+            filled: bool,
         },
         element: struct {
             style: Style,
-            filling: Color = .none,
+            filled: bool,
         },
         selection: struct {
             element_style: Style,
             text_style: Style,
-            filling: Color = .none,
+            filled: bool,
         },
         text_style: Style,
     };
@@ -62,7 +62,7 @@ pub const Menu = struct {
         if (self.style.width < 3 + self.style.padding or self.style.height < 3 + self.style.padding) return;
 
         painter.setCell(&self.style.border.style.cell());
-        painter.drawPrettyRectangle(self.style.width, self.style.height, pos, self.style.border.border, self.style.border.filling);
+        painter.drawPrettyRectangle(self.style.width, self.style.height, pos, self.style.border.border, self.style.border.filled);
         var element_width: f32 = undefined;
         var element_height: f32 = undefined;
         switch (self.style.orientation) {
@@ -83,19 +83,19 @@ pub const Menu = struct {
         for (0..self.items.items.len) |i| {
             var element_style: Cell = undefined;
             var text_style: Cell = undefined;
-            var element_filling: Color = undefined;
+            var element_filled: bool = undefined;
             if (self.selected_item == i) {
                 element_style = self.style.selection.element_style.cell();
                 text_style = self.style.selection.text_style.cell();
-                element_filling = self.style.selection.filling;
+                element_filled = self.style.selection.filled;
             } else {
                 element_style = self.style.element.style.cell();
                 text_style = self.style.text_style.cell();
-                element_filling = self.style.border.filling;
+                element_filled = self.style.element.filled;
             }
 
             painter.setCell(&element_style);
-            painter.drawPrettyRectangle(element_width, element_height, &current_pos, self.style.border.border, element_filling);
+            painter.drawPrettyRectangle(element_width, element_height, &current_pos, self.style.border.border, element_filled);
 
             const text_len: f32 = @floatFromInt(self.items.items[i].len);
             const text_y: f32 = @floor(current_pos.y() + element_center_y);
@@ -136,7 +136,7 @@ pub const TextArea = struct {
         cursor_style: Color,
         border: Border,
         border_style: Style,
-        filling: Color = .none,
+        filled: bool,
         hidden_cursor: bool = false,
     };
 
@@ -155,7 +155,7 @@ pub const TextArea = struct {
 
     pub fn draw(self: *const TextArea, painter: *Painter, pos: *const Vec2) void {
         painter.setCell(&self.style.border_style.cell());
-        painter.drawPrettyRectangle(@floatFromInt(self.style.width), 3, pos, self.style.border, self.style.filling);
+        painter.drawPrettyRectangle(@floatFromInt(self.style.width), 3, pos, self.style.border, self.style.filled);
         var cursor_style = self.style.text_style;
         cursor_style.bg = self.style.cursor_style;
 

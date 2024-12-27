@@ -69,6 +69,20 @@ pub const Vec2 = struct {
     }
 };
 
+pub const RigidBody = struct {
+    shape: Shape,
+    velocity: Vec2,
+    immovable: bool,
+
+    pub fn init(shape: *const Shape, velocity: *const Vec2, immovable: bool) RigidBody {
+        return .{
+            .shape = shape.*,
+            .velocity = velocity.*,
+            .immovable = immovable,
+        };
+    }
+};
+
 pub const Shape = union(enum) {
     point: Point,
     line: Line,
@@ -190,18 +204,25 @@ inline fn collisionPoints(p1: *const Point, p2: *const Point) bool {
 inline fn collisionLines(l1: *const Line, l2: *const Line) bool {
     var collision = false;
 
-    const div = (l2.p2.y() - l2.p1.y()) * (l1.p2.x() - l1.p1.x()) - (l2.p2.x() - l2.p1.x()) * (l1.p2.y() - l1.p1.y());
+    const div = (l2.p2.y() - l2.p1.y()) * (l1.p2.x() - l1.p1.x()) -
+        (l2.p2.x() - l2.p1.x()) * (l1.p2.y() - l1.p1.y());
 
-    if (@abs(div) >= @as(f32, 1e-6)) {
+    if (@abs(div) >= std.math.floatEps(f32)) {
         collision = true;
 
-        const xi = ((l1.p1.x() - l1.p2.x()) * (l1.p1.x() * l1.p2.y() - l1.p1.y() * l1.p2.x()) - (l2.p1.x() - l2.p2.x()) * (l2.p1.x() * l2.p2.y() - l2.p1.y() * l2.p2.x())) / div;
-        const yi = ((l2.p1.y() - l2.p2.y()) * (l1.p1.x() * l1.p2.y() - l1.p1.y() * l1.p2.x()) - (l1.p1.y() - l1.p2.y()) * (l2.p1.x() * l2.p2.y() - l2.p1.y() * l2.p2.x())) / div;
+        const xi = ((l2.p1.x() - l2.p2.x()) * (l1.p1.x() * l1.p2.y() - l1.p1.y() * l1.p2.x()) -
+            (l1.p1.x() - l1.p2.x()) * (l2.p1.x() * l2.p2.y() - l2.p1.y() * l2.p2.x())) / div;
+        const yi = ((l2.p1.y() - l2.p2.y()) * (l1.p1.x() * l1.p2.y() - l1.p1.y() * l1.p2.x()) -
+            (l1.p1.y() - l1.p2.y()) * (l2.p1.x() * l2.p2.y() - l2.p1.y() * l2.p2.x())) / div;
 
-        if (((@abs(l1.p1.x() - l1.p2.x()) > @as(f32, 1e-6)) and (xi < @min(l1.p1.x(), l1.p2.x()) or xi > @max(l1.p1.x(), l1.p2.x()))) or
-            ((@abs(l2.p1.x() - l2.p2.x()) > @as(f32, 1e-6)) and (xi < @min(l2.p1.x(), l2.p2.x()) or xi > @max(l2.p1.x(), l2.p2.x()))) or
-            ((@abs(l1.p1.y() - l1.p2.y()) > @as(f32, 1e-6)) and (yi < @min(l1.p1.y(), l1.p2.y()) or yi > @max(l1.p1.y(), l1.p2.y()))) or
-            ((@abs(l2.p1.y() - l2.p2.y()) > @as(f32, 1e-6)) and (yi < @min(l2.p1.y(), l2.p2.y()) or yi > @max(l2.p1.y(), l2.p2.y()))))
+        if (((@abs(l1.p1.x() - l1.p2.x()) > std.math.floatEps(f32)) and
+            (xi < @min(l1.p1.x(), l1.p2.x()) or xi > @max(l1.p1.x(), l1.p2.x()))) or
+            ((@abs(l2.p1.x() - l2.p2.x()) > std.math.floatEps(f32)) and
+            (xi < @min(l2.p1.x(), l2.p2.x()) or xi > @max(l2.p1.x(), l2.p2.x()))) or
+            ((@abs(l1.p1.y() - l1.p2.y()) > std.math.floatEps(f32)) and
+            (yi < @min(l1.p1.y(), l1.p2.y()) or yi > @max(l1.p1.y(), l1.p2.y()))) or
+            ((@abs(l2.p1.y() - l2.p2.y()) > std.math.floatEps(f32)) and
+            (yi < @min(l2.p1.y(), l2.p2.y()) or yi > @max(l2.p1.y(), l2.p2.y()))))
         {
             collision = false;
         }
@@ -286,7 +307,7 @@ test "Line.collisionPoint" {
 }
 
 test "Line.collisionLine" {
-    const line1 = Line.init(&vec2(0, 0), &vec2(5, 0));
+    const line1 = Line.init(&vec2(1, 1), &vec2(5, 1));
     const line2 = Line.init(&vec2(2.5, 5), &vec2(2.5, -2));
     try std.testing.expect(line1.collidesWith(&.{ .line = line2 }));
 }

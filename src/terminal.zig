@@ -133,9 +133,8 @@ pub fn Terminal(comptime T: type) @TypeOf(type) {
     };
 }
 
-const LinuxTty = @import("backends/LinuxTty.zig");
-
 test "frame draw benchmark" {
+    const LinuxTty = @import("LinuxTty.zig");
     const math = @import("math.zig");
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};

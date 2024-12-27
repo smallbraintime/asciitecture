@@ -17,6 +17,10 @@ pub const RgbColor = struct {
     b: u8,
 };
 
+pub fn rgb(r: u8, g: u8, b: u8) Color {
+    return .{ .rgb = .{ .r = r, .g = g, .b = b } };
+}
+
 pub const IndexedColor = enum(u8) {
     black = 0,
     red,
@@ -35,6 +39,10 @@ pub const IndexedColor = enum(u8) {
     bright_cyan,
     bright_white,
 };
+
+pub fn indexed(indexed_color: IndexedColor) Color {
+    return .{ .indexed = indexed_color };
+}
 
 pub const Attribute = enum(u8) {
     reset = 0,

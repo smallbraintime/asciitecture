@@ -1,4 +1,4 @@
-pub const LinuxTty = @import("backends/LinuxTty.zig");
+pub const LinuxTty = @import("LinuxTty.zig");
 pub const Terminal = @import("terminal.zig").Terminal;
 pub const style = @import("style.zig");
 pub const Cell = style.Cell;

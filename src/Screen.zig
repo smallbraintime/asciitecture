@@ -60,7 +60,7 @@ pub inline fn writeCell(self: *Screen, x: usize, y: usize, cell: *const Cell) vo
     if (fit_to_screen) {
         var new_cell = cell.*;
         const index = y * self.buffer.size.cols + x;
-        if (new_cell.bg == .none) new_cell.bg = self.buffer[index].fg;
+        if (new_cell.bg == .none) new_cell.bg = self.buffer.buf.items[index].bg;
         self.buffer.buf.items[index] = cell.*;
     }
 }
@@ -73,7 +73,10 @@ pub inline fn writeCellF(self: *Screen, x: f32, y: f32, cell: *const Cell) void 
         const iy: usize = @intFromFloat(@round(screen_pos.y()));
         const fit_to_screen = ix < self.buffer.size.cols and iy < self.buffer.size.rows;
         if (fit_to_screen) {
-            self.buffer.buf.items[iy * self.buffer.size.cols + ix] = cell.*;
+            const index = iy * self.buffer.size.cols + ix;
+            var new_cell = cell.*;
+            if (new_cell.bg == .none) new_cell.bg = self.buffer.buf.items[index].bg;
+            self.buffer.buf.items[index] = new_cell;
         }
     }
 }

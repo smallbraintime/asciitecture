@@ -16,7 +16,7 @@ pub const Sprite = struct {
         return .{ .image = str, .style = style.* };
     }
 
-    pub fn draw(self: *const Sprite, painter: *Painter, position: *const Vec2, rotation: f32) void {
+    pub fn draw(self: *const Sprite, painter: *Painter, position: *const Vec2) void {
         var x: f32 = 0.0;
         var y: f32 = 0.0;
 
@@ -34,8 +34,6 @@ pub const Sprite = struct {
                 x += 1.0;
             }
         }
-
-        _ = rotation;
     }
 };
 
@@ -63,10 +61,10 @@ pub const Animation = struct {
         if (speed < 0) self._reversed = true;
     }
 
-    pub fn draw(self: *Animation, painter: *Painter, position: *const Vec2, rotation: f32) void {
+    pub fn draw(self: *Animation, painter: *Painter, position: *const Vec2) void {
         if (self.frames.items.len == 0) return;
         const index: usize = @intFromFloat(@round(self._counter));
-        self.frames.items[index].draw(painter, position, rotation);
+        self.frames.items[index].draw(painter, position);
         self._counter = @mod((self._counter + self._speed), @as(f32, @floatFromInt(self.frames.items.len - 1)));
     }
 };

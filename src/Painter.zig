@@ -35,7 +35,7 @@ pub inline fn drawCell(self: *Painter, x: f32, y: f32) void {
     self.screen.writeCellF(x, y, &self.cell);
 }
 
-pub inline fn drawPoint(self: *Painter, point: *const Point) void {
+pub inline fn drawPointStruct(self: *Painter, point: *const Point) void {
     self.drawCell(point.p.x(), point.p.y());
 }
 
@@ -67,7 +67,7 @@ pub fn drawLine(self: *Painter, p0: *const Vec2, p1: *const Vec2) void {
 }
 
 pub fn drawLineStruct(self: *Painter, line: *const Line) void {
-    self.drawLine(line.p1, line.p2);
+    self.drawLine(&line.p1, &line.p2);
 }
 
 pub fn drawCubicSpline(self: *Painter, p0: *const Vec2, p1: *const Vec2, p2: *const Vec2, p3: *const Vec2) void {
@@ -85,27 +85,34 @@ fn cubic_bezier(t: f32, p0: f32, p1: f32, p2: f32, p3: f32) f32 {
     return pow(1 - t, 3) * p0 + 3 * pow(1 - t, 2) * t * p1 + 3 * (1 - t) * pow(t, 2) * p2 + pow(t, 3) * p3;
 }
 
-pub fn drawRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, rotation_angle: f32, filling: Color) void {
-    // const origin = vec2(position.x() + width / 2, position.y() + height / 2);
-    const top_left = position;
-    const top_right = vec2(position.x() + width - 1, position.y());
-    const bottom_left = vec2(position.x(), position.y() + height - 1);
-    const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
+pub fn drawRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, filled: bool) void {
+    if (filled) {
+        const x1 = position.x();
+        const x2 = position.x() + width - 1;
+        var y = position.y();
+        while (y < position.y() + height) : (y += 1) {
+            const filling_line_left = vec2(x1, y);
+            const filling_line_right = vec2(x2, y);
+            self.drawLine(&filling_line_left, &filling_line_right);
+        }
+    } else {
+        const top_left = position;
+        const top_right = vec2(position.x() + width - 1, position.y());
+        const bottom_left = vec2(position.x(), position.y() + height - 1);
+        const bottom_right = vec2(position.x() + width - 1, position.y() + height - 1);
 
-    self.drawLine(top_left, &top_right);
-    self.drawLine(&top_right, &bottom_right);
-    self.drawLine(&bottom_right, &bottom_left);
-    self.drawLine(&bottom_left, top_left);
-
-    _ = rotation_angle;
-    _ = filling;
+        self.drawLine(top_left, &top_right);
+        self.drawLine(&top_right, &bottom_right);
+        self.drawLine(&bottom_right, &bottom_left);
+        self.drawLine(&bottom_left, top_left);
+    }
 }
 
-pub fn drawRectangleStruct(self: *Painter, rectangle: *const Rectangle, rotation_angle: f32, filling: Color) void {
-    self.drawRectangle(rectangle.width, rectangle.height, rectangle.pos, rotation_angle, filling);
+pub fn drawRectangleStruct(self: *Painter, rectangle: *const Rectangle, filled: bool) void {
+    self.drawRectangle(rectangle.width, rectangle.height, &rectangle.pos, filled);
 }
 
-pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, borders: Border, filling: Color) void {
+pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, borders: Border, filled: bool) void {
     if (width < 2 or height < 2) return;
 
     var horizontal_border = Cell{ .fg = self.cell.fg, .bg = self.cell.bg };
@@ -173,36 +180,72 @@ pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *c
     self.setCell(&bottom_right_edge);
     self.drawCell(bottom_right.x(), bottom_right.y());
 
-    _ = filling;
+    if (filled) {
+        const interior_pos = top_left.add(&vec2(1, 1));
+        self.cell.char = ' ';
+        self.drawRectangle(width - 2, height - 2, &interior_pos, filled);
+    }
 }
 
 pub fn drawPrettyRectangleStruct(self: *Painter, rectangle: *const Rectangle, borders: Border, filling: Color) void {
     self.drawPrettyRectangle(rectangle.width, rectangle.height, rectangle.pos, borders, filling);
 }
 
-pub fn drawTriangle(self: *Painter, p1: *const Vec2, p2: *const Vec2, p3: *const Vec2, rotation: f32, filling: Color) void {
-    self.drawLine(p1, p2);
-    self.drawLine(p2, p3);
-    self.drawLine(p3, p1);
+pub fn drawTriangle(self: *Painter, p1: *const Vec2, p2: *const Vec2, p3: *const Vec2, filled: bool) void {
+    if (filled) {
+        const miny = @min(@min(p1.y(), p2.y()), p3.y());
+        const maxy = @max(@max(p1.y(), p2.y()), p3.y());
 
-    _ = rotation;
-    _ = filling;
+        var y: f32 = miny;
+        while (y <= maxy) : (y += 1.0) {
+            var x_min: ?f32 = null;
+            var x_max: ?f32 = null;
+
+            checkEdge(p1, p2, y, &x_min, &x_max);
+            checkEdge(p2, p3, y, &x_min, &x_max);
+            checkEdge(p3, p1, y, &x_min, &x_max);
+
+            if (x_min != null and x_max != null) {
+                self.drawLine(&vec2(x_min.?, y), &vec2(x_max.?, y));
+            }
+        }
+    } else {
+        self.drawLine(p1, p2);
+        self.drawLine(p2, p3);
+        self.drawLine(p3, p1);
+    }
 }
 
-pub fn drawCircle(self: *Painter, position: *const Vec2, radius: f32, filling: Color) void {
+fn checkEdge(p1: *const Vec2, p2: *const Vec2, y: f32, x_min: *?f32, x_max: *?f32) void {
+    if ((y < @min(p1.y(), p2.y())) or (y > @max(p1.y(), p2.y()))) return;
+
+    const edgex = if (p1.y() == p2.y()) p1.x() else p1.x() + (y - p1.y()) * (p2.x() - p1.x()) / (p2.y() - p1.y());
+
+    if (x_min.* == null or edgex < x_min.*.?) {
+        x_min.* = edgex;
+    }
+    if (x_max.* == null or edgex > x_max.*.?) {
+        x_max.* = edgex;
+    }
+}
+
+pub fn drawCircle(self: *Painter, position: *const Vec2, radius: f32, stretch: *const Vec2, filled: bool) void {
+    const stretch_x = if (stretch.x() == 0) 1 else stretch.x();
+    const stretch_y = if (stretch.y() == 0) 1 else stretch.y();
+
     var x: f32 = 0;
     var y = radius;
     var d = 3 - 2 * radius;
 
     while (y > x) {
-        self.drawCell(x + position.x(), y * 0.5 + position.y());
-        self.drawCell(y + position.x(), x * 0.5 + position.y());
-        self.drawCell(-y + position.x(), x * 0.5 + position.y());
-        self.drawCell(-x + position.x(), y * 0.5 + position.y());
-        self.drawCell(-x + position.x(), -y * 0.5 + position.y());
-        self.drawCell(-y + position.x(), -x * 0.5 + position.y());
-        self.drawCell(y + position.x(), -x * 0.5 + position.y());
-        self.drawCell(x + position.x(), -y * 0.5 + position.y());
+        self.drawCell(x * stretch_x + position.x(), y * stretch_y + position.y());
+        self.drawCell(y * stretch_x + position.x(), x * stretch_y + position.y());
+        self.drawCell(-y * stretch_x + position.x(), x * stretch_y + position.y());
+        self.drawCell(-x * stretch_x + position.x(), y * stretch_y + position.y());
+        self.drawCell(-x * stretch_x + position.x(), -y * stretch_y + position.y());
+        self.drawCell(-y * stretch_x + position.x(), -x * stretch_y + position.y());
+        self.drawCell(y * stretch_x + position.x(), -x * stretch_y + position.y());
+        self.drawCell(x * stretch_x + position.x(), -y * stretch_y + position.y());
 
         if (d > 0) {
             d = d + 4 * (x - y) + 10;
@@ -214,13 +257,38 @@ pub fn drawCircle(self: *Painter, position: *const Vec2, radius: f32, filling: C
         x += 1;
     }
 
-    _ = filling;
+    if (filled) {
+        var dy: f32 = -radius;
+        while (dy <= radius) : (dy += 1) {
+            const adjusted_y = dy * stretch_y;
+            const line_length = @sqrt(radius * radius - dy * dy);
+            var dx: f32 = -line_length;
+            while (dx <= line_length) : (dx += 1) {
+                const adjusted_x = dx * stretch_x;
+                self.drawCell(adjusted_x + position.x(), adjusted_y + position.y());
+            }
+        }
+    }
 }
 
 pub fn drawText(self: *Painter, content: []const u8, pos: *const Vec2) void {
     for (0..content.len) |i| {
         self.cell.char = content[i];
         self.drawCell(pos.x() + @as(f32, @floatFromInt(i)), pos.y());
+    }
+}
+
+pub fn drawParagraph(self: *Painter, content: []const []const u8, pos: *const Vec2, border: Border, filling: bool) void {
+    var longest: usize = 0;
+    for (content) |el| {
+        if (el.len > longest) longest = el.len;
+    }
+    self.drawPrettyRectangle(@floatFromInt(longest + 2), @floatFromInt(content.len + 2), pos, border, filling);
+
+    var new_pos = pos.*.add(&vec2(1, 0));
+    for (content) |el| {
+        new_pos = new_pos.add(&vec2(0, 1));
+        self.drawText(el, &new_pos);
     }
 }
 
