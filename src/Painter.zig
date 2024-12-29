@@ -278,20 +278,6 @@ pub fn drawText(self: *Painter, content: []const u8, pos: *const Vec2) void {
     }
 }
 
-pub fn drawParagraph(self: *Painter, content: []const []const u8, pos: *const Vec2, border: Border, filling: bool) void {
-    var longest: usize = 0;
-    for (content) |el| {
-        if (el.len > longest) longest = el.len;
-    }
-    self.drawPrettyRectangle(@floatFromInt(longest + 2), @floatFromInt(content.len + 2), pos, border, filling);
-
-    var new_pos = pos.*.add(&vec2(1, 0));
-    for (content) |el| {
-        new_pos = new_pos.add(&vec2(0, 1));
-        self.drawText(el, &new_pos);
-    }
-}
-
 pub fn drawParticles(self: *Painter, position: *const Vec2, width: f32, height: f32, quantity: usize) void {
     var rn: [1]u8 = undefined;
     std.posix.getrandom(&rn) catch unreachable;

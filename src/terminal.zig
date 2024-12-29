@@ -94,12 +94,14 @@ pub fn Terminal(comptime T: type) @TypeOf(type) {
                         switch (cell.fg) {
                             .indexed => |*indexed| try backend.setIndexedFg(@intFromEnum(indexed.*)),
                             .rgb => |*rgb| try backend.setRgbFg(rgb.r, rgb.g, rgb.b),
-                            .none => try backend.setIndexedFg(@intFromEnum(IndexedColor.black)),
+                            else => {},
+                            // .none => try backend.setIndexedFg(@intFromEnum(IndexedColor.black)),
                         }
                         switch (cell.bg) {
                             .indexed => |*indexed| try backend.setIndexedBg(@intFromEnum(indexed.*)),
                             .rgb => |*rgb| try backend.setRgbBg(rgb.r, rgb.g, rgb.b),
-                            .none => try backend.setIndexedBg(@intFromEnum(IndexedColor.black)),
+                            else => {},
+                            // .none => try backend.setIndexedBg(@intFromEnum(IndexedColor.black)),
                         }
                         if (cell.attr != .none) {
                             try backend.setAttr(@intFromEnum(cell.attr));

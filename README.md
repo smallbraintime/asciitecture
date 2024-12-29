@@ -5,8 +5,7 @@ a simple ascii graphics game library/engine
 ```zig build example```
 
 ### Todo
-- [ ] Fix collision checks
-- [ ] Improve graphics (improve particle system, add text animation)
+- [ ] Improve graphics (improve particle system)
 - [ ] Add local scaling to drawable objects
 - [ ] Fix frame pacing
 - [ ] Drawing only within view constraints (clipping)

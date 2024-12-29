@@ -11,6 +11,118 @@ const Border = style.Border;
 const Style = @import("style.zig").Style;
 const Cell = style.Cell;
 
+pub const Paragraph = struct {
+    content: std.ArrayList([]const u8),
+    style: ParagraphConfig,
+    _animation_state: struct {
+        current_line: usize,
+        current_index: f32,
+    },
+
+    pub const ParagraphConfig = struct {
+        border_style: struct {
+            border: Border,
+            style: Style,
+        },
+        text_style: Style,
+        filling: bool,
+        animation: ?struct {
+            speed: f32,
+            looping: bool,
+        },
+    };
+
+    pub fn init(allocator: std.mem.Allocator, content: []const []const u8, config: *const ParagraphConfig) !Paragraph {
+        var self = Paragraph{
+            .content = std.ArrayList([]const u8).init(allocator),
+            .style = config.*,
+            ._animation_state = .{
+                .current_line = 0,
+                .current_index = 0,
+            },
+        };
+        if (content.len > 0) try self.content.appendSlice(content);
+        return self;
+    }
+
+    pub fn deinit(self: *Paragraph) void {
+        self.content.deinit();
+    }
+
+    pub fn draw(self: *Paragraph, painter: *Painter, pos: *const Vec2) void {
+        var longest: usize = 0;
+        var new_pos = pos.*.add(&vec2(1, 0));
+        painter.setCell(&self.style.text_style.cell());
+
+        if (self.content.items.len == 0) {
+            for (self.content.items) |el| {
+                if (el.len > longest) longest = el.len;
+            }
+        } else {
+            if (self.style.animation) |anim| {
+                if (anim.looping) {
+                    var current_index: usize = @intFromFloat(@round(self._animation_state.current_index));
+                    if (current_index > self.content.items[self._animation_state.current_line].len) {
+                        self._animation_state.current_line += 1;
+                        self._animation_state.current_index = 0;
+                        current_index = 0;
+                    }
+                    if (self._animation_state.current_line >= self.content.items.len) {
+                        self._animation_state.current_line = 0;
+                        self._animation_state.current_index = 0;
+                    }
+
+                    for (0.., self.content.items) |line, el| {
+                        new_pos = new_pos.add(&vec2(0, 1));
+                        if (line < self._animation_state.current_line) {
+                            painter.drawText(el, &new_pos);
+                        } else if (line == self._animation_state.current_line) {
+                            painter.drawText(el[0..current_index], &new_pos);
+                        }
+                        if (el.len > longest) longest = el.len;
+                    }
+
+                    self._animation_state.current_index += anim.speed;
+                } else {
+                    var current_index: usize = @intFromFloat(@round(self._animation_state.current_index));
+                    if (self._animation_state.current_line != self.content.items.len - 1 or current_index < self.content.items[self._animation_state.current_line].len) {
+                        if (current_index >= self.content.items[self._animation_state.current_line].len) {
+                            self._animation_state.current_line += 1;
+                            self._animation_state.current_index = 0;
+                            current_index = 0;
+                        }
+                        if (self._animation_state.current_line >= self.content.items.len) {
+                            self._animation_state.current_line = 0;
+                            self._animation_state.current_index = 0;
+                        }
+
+                        self._animation_state.current_index += anim.speed;
+                    }
+
+                    for (0.., self.content.items) |line, el| {
+                        new_pos = new_pos.add(&vec2(0, 1));
+                        if (line < self._animation_state.current_line) {
+                            painter.drawText(el, &new_pos);
+                        } else if (line == self._animation_state.current_line) {
+                            painter.drawText(el[0..current_index], &new_pos);
+                        }
+                        if (el.len > longest) longest = el.len;
+                    }
+                }
+            } else {
+                for (self.content.items) |el| {
+                    new_pos = new_pos.add(&vec2(0, 1));
+                    painter.drawText(el, &new_pos);
+                    if (el.len > longest) longest = el.len;
+                }
+            }
+        }
+
+        painter.setCell(&self.style.border_style.style.cell());
+        painter.drawPrettyRectangle(@floatFromInt(longest + 2), @floatFromInt(self.content.items.len + 2), pos, self.style.border_style.border, self.style.filling);
+    }
+};
+
 pub const Menu = struct {
     selected_item: i16,
     items: std.ArrayList([]const u8),

@@ -39,16 +39,16 @@ pub const Sprite = struct {
 
 pub const Animation = struct {
     frames: std.ArrayList(*const Sprite),
+    looping: bool,
     _speed: f32,
     _counter: f32,
-    _reversed: bool,
 
-    pub fn init(allocator: std.mem.Allocator) Animation {
+    pub fn init(allocator: std.mem.Allocator, speed: f32, looping: bool) Animation {
         return .{
             .frames = std.ArrayList(*const Sprite).init(allocator),
-            ._speed = 1,
+            .looping = looping,
+            ._speed = speed,
             ._counter = 0,
-            ._reversed = false,
         };
     }
 
@@ -56,15 +56,19 @@ pub const Animation = struct {
         self.frames.deinit();
     }
 
-    pub fn setSpeed(self: *Animation, speed: f32) void {
-        self._speed = speed;
-        if (speed < 0) self._reversed = true;
-    }
-
     pub fn draw(self: *Animation, painter: *Painter, position: *const Vec2) void {
         if (self.frames.items.len == 0) return;
-        const index: usize = @intFromFloat(@round(self._counter));
-        self.frames.items[index].draw(painter, position);
-        self._counter = @mod((self._counter + self._speed), @as(f32, @floatFromInt(self.frames.items.len - 1)));
+
+        if (self.looping) {
+            const index: usize = @intFromFloat(@round(self._counter));
+            self.frames.items[index].draw(painter, position);
+            self._counter = @mod((self._counter + self._speed), @as(f32, @floatFromInt(self.frames.items.len - 1)));
+        } else {
+            const index: usize = @intFromFloat(@round(self._counter));
+            if (index < self.frames.items.len) {
+                self.frames.items[index].draw(painter, position);
+                self._counter += self._speed;
+            }
+        }
     }
 };

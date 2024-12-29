@@ -10,6 +10,7 @@ const Line = at.math.Line;
 const Rectangle = at.math.Rectangle;
 const RigidBody = at.math.RigidBody;
 const Painter = at.Painter;
+const rgb = at.style.rgb;
 
 pub fn main() !void {
     // init
@@ -84,19 +85,35 @@ pub fn main() !void {
         \\/ \
     ;
 
-    var anim_right = at.Animation.init(gpa.allocator());
-    anim_right.setSpeed(2 * term.delta_time);
+    var anim_right = at.Animation.init(gpa.allocator(), 2 * term.delta_time, true);
     defer anim_right.deinit();
     try anim_right.frames.append(&at.spriteFromStr(walk_right, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
     try anim_right.frames.append(&at.spriteFromStr(walk_right2, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
     try anim_right.frames.append(&at.spriteFromStr(walk_right3, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
 
-    var anim_left = at.Animation.init(gpa.allocator());
-    anim_left.setSpeed(2 * term.delta_time);
+    var anim_left = at.Animation.init(gpa.allocator(), 2 * term.delta_time, true);
     defer anim_left.deinit();
     try anim_left.frames.append(&at.spriteFromStr(walk_left, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
     try anim_left.frames.append(&at.spriteFromStr(walk_left2, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
     try anim_left.frames.append(&at.spriteFromStr(walk_left3, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
+
+    var paragraph = try widgets.Paragraph.init(gpa.allocator(), &[_][]const u8{ "something", "goes", "wrong" }, &.{
+        .border_style = .{
+            .border = .rounded,
+            .style = .{
+                .fg = .{ .indexed = .blue },
+            },
+        },
+        .text_style = .{
+            .fg = rgb(255, 165, 0),
+        },
+        .filling = false,
+        .animation = .{
+            .speed = 5 * term.delta_time,
+            .looping = false,
+        },
+    });
+    defer paragraph.deinit();
 
     // menu list segment
     {
@@ -202,7 +219,7 @@ pub fn main() !void {
         rec.shape.rectangle.pos = rec.shape.rectangle.pos.add(&rec.velocity);
 
         painter.setCell(&.{ .fg = .{ .indexed = .red } });
-        painter.drawParagraph(&[_][]const u8{ "something", "goes", "wrong" }, &vec2(-12, 0), .rounded, false);
+        paragraph.draw(&painter, &vec2(-12, 0));
 
         painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .cyan } });
         painter.drawParticles(&vec2(-80, 7), 10, 5, 3);
@@ -274,11 +291,11 @@ pub fn main() !void {
         }
         if (start_jump) {
             view_pos = view_pos.add(&vec2(0, -25.0 * term.delta_time));
-            at.spriteFromStr(jump, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }).draw(&painter, &view_pos);
+            at.spriteFromStr(jump, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }).draw(&painter, &view_pos);
         }
 
         if (!start_jump and (!input.contains(&.{ .key = .d }) and !input.contains(&.{ .key = .a }))) {
-            at.spriteFromStr(idle, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } }, .bg = .{ .indexed = .black } }).draw(&painter, &view_pos);
+            at.spriteFromStr(idle, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }).draw(&painter, &view_pos);
         }
         if (input.contains(&.{ .key = .d })) {
             view_direction = 1;
