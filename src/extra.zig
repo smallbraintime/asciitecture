@@ -73,39 +73,3 @@ pub fn screenMeltingTransition(screen: *Screen, old_buffer: []const Cell, new_bu
     state.falling_cols = null;
     state.cols_positions = null;
 }
-
-pub fn waveAnim(painter: *Painter, position: *const Vec2, bg: RgbColor) bool {
-    const counter = struct {
-        var n: f32 = 1;
-        var timer: u32 = 0;
-    };
-    if (@as(usize, @intFromFloat(counter.n)) > painter.screen.buffer.size.cols * 2 or @as(usize, @intFromFloat(counter.n)) > painter.screen.buffer.size.rows * 2) {
-        counter.n = 1;
-        counter.timer = 0;
-        return true;
-    }
-    var cell = Cell{
-        .bg = .{ .rgb = bg },
-        .fg = painter.screen.bg,
-        .attr = .none,
-        .char = ' ',
-    };
-    var layer: f32 = 0;
-    var brightness: u8 = 0;
-    while (layer <= 24) {
-        const radius = counter.n - 1;
-        if (radius > 0) {
-            cell.bg = .{ .rgb = .{ .r = @min(bg.r + @min(brightness, 255 - bg.r), 255), .g = @min(bg.g + @min(brightness, 255 - bg.g), 255), .b = @min(bg.b + @min(brightness, 255 - bg.b), 255) } };
-            painter.setCell(&cell);
-            painter.drawCircle(position, counter.n - layer, null);
-        }
-        layer += 1;
-        brightness += 10;
-    }
-    if (counter.timer % 2 == 0) {
-        counter.n += 1;
-    }
-    counter.timer += 1;
-
-    return false;
-}

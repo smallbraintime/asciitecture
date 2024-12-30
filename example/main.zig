@@ -38,13 +38,24 @@ pub fn main() !void {
     std.posix.getrandom(&rn) catch unreachable;
     var rng = std.rand.DefaultPrng.init(@intCast(rn[0]));
 
-    var ps: [100]Particle = undefined;
-    for (0..100) |i| {
+    var ps: [360]Particle = undefined;
+    for (0..360) |i| {
         const angle: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 0, 360));
-        const speed: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 10, 50));
-        const life: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 1, 5));
+        const speed: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 2, 5));
+        const life: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 1, 10));
+        const r = rng.random().intRangeAtMost(u8, 0, 255);
+        const g = rng.random().intRangeAtMost(u8, 0, 255);
+        const b = rng.random().intRangeAtMost(u8, 0, 255);
+        const char = rng.random().intRangeAtMost(u21, 2, 1000);
 
-        ps[i] = Particle.init(&.{ .char = '●', .fg = .{ .indexed = .magenta } }, &vec2(0, 22), life, angle, speed);
+        ps[i] = Particle.init(&.{
+            .start_cell = .{ .char = char, .fg = rgb(r, g, b) },
+            .start_pos = vec2(0, 22),
+            .life = life,
+            .fading = true,
+            .angle = angle,
+            .speed = speed,
+        });
     }
     var particles = Particles.init(&vec2(0, 22), true, &ps);
 
@@ -128,7 +139,7 @@ pub fn main() !void {
         .filling = false,
         .animation = .{
             .speed = 5 * term.delta_time,
-            .looping = false,
+            .looping = true,
         },
     });
     defer paragraph.deinit();
@@ -226,9 +237,9 @@ pub fn main() !void {
 
     // main loop
     while (true) {
-        // _ = extra.waveAnim(&painter, &view_pos, .{ .r = 0, .g = 0, .b = 255 });
-
-        particles.draw(&painter, term.delta_time);
+        for (0..7) |_| {
+            particles.draw(&painter, term.delta_time);
+        }
         //
         // painter.setCell(&.{ .bg = .{ .indexed = .white } });
         // painter.drawLineShape(&floor.shape.line);
@@ -243,13 +254,6 @@ pub fn main() !void {
         //
         painter.setCell(&.{ .fg = .{ .indexed = .red } });
         paragraph.draw(&painter, &vec2(-12, 0));
-
-        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .cyan } });
-        painter.drawParticles(&vec2(-80, 7), 10, 5, 3);
-        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .blue } });
-        painter.drawParticles(&vec2(-88, 5), 15, 10, 5);
-        painter.setCell(&.{ .char = '●', .fg = .{ .indexed = .red } });
-        painter.drawParticles(&vec2(-93, 0), 30, 20, 2);
 
         painter.setCell(&.{ .bg = .{ .indexed = .red } });
         painter.drawLine(&vec2(100.0, 20.0), &vec2(-100.0, 20.0));

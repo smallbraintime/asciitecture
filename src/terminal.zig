@@ -115,7 +115,7 @@ pub fn Terminal(comptime T: type) @TypeOf(type) {
             self.screen.clear();
         }
 
-        // This should be handled by a signal
+        // This can be handled by a signal
         fn handleResize(self: *Terminal(T)) !void {
             const screen_size = try self.backend.screenSize();
             if (!std.meta.eql(screen_size, self.screen.buffer.size)) {

@@ -282,16 +282,3 @@ pub fn drawText(self: *Painter, content: []const u8, pos: *const Vec2) void {
         self.drawCell(pos.x() + @as(f32, @floatFromInt(i)), pos.y());
     }
 }
-
-pub fn drawParticles(self: *Painter, position: *const Vec2, width: f32, height: f32, quantity: usize) void {
-    var rn: [1]u8 = undefined;
-    std.posix.getrandom(&rn) catch unreachable;
-    var rng = std.rand.DefaultPrng.init(@intCast(rn[0]));
-    var prng = rng.random();
-
-    for (0..quantity) |_| {
-        const x = prng.intRangeAtMost(i32, @intFromFloat(@trunc(position.x())), @intFromFloat(@trunc(position.x() + width)));
-        const y = prng.intRangeAtMost(i32, @intFromFloat(@trunc(position.y())), @intFromFloat(@trunc(position.y() + height)));
-        self.drawCell(@floatFromInt(x), @floatFromInt(y));
-    }
-}

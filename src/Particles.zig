@@ -2,28 +2,37 @@ const std = @import("std");
 const math = @import("math.zig");
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
-const Cell = @import("style.zig").Cell;
+const style = @import("style.zig");
+const Cell = style.Cell;
 const Painter = @import("Painter.zig");
+const rgb = style.rgb;
 
 pub const Particle = struct {
+    pub const ParticleConfig = struct {
+        start_cell: Cell,
+        start_pos: Vec2,
+        life: f32,
+        fading: bool,
+        speed: f32,
+        angle: f32,
+    };
+
+    config: ParticleConfig,
     cell: Cell,
     pos: Vec2,
-    start_pos: Vec2,
     velocity: Vec2,
-    life: f32,
     life_counter: f32,
 
-    pub fn init(cell: *const Cell, start_pos: *const Vec2, life: f32, angle: f32, speed: f32) Particle {
+    pub fn init(config: *const ParticleConfig) Particle {
         return .{
-            .cell = cell.*,
-            .pos = start_pos.*,
-            .start_pos = start_pos.*,
+            .config = config.*,
+            .cell = config.start_cell,
+            .pos = config.start_pos,
             .velocity = vec2(
-                speed * @cos(std.math.degreesToRadians(angle)),
-                -speed * @sin(std.math.degreesToRadians(angle)),
+                config.speed * @cos(std.math.degreesToRadians(config.angle)),
+                -config.speed * @sin(std.math.degreesToRadians(config.angle)),
             ),
-            .life = life,
-            .life_counter = life,
+            .life_counter = config.life,
         };
     }
 
@@ -31,10 +40,20 @@ pub const Particle = struct {
         self.life_counter -= delta_time;
         if (self.life_counter > 0) {
             self.pos = self.pos.add(&vec2(self.velocity.x() * delta_time, self.velocity.y() * delta_time));
+            if (self.config.fading) {
+                if (self.config.start_cell.fg == .rgb) {
+                    const age_ratio = self.life_counter / self.config.life;
+                    const r: u8 = @intFromFloat(@as(f32, @floatFromInt(self.config.start_cell.fg.rgb.r)) * age_ratio);
+                    const g: u8 = @intFromFloat(@as(f32, @floatFromInt(self.config.start_cell.fg.rgb.g)) * age_ratio);
+                    const b: u8 = @intFromFloat(@as(f32, @floatFromInt(self.config.start_cell.fg.rgb.b)) * age_ratio);
+                    self.cell.fg = rgb(r, g, b);
+                }
+            }
         } else {
             if (looping) {
-                self.pos = self.start_pos;
-                self.life_counter = self.life;
+                self.pos = self.config.start_pos;
+                self.life_counter = self.config.life;
+                if (self.config.fading) self.cell = self.config.start_cell;
             }
         }
     }
