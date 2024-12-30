@@ -11,9 +11,10 @@ const Vec2 = math.Vec2;
 const vec2 = math.vec2;
 const pow = math.pow;
 const Sprite = @import("sprite.zig");
+const Point = math.Point;
 const Line = math.Line;
 const Rectangle = math.Rectangle;
-const Point = math.Point;
+const Circle = math.Circle;
 
 const Painter = @This();
 
@@ -33,10 +34,6 @@ pub inline fn setCell(self: *Painter, new_cell: *const Cell) void {
 
 pub inline fn drawCell(self: *Painter, x: f32, y: f32) void {
     self.screen.writeCellF(x, y, &self.cell);
-}
-
-pub inline fn drawPointStruct(self: *Painter, point: *const Point) void {
-    self.drawCell(point.p.x(), point.p.y());
 }
 
 pub fn drawLine(self: *Painter, p0: *const Vec2, p1: *const Vec2) void {
@@ -64,10 +61,6 @@ pub fn drawLine(self: *Painter, p0: *const Vec2, p1: *const Vec2) void {
             y0 += sy;
         }
     }
-}
-
-pub fn drawLineStruct(self: *Painter, line: *const Line) void {
-    self.drawLine(&line.p1, &line.p2);
 }
 
 pub fn drawCubicSpline(self: *Painter, p0: *const Vec2, p1: *const Vec2, p2: *const Vec2, p3: *const Vec2) void {
@@ -106,10 +99,6 @@ pub fn drawRectangle(self: *Painter, width: f32, height: f32, position: *const V
         self.drawLine(&bottom_right, &bottom_left);
         self.drawLine(&bottom_left, top_left);
     }
-}
-
-pub fn drawRectangleStruct(self: *Painter, rectangle: *const Rectangle, filled: bool) void {
-    self.drawRectangle(rectangle.width, rectangle.height, &rectangle.pos, filled);
 }
 
 pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, borders: Border, filled: bool) void {
@@ -185,10 +174,6 @@ pub fn drawPrettyRectangle(self: *Painter, width: f32, height: f32, position: *c
         self.cell.char = ' ';
         self.drawRectangle(width - 2, height - 2, &interior_pos, filled);
     }
-}
-
-pub fn drawPrettyRectangleStruct(self: *Painter, rectangle: *const Rectangle, borders: Border, filling: Color) void {
-    self.drawPrettyRectangle(rectangle.width, rectangle.height, rectangle.pos, borders, filling);
 }
 
 pub fn drawTriangle(self: *Painter, p1: *const Vec2, p2: *const Vec2, p3: *const Vec2, filled: bool) void {
@@ -269,6 +254,26 @@ pub fn drawCircle(self: *Painter, position: *const Vec2, radius: f32, stretch: *
             }
         }
     }
+}
+
+pub inline fn drawPointShape(self: *Painter, point: *const Point) void {
+    self.drawCell(point.p.x(), point.p.y());
+}
+
+pub inline fn drawLineShape(self: *Painter, line: *const Line) void {
+    self.drawLine(&line.p1, &line.p2);
+}
+
+pub inline fn drawRectangleShape(self: *Painter, rectangle: *const Rectangle, filled: bool) void {
+    self.drawRectangle(rectangle.width, rectangle.height, &rectangle.pos, filled);
+}
+
+pub inline fn drawPrettyRectangleShape(self: *Painter, rectangle: *const Rectangle, border: Border, filled: bool) void {
+    self.drawPrettyRectangle(rectangle.width, rectangle.height, &rectangle.pos, border, filled);
+}
+
+pub inline fn drawCircleShape(self: *Painter, circle: *const Circle, stretch: *const Vec2, filled: bool) void {
+    self.drawCircle(&circle.center, circle.radius, stretch, filled);
 }
 
 pub fn drawText(self: *Painter, content: []const u8, pos: *const Vec2) void {
