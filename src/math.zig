@@ -193,32 +193,21 @@ inline fn collisionLineRectangle(line: *const Line, rectangle: *const Rectangle)
 }
 
 inline fn collisionLineCircle(line: *const Line, circle: *const Circle) bool {
-    const distance1 = line.p1.distance(&circle.center);
-    const distance2 = line.p2.distance(&circle.center);
+    const d = line.p1.sub(&line.p2);
+    if (@abs(d.x()) + @abs(d.y()) <= std.math.floatEps(f32)) return collisionCircles(&Circle.init(&line.p1, 0), circle);
 
-    if (distance1 <= circle.radius or distance2 <= circle.radius) {
-        return true;
-    }
+    const sq_len = d.squaredLen();
+    const dot = std.math.clamp(((circle.center.x() - line.p1.x()) * (line.p2.x() - line.p1.x()) +
+        (circle.center.y() - line.p1.y()) * (line.p2.y() - line.p1.y())) / sq_len, 0, 1);
 
-    const line_len = line.p1.distance(&line.p2);
-    const dot = (((circle.center.x() - line.p1.x()) * (line.p2.x() - line.p1.x())) +
-        ((circle.center.y() - line.p1.y()) * (line.p2.y() - line.p1.y()))) / pow(line_len, 2);
+    const closest_x = line.p1.x() + dot * d.x();
+    const closest_y = line.p1.y() + dot * d.y();
 
-    const closest_x = line.p1.x() + (dot * (line.p2.x() - line.p1.x()));
-    const closest_y = line.p1.y() + (dot * (line.p2.y() - line.p1.y()));
+    const dx = closest_x - circle.center.x();
+    const dy = closest_y - circle.center.y();
+    const sq_dist = vec2(dx, dy).squaredLen();
 
-    const is_within_segment = (dot >= 0.0 and dot <= 1.0);
-
-    if (is_within_segment) {
-        const closest_point = &vec2(closest_x, closest_y);
-        const distance_to_closest_point = closest_point.distance(&circle.center);
-
-        if (distance_to_closest_point <= circle.radius) {
-            return true;
-        }
-    }
-
-    return false;
+    return sq_dist <= circle.radius * circle.radius;
 }
 
 inline fn collisionRectangles(r1: *const Rectangle, r2: *const Rectangle) bool {
@@ -277,6 +266,10 @@ pub const Vec2 = struct {
         return self.v[1];
     }
 
+    pub inline fn splat(scalar: f32) Vec2 {
+        return .{ .v = @splat(scalar) };
+    }
+
     pub inline fn add(a: *const Vec2, b: *const Vec2) Vec2 {
         return .{ .v = a.v + b.v };
     }
@@ -315,9 +308,25 @@ pub const Vec2 = struct {
     }
 
     pub inline fn distance(self: *const Vec2, other: *const Vec2) f32 {
+        return @sqrt(self.squaredDistance(other));
+    }
+
+    pub inline fn squaredDistance(self: *const Vec2, other: *const Vec2) f32 {
         const dx = other.x() - self.x();
         const dy = other.y() - self.y();
-        return @sqrt(dx * dx + dy * dy);
+        return dx * dx + dy * dy;
+    }
+
+    pub inline fn len(self: *const Vec2) f32 {
+        return @sqrt(self.squaredLen());
+    }
+
+    pub inline fn squaredLen(self: *const Vec2) f32 {
+        return (self.x() * self.x()) + (self.y() * self.y());
+    }
+
+    pub inline fn dot(self: *const Vec2, other: *const Vec2) f32 {
+        return @reduce(.Add, self.v * other.v);
     }
 
     pub inline fn lerp(self: *const Vec2, other: *const Vec2, amount: f32) Vec2 {

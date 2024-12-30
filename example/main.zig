@@ -11,6 +11,8 @@ const Rectangle = at.math.Rectangle;
 const Circle = at.math.Circle;
 const RigidBody = at.math.RigidBody;
 const Painter = at.Painter;
+const Particles = at.Particles;
+const Particle = Particles.Particle;
 const rgb = at.style.rgb;
 
 pub fn main() !void {
@@ -28,9 +30,23 @@ pub fn main() !void {
     defer input.deinit() catch |err| @panic(@errorName(err));
     errdefer input.deinit() catch |err| @panic(@errorName(err));
 
-    var floor = RigidBody.init(&.{ .line = Line.init(&vec2(-3, 19), &vec2(3, 19)) }, &vec2(0, 0), true);
-    var rec = RigidBody.init(&.{ .rectangle = Rectangle.init(&vec2(0, -5), 5, 5) }, &vec2(0, 0.1), false);
-    var circ = RigidBody.init(&.{ .circle = Circle.init(&vec2(0, -10), 15) }, &vec2(0, 0.1), false);
+    // var floor = RigidBody.init(&.{ .line = Line.init(&vec2(-3, 19), &vec2(3, 19)) }, &vec2(0, 0), true);
+    // var rec = RigidBody.init(&.{ .rectangle = Rectangle.init(&vec2(0, -5), 5, 5) }, &vec2(0, 0.1), false);
+    // var circ = RigidBody.init(&.{ .circle = Circle.init(&vec2(0, -10), 15) }, &vec2(0, 0.1), false);
+
+    var rn: [1]u8 = undefined;
+    std.posix.getrandom(&rn) catch unreachable;
+    var rng = std.rand.DefaultPrng.init(@intCast(rn[0]));
+
+    var ps: [100]Particle = undefined;
+    for (0..100) |i| {
+        const angle: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 0, 360));
+        const speed: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 10, 50));
+        const life: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 1, 5));
+
+        ps[i] = Particle.init(&.{ .char = '●', .fg = .{ .indexed = .magenta } }, &vec2(0, 22), life, angle, speed);
+    }
+    var particles = Particles.init(&vec2(0, 22), true, &ps);
 
     // game state
     var rect_posx: f32 = 0;
@@ -212,17 +228,19 @@ pub fn main() !void {
     while (true) {
         // _ = extra.waveAnim(&painter, &view_pos, .{ .r = 0, .g = 0, .b = 255 });
 
-        painter.setCell(&.{ .bg = .{ .indexed = .white } });
-        painter.drawLineShape(&floor.shape.line);
-        painter.drawRectangleShape(&rec.shape.rectangle, false);
-        painter.drawCircleShape(&circ.shape.circle, &vec2(0, 0.5), false);
-        if (rec.shape.rectangle.collidesWith(&floor.shape)) {
-            rec.velocity = vec2(0, 0);
-            circ.velocity = vec2(0, 0);
-        }
-        rec.shape.rectangle.pos = rec.shape.rectangle.pos.add(&rec.velocity);
-        circ.shape.circle.center = circ.shape.circle.center.add(&circ.velocity);
-
+        particles.draw(&painter, term.delta_time);
+        //
+        // painter.setCell(&.{ .bg = .{ .indexed = .white } });
+        // painter.drawLineShape(&floor.shape.line);
+        // painter.drawRectangleShape(&rec.shape.rectangle, false);
+        // painter.drawCircleShape(&circ.shape.circle, &vec2(0, 0.5), false);
+        // if (rec.shape.rectangle.collidesWith(&floor.shape)) {
+        //     rec.velocity = vec2(0, 0);
+        //     circ.velocity = vec2(0, 0);
+        // }
+        // rec.shape.rectangle.pos = rec.shape.rectangle.pos.add(&rec.velocity);
+        // circ.shape.circle.center = circ.shape.circle.center.add(&circ.velocity);
+        //
         painter.setCell(&.{ .fg = .{ .indexed = .red } });
         paragraph.draw(&painter, &vec2(-12, 0));
 

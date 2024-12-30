@@ -13,3 +13,4 @@ pub const math = @import("math.zig");
 pub const input = @import("input.zig");
 pub const extra = @import("extra.zig");
 pub const widgets = @import("widgets.zig");
+pub const Particles = @import("Particles.zig");
