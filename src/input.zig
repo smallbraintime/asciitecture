@@ -6,208 +6,49 @@ const x11 = @cImport({
 });
 
 pub const Input = struct {
-    _backend: InputBackend,
-
-    pub fn init(allocator: std.mem.Allocator) !Input {
-        if (std.posix.getenv("DISPLAY") != null)
-            return .{ ._backend = .{ .x11 = try X11Input.init(allocator) } }
-        else
-            return .{ ._backend = .{ .std = StdInput.init(allocator) } };
-    }
-
-    pub fn deinit(self: *Input) !void {
-        switch (self._backend) {
-            .x11 => |*be| try be.deinit(),
-            .std => |*be| be.deinit(),
-        }
-    }
-
-    pub fn contains(self: *Input, key: *const KeyInput) bool {
-        switch (self._backend) {
-            .x11 => |*be| {
-                return be.contains(key) catch |err|
-                    @panic(@errorName(err));
-            },
-            .std => |*be| {
-                return be.contains(key) catch |err|
-                    @panic(@errorName(err));
-            },
-        }
-    }
-
-    pub fn nextEvent(self: *Input) ?KeyInput {
-        switch (self._backend) {
-            .x11 => |*be| {
-                return be.nextEvent() catch |err|
-                    @panic(@errorName(err));
-            },
-            .std => |*be| {
-                return be.nextEvent() catch |err|
-                    @panic(@errorName(err));
-            },
-        }
-    }
-};
-
-const InputBackend = union(enum) {
-    x11: X11Input,
-    std: StdInput,
-};
-
-pub const KeyInput = struct {
-    key: Key,
-    mod: KeyMod = .{},
-
-    pub fn eql(a: *const KeyInput, b: *const KeyInput) bool {
-        return @intFromEnum(a.key) == @intFromEnum(b.key) and a.mod.ctrl == b.mod.ctrl and a.mod.alt == b.mod.alt and a.mod.shift == b.mod.shift;
-    }
-};
-
-pub const KeyMod = packed struct(u8) {
-    shift: bool = false,
-    ctrl: bool = false,
-    alt: bool = false,
-    _padding: u5 = undefined,
-};
-
-pub const Key = enum {
-    a,
-    b,
-    c,
-    d,
-    e,
-    f,
-    g,
-    h,
-    i,
-    j,
-    k,
-    l,
-    m,
-    n,
-    o,
-    p,
-    q,
-    r,
-    s,
-    t,
-    u,
-    v,
-    w,
-    x,
-    y,
-    z,
-    zero,
-    one,
-    two,
-    three,
-    four,
-    five,
-    six,
-    seven,
-    eight,
-    nine,
-    tab,
-    enter,
-    escape,
-    space,
-    backspace,
-    insert,
-    delete,
-    left,
-    right,
-    up,
-    down,
-    f1,
-    f2,
-    f3,
-    f4,
-    f5,
-    f6,
-    f7,
-    f8,
-    f9,
-    f10,
-    f11,
-    f12,
-    shift,
-    control,
-    alt,
-    minus,
-    underscore,
-    equal,
-    plus,
-    bracket_left,
-    bracket_right,
-    brace_left,
-    brace_right,
-    backslash,
-    bar,
-    semicolon,
-    colon,
-    apostrophe,
-    double_quote,
-    comma,
-    less,
-    period,
-    greater,
-    slash,
-    question,
-    grave,
-    tilde,
-    exclamation,
-    at,
-    hash,
-    dollar,
-    percent,
-    caret,
-    ampersand,
-    asterisk,
-    paren_left,
-    paren_right,
-    unknown,
-};
-
-const X11Input = struct {
     _display: *x11.Display,
-    _key_state: std.AutoHashMap(KeyInput, bool),
+    _pressed_keys: std.StaticBitSet(std.math.maxInt(u8)),
 
-    pub fn init(allocator: std.mem.Allocator) !X11Input {
+    pub fn init() !Input {
         const dpy = x11.XOpenDisplay(null) orelse return error.X11Error;
         var focused: x11.Window = undefined;
         var revert: i32 = undefined;
         _ = x11.XGetInputFocus(dpy, &focused, &revert);
         _ = x11.XSelectInput(dpy, focused, x11.KeyPressMask | x11.KeyReleaseMask | x11.FocusChangeMask);
-        _ = x11.XAutoRepeatOff(dpy);
         _ = x11.XSynchronize(dpy, 1);
-        return .{ ._display = dpy, ._key_state = std.AutoHashMap(KeyInput, bool).init(allocator) };
+        return .{
+            ._display = dpy,
+            ._pressed_keys = std.StaticBitSet(std.math.maxInt(u8)).initEmpty(),
+        };
     }
 
-    pub fn contains(self: *X11Input, key: *const KeyInput) !bool {
-        _ = try self.nextEvent();
-        if (self._key_state.get(key.*)) |k| {
-            return k;
-        }
-        return false;
+    pub fn deinit(self: *Input) !void {
+        _ = x11.XAutoRepeatOn(self._display);
+        _ = x11.XCloseDisplay(self._display);
     }
 
-    pub fn nextEvent(self: *X11Input) !?KeyInput {
-        if (x11.XPending(self._display) > 0) {
+    pub fn contains(self: *Input, key: *const KeyInput) bool {
+        _ = self.nextEvent();
+        return self._pressed_keys.isSet(@intFromEnum(key.key));
+    }
+
+    pub fn nextEvent(self: *Input) ?KeyInput {
+        var press: ?KeyInput = null;
+        while (x11.XPending(self._display) > 0) {
             var event: x11.XEvent = undefined;
             _ = x11.XNextEvent(self._display, &event);
             switch (event.type) {
                 x11.KeyPress => {
                     var keysym: x11.KeySym = undefined;
                     _ = x11.XLookupString(&event.xkey, null, 0, &keysym, null);
-                    const key = KeyInput{ .key = toKey(keysym), .mod = toMod(event.xkey.state) };
-                    try self._key_state.put(key, true);
-                    return key;
+                    press = KeyInput{ .key = toKey(keysym), .mod = toMod(event.xkey.state) };
+                    self._pressed_keys.set(@intFromEnum(press.?.key));
                 },
                 x11.KeyRelease => {
                     var keysym: x11.KeySym = undefined;
                     _ = x11.XLookupString(&event.xkey, null, 0, &keysym, null);
                     const key = KeyInput{ .key = toKey(keysym), .mod = toMod(event.xkey.state) };
-                    try self._key_state.put(key, false);
+                    self._pressed_keys.unset(@intFromEnum(key.key));
                 },
                 x11.FocusOut => {
                     _ = x11.XAutoRepeatOn(self._display);
@@ -218,7 +59,7 @@ const X11Input = struct {
                 else => {},
             }
         }
-        return null;
+        return press;
     }
 
     fn toMod(mods: x11.KeySym) KeyMod {
@@ -326,144 +167,297 @@ const X11Input = struct {
             else => .unknown,
         };
     }
-
-    pub fn deinit(self: *X11Input) !void {
-        self._key_state.deinit();
-        _ = x11.XAutoRepeatOn(self._display);
-        _ = x11.XCloseDisplay(self._display);
-    }
 };
 
-const StdInput = struct {
-    stdin: std.fs.File.Reader,
-    _key_state: std.AutoHashMap(KeyInput, i128),
-
-    pub fn init(allocator: std.mem.Allocator) StdInput {
-        return .{
-            .stdin = std.io.getStdIn().reader(),
-            ._key_state = std.AutoHashMap(KeyInput, i128).init(allocator),
-        };
-    }
-
-    pub fn deinit(self: *StdInput) void {
-        self._key_state.deinit();
-    }
-
-    pub fn contains(self: *StdInput, key: *const KeyInput) !bool {
-        _ = try self.nextEvent();
-        if (self._key_state.get(key.*)) |k| {
-            if ((std.time.nanoTimestamp() - k) <= 500000000) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    pub fn nextEvent(self: *StdInput) !?KeyInput {
-        var buf: [3]u8 = undefined;
-        const c = try self.stdin.read(&buf);
-        const key = try toKeyInput(buf[0..c]) orelse null;
-        if (key) |ev| {
-            try self._key_state.put(ev, std.time.nanoTimestamp());
-        }
-        return key;
-    }
-
-    fn toKeyInput(buf: []const u8) !?KeyInput {
-        const view = try std.unicode.Utf8View.init(buf);
-        var iter = view.iterator();
-        if (iter.bytes.len == 0) return null;
-
-        var input = KeyInput{ .key = .unknown, .mod = .{ .alt = false, .shift = false, .ctrl = false } };
-        if (iter.nextCodepoint()) |c0| switch (c0) {
-            '\x1b' => {
-                input.key = .escape;
-                if (iter.nextCodepoint()) |c1| switch (c1) {
-                    '[' => {
-                        switch (buf[2]) {
-                            'A' => input.key = .up,
-                            'B' => input.key = .down,
-                            'C' => input.key = .right,
-                            'D' => input.key = .left,
-                            '1' => {
-                                if (iter.nextCodepoint()) |c2| switch (c2) {
-                                    '5' => input.key = .f5,
-                                    '7' => input.key = .f6,
-                                    '8' => input.key = .f7,
-                                    '9' => input.key = .f8,
-                                    '1' => {
-                                        if (iter.nextCodepoint()) |c3| switch (c3) {
-                                            '0' => input.key = .f9,
-                                            '1' => input.key = .f10,
-                                            '3' => input.key = .f11,
-                                            '4' => input.key = .f12,
-                                            else => {},
-                                        };
-                                    },
-                                    else => {},
-                                };
-                            },
-                            else => {},
-                        }
-                    },
-                    'O' => {
-                        switch (buf[2]) {
-                            'P' => input.key = .f1,
-                            'Q' => input.key = .f2,
-                            'R' => input.key = .f3,
-                            'S' => input.key = .f4,
-                            else => {},
-                        }
-                    },
-                    else => {},
-                };
-            },
-            '\x09' => input.key = Key.tab,
-            '\x0D' => input.key = Key.enter,
-            '\x08' => input.key = Key.backspace,
-            '\x20' => input.key = Key.space,
-            'a' => input.key = .a,
-            'b' => input.key = .b,
-            'c' => input.key = .c,
-            'd' => input.key = .d,
-            'e' => input.key = .e,
-            'f' => input.key = .f,
-            'g' => input.key = .g,
-            'h' => input.key = .h,
-            'i' => input.key = .i,
-            'j' => input.key = .j,
-            'k' => input.key = .k,
-            'l' => input.key = .l,
-            'm' => input.key = .m,
-            'n' => input.key = .n,
-            'o' => input.key = .o,
-            'p' => input.key = .p,
-            'q' => input.key = .q,
-            'r' => input.key = .r,
-            's' => input.key = .s,
-            't' => input.key = .t,
-            'u' => input.key = .u,
-            'v' => input.key = .v,
-            'w' => input.key = .w,
-            'x' => input.key = .x,
-            'y' => input.key = .y,
-            'z' => input.key = .z,
-            '1' => input.key = .one,
-            '2' => input.key = .two,
-            '3' => input.key = .three,
-            '4' => input.key = .four,
-            '5' => input.key = .five,
-            '6' => input.key = .six,
-            '7' => input.key = .seven,
-            '8' => input.key = .eight,
-            '9' => input.key = .nine,
-            '0' => input.key = .zero,
-            else => {},
-        };
-        input.mod.shift = (buf[0] >= 'A' and buf[0] <= 'Z');
-        return input;
-    }
+pub const KeyInput = struct {
+    key: Key,
+    mod: KeyMod = .{},
 };
+
+pub const KeyMod = packed struct(u8) {
+    shift: bool = false,
+    ctrl: bool = false,
+    alt: bool = false,
+    _padding: u5 = undefined,
+};
+
+pub const Key = enum {
+    a,
+    b,
+    c,
+    d,
+    e,
+    f,
+    g,
+    h,
+    i,
+    j,
+    k,
+    l,
+    m,
+    n,
+    o,
+    p,
+    q,
+    r,
+    s,
+    t,
+    u,
+    v,
+    w,
+    x,
+    y,
+    z,
+    zero,
+    one,
+    two,
+    three,
+    four,
+    five,
+    six,
+    seven,
+    eight,
+    nine,
+    tab,
+    enter,
+    escape,
+    space,
+    backspace,
+    insert,
+    delete,
+    left,
+    right,
+    up,
+    down,
+    f1,
+    f2,
+    f3,
+    f4,
+    f5,
+    f6,
+    f7,
+    f8,
+    f9,
+    f10,
+    f11,
+    f12,
+    shift,
+    control,
+    alt,
+    minus,
+    underscore,
+    equal,
+    plus,
+    bracket_left,
+    bracket_right,
+    brace_left,
+    brace_right,
+    backslash,
+    bar,
+    semicolon,
+    colon,
+    apostrophe,
+    double_quote,
+    comma,
+    less,
+    period,
+    greater,
+    slash,
+    question,
+    grave,
+    tilde,
+    exclamation,
+    at,
+    hash,
+    dollar,
+    percent,
+    caret,
+    ampersand,
+    asterisk,
+    paren_left,
+    paren_right,
+    unknown,
+};
+
+// pub const Input = struct {
+//     _backend: InputBackend,
+//
+//     pub fn init(allocator: std.mem.Allocator) !Input {
+//         if (std.posix.getenv("DISPLAY") != null)
+//             return .{ ._backend = .{ .x11 = try X11Input.init(allocator) } }
+//         else
+//             return .{ ._backend = .{ .std = StdInput.init(allocator) } };
+//     }
+//
+//     pub fn deinit(self: *Input) !void {
+//         switch (self._backend) {
+//             .x11 => |*be| try be.deinit(),
+//             .std => |*be| be.deinit(),
+//         }
+//     }
+//
+//     pub fn contains(self: *Input, key: *const KeyInput) bool {
+//         switch (self._backend) {
+//             .x11 => |*be| {
+//                 return be.contains(key) catch |err|
+//                     @panic(@errorName(err));
+//             },
+//             .std => |*be| {
+//                 return be.contains(key) catch |err|
+//                     @panic(@errorName(err));
+//             },
+//         }
+//     }
+//
+//     pub fn nextEvent(self: *Input) ?KeyInput {
+//         switch (self._backend) {
+//             .x11 => |*be| {
+//                 return be.nextEvent() catch |err|
+//                     @panic(@errorName(err));
+//             },
+//             .std => |*be| {
+//                 return be.nextEvent() catch |err|
+//                     @panic(@errorName(err));
+//             },
+//         }
+//     }
+// };
+//
+// const InputBackend = union(enum) {
+//     x11: X11Input,
+//     std: StdInput,
+// };
+
+// const StdInput = struct {
+//     stdin: std.fs.File.Reader,
+//     _key_state: std.AutoHashMap(KeyInput, i128),
+//
+//     pub fn init(allocator: std.mem.Allocator) StdInput {
+//         return .{
+//             .stdin = std.io.getStdIn().reader(),
+//             ._key_state = std.AutoHashMap(KeyInput, i128).init(allocator),
+//         };
+//     }
+//
+//     pub fn deinit(self: *StdInput) void {
+//         self._key_state.deinit();
+//     }
+//
+//     pub fn contains(self: *StdInput, key: *const KeyInput) !bool {
+//         _ = try self.nextEvent();
+//         if (self._key_state.get(key.*)) |k| {
+//             if ((std.time.nanoTimestamp() - k) <= 500000000) {
+//                 return true;
+//             }
+//         }
+//         return false;
+//     }
+//
+//     pub fn nextEvent(self: *StdInput) !?KeyInput {
+//         var buf: [3]u8 = undefined;
+//         const c = try self.stdin.read(&buf);
+//         const key = try toKeyInput(buf[0..c]) orelse null;
+//         if (key) |ev| {
+//             try self._key_state.put(ev, std.time.nanoTimestamp());
+//         }
+//         return key;
+//     }
+//
+//     fn toKeyInput(buf: []const u8) !?KeyInput {
+//         const view = try std.unicode.Utf8View.init(buf);
+//         var iter = view.iterator();
+//         if (iter.bytes.len == 0) return null;
+//
+//         var input = KeyInput{ .key = .unknown, .mod = .{ .alt = false, .shift = false, .ctrl = false } };
+//         if (iter.nextCodepoint()) |c0| switch (c0) {
+//             '\x1b' => {
+//                 input.key = .escape;
+//                 if (iter.nextCodepoint()) |c1| switch (c1) {
+//                     '[' => {
+//                         switch (buf[2]) {
+//                             'A' => input.key = .up,
+//                             'B' => input.key = .down,
+//                             'C' => input.key = .right,
+//                             'D' => input.key = .left,
+//                             '1' => {
+//                                 if (iter.nextCodepoint()) |c2| switch (c2) {
+//                                     '5' => input.key = .f5,
+//                                     '7' => input.key = .f6,
+//                                     '8' => input.key = .f7,
+//                                     '9' => input.key = .f8,
+//                                     '1' => {
+//                                         if (iter.nextCodepoint()) |c3| switch (c3) {
+//                                             '0' => input.key = .f9,
+//                                             '1' => input.key = .f10,
+//                                             '3' => input.key = .f11,
+//                                             '4' => input.key = .f12,
+//                                             else => {},
+//                                         };
+//                                     },
+//                                     else => {},
+//                                 };
+//                             },
+//                             else => {},
+//                         }
+//                     },
+//                     'O' => {
+//                         switch (buf[2]) {
+//                             'P' => input.key = .f1,
+//                             'Q' => input.key = .f2,
+//                             'R' => input.key = .f3,
+//                             'S' => input.key = .f4,
+//                             else => {},
+//                         }
+//                     },
+//                     else => {},
+//                 };
+//             },
+//             '\x09' => input.key = Key.tab,
+//             '\x0D' => input.key = Key.enter,
+//             '\x08' => input.key = Key.backspace,
+//             '\x20' => input.key = Key.space,
+//             'a' => input.key = .a,
+//             'b' => input.key = .b,
+//             'c' => input.key = .c,
+//             'd' => input.key = .d,
+//             'e' => input.key = .e,
+//             'f' => input.key = .f,
+//             'g' => input.key = .g,
+//             'h' => input.key = .h,
+//             'i' => input.key = .i,
+//             'j' => input.key = .j,
+//             'k' => input.key = .k,
+//             'l' => input.key = .l,
+//             'm' => input.key = .m,
+//             'n' => input.key = .n,
+//             'o' => input.key = .o,
+//             'p' => input.key = .p,
+//             'q' => input.key = .q,
+//             'r' => input.key = .r,
+//             's' => input.key = .s,
+//             't' => input.key = .t,
+//             'u' => input.key = .u,
+//             'v' => input.key = .v,
+//             'w' => input.key = .w,
+//             'x' => input.key = .x,
+//             'y' => input.key = .y,
+//             'z' => input.key = .z,
+//             '1' => input.key = .one,
+//             '2' => input.key = .two,
+//             '3' => input.key = .three,
+//             '4' => input.key = .four,
+//             '5' => input.key = .five,
+//             '6' => input.key = .six,
+//             '7' => input.key = .seven,
+//             '8' => input.key = .eight,
+//             '9' => input.key = .nine,
+//             '0' => input.key = .zero,
+//             else => {},
+//         };
+//         input.mod.shift = (buf[0] >= 'A' and buf[0] <= 'Z');
+//         return input;
+//     }
+// };
 
 // deprecated and overkilled previous idea
 // const libudev = @cImport(@cInclude("libudev.h"));

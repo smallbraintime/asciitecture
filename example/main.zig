@@ -23,7 +23,7 @@ pub fn main() !void {
 
     var painter = term.painter();
 
-    var input = try Input.init(gpa.allocator());
+    var input = try Input.init();
     defer input.deinit() catch |err| @panic(@errorName(err));
     errdefer input.deinit() catch |err| @panic(@errorName(err));
 
@@ -294,15 +294,23 @@ pub fn main() !void {
             at.spriteFromStr(jump, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }).draw(&painter, &view_pos);
         }
 
-        if (!start_jump and (!input.contains(&.{ .key = .d }) and !input.contains(&.{ .key = .a }))) {
+        if (!start_jump and (!input.contains(&.{ .key = .d }) and !input.contains(&.{ .key = .a }) and !input.contains(&.{ .key = .shift }))) {
             at.spriteFromStr(idle, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }).draw(&painter, &view_pos);
         }
-        if (input.contains(&.{ .key = .d })) {
+        if (input.contains(&.{ .key = .d }) and input.contains(&.{ .key = .shift })) {
+            view_direction = 1;
+            view_pos = view_pos.add(&vec2(view_speed * 2 * view_direction * term.delta_time, 0));
+            if (!start_jump) anim_right.draw(&painter, &view_pos);
+        } else if (input.contains(&.{ .key = .d })) {
             view_direction = 1;
             view_pos = view_pos.add(&vec2(view_speed * view_direction * term.delta_time, 0));
             if (!start_jump) anim_right.draw(&painter, &view_pos);
         }
-        if (input.contains(&.{ .key = .a })) {
+        if (input.contains(&.{ .key = .a }) and input.contains(&.{ .key = .shift })) {
+            view_direction = -1;
+            view_pos = view_pos.add(&vec2(view_speed * 2 * view_direction * term.delta_time, 0));
+            if (!start_jump) anim_left.draw(&painter, &view_pos);
+        } else if (input.contains(&.{ .key = .a })) {
             view_direction = -1;
             view_pos = view_pos.add(&vec2(view_speed * view_direction * term.delta_time, 0));
             if (!start_jump) anim_left.draw(&painter, &view_pos);
