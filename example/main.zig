@@ -11,8 +11,7 @@ const Rectangle = at.math.Rectangle;
 const Circle = at.math.Circle;
 const RigidBody = at.math.RigidBody;
 const Painter = at.Painter;
-const Particles = at.Particles;
-const Particle = Particles.Particle;
+const ParticleEmitter = at.ParticleEmitter;
 const rgb = at.style.rgb;
 
 pub fn main() !void {
@@ -34,30 +33,25 @@ pub fn main() !void {
     // var rec = RigidBody.init(&.{ .rectangle = Rectangle.init(&vec2(0, -5), 5, 5) }, &vec2(0, 0.1), false);
     // var circ = RigidBody.init(&.{ .circle = Circle.init(&vec2(0, -10), 15) }, &vec2(0, 0.1), false);
 
-    var rn: [1]u8 = undefined;
-    std.posix.getrandom(&rn) catch unreachable;
-    var rng = std.rand.DefaultPrng.init(@intCast(rn[0]));
-
-    var ps: [360]Particle = undefined;
-    for (0..360) |i| {
-        const angle: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 0, 360));
-        const speed: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 2, 5));
-        const life: f32 = @floatFromInt(rng.random().intRangeAtMost(i32, 1, 10));
-        const r = rng.random().intRangeAtMost(u8, 0, 255);
-        const g = rng.random().intRangeAtMost(u8, 0, 255);
-        const b = rng.random().intRangeAtMost(u8, 0, 255);
-        const char = rng.random().intRangeAtMost(u21, 2, 1000);
-
-        ps[i] = Particle.init(&.{
-            .start_cell = .{ .char = char, .fg = rgb(r, g, b) },
-            .start_pos = vec2(0, 22),
-            .life = life,
-            .fading = true,
-            .angle = angle,
-            .speed = speed,
-        });
-    }
-    var particles = Particles.init(&vec2(0, 22), true, &ps);
+    var emmiter = ParticleEmitter(250).init(&.{
+        .pos = vec2(0, 40),
+        .chars = &[_]u21{'○'},
+        .fg_color = .{
+            .start = .{ .r = 190, .g = 60, .b = 30 },
+            .end = .{ .r = 0, .g = 0, .b = 0 },
+        },
+        .bg_color = null,
+        .color_var = 0,
+        .start_angle = 45,
+        .end_angle = 135,
+        .life = 3,
+        .life_var = 0.5,
+        .speed = 10,
+        .speed_var = 5,
+        .emission_rate = 250 / 3,
+        .gravity = vec2(0, 0),
+        .duration = std.math.inf(f32),
+    });
 
     // game state
     var rect_posx: f32 = 0;
@@ -134,7 +128,7 @@ pub fn main() !void {
             },
         },
         .text_style = .{
-            .fg = rgb(255, 165, 0),
+            .fg = .{ .rgb = .{ .r = 255, .g = 165, .b = 0 } },
         },
         .filling = false,
         .animation = .{
@@ -237,10 +231,8 @@ pub fn main() !void {
 
     // main loop
     while (true) {
-        for (0..7) |_| {
-            particles.draw(&painter, term.delta_time);
-        }
-        //
+        emmiter.draw(&painter, term.delta_time);
+
         // painter.setCell(&.{ .bg = .{ .indexed = .white } });
         // painter.drawLineShape(&floor.shape.line);
         // painter.drawRectangleShape(&rec.shape.rectangle, false);

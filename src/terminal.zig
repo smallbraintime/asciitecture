@@ -8,7 +8,7 @@ const Color = style.Color;
 const IndexedColor = style.IndexedColor;
 const Painter = @import("Painter.zig");
 
-pub fn Terminal(comptime T: type) @TypeOf(type) {
+pub fn Terminal(comptime T: type) @TypeOf(T) {
     return struct {
         screen: Screen,
         last_screen: Buffer,
@@ -80,42 +80,37 @@ pub fn Terminal(comptime T: type) @TypeOf(type) {
         }
 
         fn drawFrame(self: *Terminal(T)) !void {
-            const screen = &self.screen;
-            const last_buf = &self.last_screen;
-            var backend = &self.backend;
-            for (0..screen.buffer.size.rows) |y| {
-                for (0..screen.buffer.size.cols) |x| {
-                    const cell = screen.buffer.buf.items[y * screen.buffer.size.cols + x];
-                    const last_cell = last_buf.buf.items[y * last_buf.size.cols + x];
+            for (0..self.screen.buffer.size.rows) |y| {
+                for (0..self.screen.buffer.size.cols) |x| {
+                    const cell = &self.screen.buffer.buf.items[y * self.screen.buffer.size.cols + x];
+                    const last_cell = &self.last_screen.buf.items[y * self.last_screen.size.cols + x];
 
                     if (!std.meta.eql(cell, last_cell)) {
-                        try backend.setAttr(@intFromEnum(Attribute.reset));
-                        try backend.setCursor(@intCast(x), @intCast(y));
+                        try self.backend.setAttr(@intFromEnum(Attribute.reset));
+                        try self.backend.setCursor(@intCast(x), @intCast(y));
                         switch (cell.fg) {
-                            .indexed => |*indexed| try backend.setIndexedFg(@intFromEnum(indexed.*)),
-                            .rgb => |*rgb| try backend.setRgbFg(rgb.r, rgb.g, rgb.b),
+                            .indexed => |*indexed| try self.backend.setIndexedFg(@intFromEnum(indexed.*)),
+                            .rgb => |*rgb| try self.backend.setRgbFg(rgb.r, rgb.g, rgb.b),
                             else => {},
-                            // .none => try backend.setIndexedFg(@intFromEnum(IndexedColor.black)),
                         }
                         switch (cell.bg) {
-                            .indexed => |*indexed| try backend.setIndexedBg(@intFromEnum(indexed.*)),
-                            .rgb => |*rgb| try backend.setRgbBg(rgb.r, rgb.g, rgb.b),
+                            .indexed => |*indexed| try self.backend.setIndexedBg(@intFromEnum(indexed.*)),
+                            .rgb => |*rgb| try self.backend.setRgbBg(rgb.r, rgb.g, rgb.b),
                             else => {},
-                            // .none => try backend.setIndexedBg(@intFromEnum(IndexedColor.black)),
                         }
                         if (cell.attr != .none) {
-                            try backend.setAttr(@intFromEnum(cell.attr));
+                            try self.backend.setAttr(@intFromEnum(cell.attr));
                         }
-                        try backend.putChar(cell.char);
+                        try self.backend.putChar(cell.char);
                     }
                 }
             }
             try self.last_screen.replace(&self.screen.buffer.buf.items);
-            try backend.flush();
+            try self.backend.flush();
             self.screen.clear();
         }
 
-        // This can be handled by a signal
+        // This can be handled by the signal
         fn handleResize(self: *Terminal(T)) !void {
             const screen_size = try self.backend.screenSize();
             if (!std.meta.eql(screen_size, self.screen.buffer.size)) {

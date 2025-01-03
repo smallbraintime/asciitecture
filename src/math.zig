@@ -334,42 +334,42 @@ pub const Vec2 = struct {
     }
 };
 
-test "addition" {
+test "Vec2.add" {
     try std.testing.expectEqual(vec2(15, 10), vec2(5, 1).add(&vec2(10, 9)));
 }
 
-test "substruction" {
+test "Vec2.sub" {
     try std.testing.expectEqual(vec2(2, 5), vec2(5, 9).sub(&vec2(3, 4)));
 }
 
-test "multipication" {
+test "Vec2.mul" {
     try std.testing.expectEqual(vec2(12, 25), vec2(3, 5).mul(&vec2(4, 5)));
 }
 
-test "division" {
+test "Vec2.div" {
     try std.testing.expectEqual(vec2(3.5, 1.75), vec2(7, 5.25).div(&vec2(2, 3)));
 }
 
-test "translation" {
+test "Vec2.translate" {
     try std.testing.expectEqual(vec2(48.5, 23), vec2(30, 26).translate(&vec2(18.5, -3)));
 }
 
-test "scaling" {
+test "Vec2.scale" {
     try std.testing.expectEqual(vec2(45, 25), vec2(9, 5).scale(&vec2(5, 5)));
 }
 
-test "rotation" {
+test "Vec2.rotate" {
     const expected = vec2(2, 3);
     const tested = vec2(5, 2).rotate(90, &vec2(3, 1));
     try std.testing.expectApproxEqRel(expected.x(), tested.x(), 0.1);
     try std.testing.expectApproxEqRel(expected.y(), tested.y(), 0.1);
 }
 
-test "distance" {
+test "Vec2.distance" {
     try std.testing.expectEqual(5.0, vec2(1.0, 2.0).distance(&vec2(4.0, 6.0)));
 }
 
-test "lerp" {
+test "Vec2.lerp" {
     try std.testing.expectEqual(vec2(20.0, 30.0), vec2(10.0, 20.0).lerp(&vec2(30.0, 40.0), 0.5));
 }
 

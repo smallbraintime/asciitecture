@@ -1,5 +1,5 @@
 # 🔺asciitecture
-a simple ascii graphics game library/engine
+a simple "ASCII" graphics game library for zig
 
 ### Run Example
 ```zig build example```
@@ -9,6 +9,7 @@ a simple ascii graphics game library/engine
 - [ ] Fix frame pacing
 - [ ] Drawing only within view constraints (clipping)
 - [ ] Add frame transition system (screen melting)
+- [ ] Clean the code
 - [ ] Add tests and docs
 
 - [ ] Maybe add grapheme clusters
