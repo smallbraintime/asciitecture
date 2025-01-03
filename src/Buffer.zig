@@ -1,6 +1,10 @@
 const std = @import("std");
 const Cell = @import("style.zig").Cell;
-const ScreenSize = @import("util.zig").ScreenSize;
+
+pub const ScreenSize = struct {
+    cols: usize,
+    rows: usize,
+};
 
 const Buffer = @This();
 

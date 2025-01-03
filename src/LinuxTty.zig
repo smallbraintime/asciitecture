@@ -5,7 +5,6 @@ const util = @import("util.zig");
 const posix = std.posix;
 const stdout = std.io.getStdOut();
 const os = std.os;
-const ScreenSize = util.ScreenSize;
 const Color = style.Color;
 const IndexedColor = style.IndexedColor;
 const RgbColor = style.RgbColor;
@@ -53,7 +52,7 @@ pub inline fn flush(self: *LinuxTty) !void {
     try self.buf.flush();
 }
 
-pub inline fn screenSize(self: *const LinuxTty) !ScreenSize {
+pub inline fn screenSize(self: *const LinuxTty, size: []usize) !void {
     var ws: posix.winsize = undefined;
 
     const err = std.os.linux.ioctl(self.handle, posix.T.IOCGWINSZ, @intFromPtr(&ws));
@@ -61,7 +60,8 @@ pub inline fn screenSize(self: *const LinuxTty) !ScreenSize {
         return error.IoctlError;
     }
 
-    return ScreenSize{ .cols = ws.ws_col, .rows = ws.ws_row };
+    size[0] = ws.ws_col;
+    size[1] = ws.ws_row;
 }
 
 pub fn enterRawMode(self: *LinuxTty) !void {

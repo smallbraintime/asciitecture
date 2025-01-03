@@ -1,10 +1,5 @@
 const std = @import("std");
 
-pub const ScreenSize = struct {
-    cols: usize,
-    rows: usize,
-};
-
 pub fn randomRange(comptime T: type, a: T, b: T) T {
     var rn: [1]u8 = undefined;
     std.posix.getrandom(&rn) catch unreachable;

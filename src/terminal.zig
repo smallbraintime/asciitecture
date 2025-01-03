@@ -22,19 +22,21 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
         _accumulator: f32,
 
         pub fn init(allocator: std.mem.Allocator, target_fps: f32, speed: f32) !Terminal(T) {
-            var backend_ = try T.init();
-            try backend_.enterRawMode();
-            try backend_.hideCursor();
-            try backend_.newScreen();
-            try backend_.flush();
-            const screen_size = try backend_.screenSize();
-            const screen = try Screen.init(allocator, screen_size.cols, screen_size.rows);
+            var backend = try T.init();
+            try backend.enterRawMode();
+            try backend.hideCursor();
+            try backend.newScreen();
+            try backend.flush();
+            var screen_size: [2]usize = undefined;
+            try backend.screenSize(&screen_size);
+
+            const screen = try Screen.init(allocator, screen_size[0], screen_size[1]);
             const delta = 1 / target_fps;
 
             return .{
                 .screen = screen,
                 .last_screen = try screen.buffer.clone(),
-                .backend = backend_,
+                .backend = backend,
                 .target_delta = delta,
                 .delta_time = delta,
                 .speed = speed,
@@ -112,13 +114,14 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
 
         // This can be handled by the signal
         fn handleResize(self: *Terminal(T)) !void {
-            const screen_size = try self.backend.screenSize();
-            if (!std.meta.eql(screen_size, self.screen.buffer.size)) {
-                if (screen_size.cols == 0 and screen_size.rows == 0) {
+            var screen_size: [2]usize = undefined;
+            try self.backend.screenSize(&screen_size);
+            if (screen_size[0] != self.screen.buffer.size.cols or screen_size[0] != self.screen.buffer.size.cols) {
+                if (screen_size[0] == 0 and screen_size[1] == 0) {
                     self.minimized = true;
                 }
-                try self.screen.resize(screen_size.cols, screen_size.rows);
-                try self.last_screen.resize(screen_size.cols, screen_size.rows);
+                try self.screen.resize(screen_size[0], screen_size[1]);
+                try self.last_screen.resize(screen_size[0], screen_size[1]);
                 try self.backend.clearScreen();
             }
             self.minimized = false;
