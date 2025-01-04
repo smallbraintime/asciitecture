@@ -1,24 +1,10 @@
 const std = @import("std");
 
-pub const RigidBody = struct {
-    shape: Shape,
-    velocity: Vec2,
-    immovable: bool,
-
-    pub fn init(shape: *const Shape, velocity: *const Vec2, immovable: bool) RigidBody {
-        return .{
-            .shape = shape.*,
-            .velocity = velocity.*,
-            .immovable = immovable,
-        };
-    }
-};
-
 pub const Shape = union(enum) {
     point: Point,
     line: Line,
     rectangle: Rectangle,
-    circle: Circle,
+    ellipse: Ellipse,
 };
 
 pub const Point = struct {
@@ -35,7 +21,7 @@ pub const Point = struct {
             .point => |*p| return collisionPoints(self, p),
             .line => |*l| return collisionPointLine(self, l),
             .rectangle => |*r| return collisionPointRectangle(self, r),
-            .circle => |*c| return collisionPointCircle(self, c),
+            .ellipse => |*e| return collisionPointEllipse(self, e),
         }
     }
 };
@@ -56,7 +42,7 @@ pub const Line = struct {
             .point => |*p| return collisionPointLine(p, self),
             .line => |*l| return collisionLines(self, l),
             .rectangle => |*r| return collisionLineRectangle(self, r),
-            .circle => |*c| return collisionLineCircle(self, c),
+            .ellipse => |*e| return collisionLineEllipse(self, e),
         }
     }
 };
@@ -79,28 +65,28 @@ pub const Rectangle = struct {
             .point => |*p| return collisionPointRectangle(p, self),
             .line => |*l| return collisionLineRectangle(l, self),
             .rectangle => |*r| return collisionRectangles(self, r),
-            .circle => |*c| return collisionRectangleCircle(self, c),
+            .ellipse => |*e| return collisionRectangleEllipse(self, e),
         }
     }
 };
 
-pub const Circle = struct {
+pub const Ellipse = struct {
     center: Vec2,
     radius: f32,
 
-    pub fn init(center: *const Vec2, radius: f32) Circle {
+    pub fn init(center: *const Vec2, radius: f32) Ellipse {
         return .{
             .center = center.*,
             .radius = radius,
         };
     }
 
-    pub inline fn collidesWith(self: *const Circle, object: *const Shape) bool {
+    pub inline fn collidesWith(self: *const Ellipse, object: *const Shape) bool {
         switch (object.*) {
-            .point => |*p| return collisionPointCircle(p, self),
-            .line => |*l| return collisionLineCircle(l, self),
-            .rectangle => |*r| return collisionRectangleCircle(r, self),
-            .circle => |*c| return collisionCircles(self, c),
+            .point => |*p| return collisionPointEllipse(p, self),
+            .line => |*l| return collisionLineEllipse(l, self),
+            .rectangle => |*r| return collisionRectangleEllipse(r, self),
+            .ellipse => |*e| return collisionEllipses(self, e),
         }
     }
 };
@@ -143,9 +129,9 @@ inline fn collisionPointRectangle(point: *const Point, rectangle: *const Rectang
     return collision;
 }
 
-inline fn collisionPointCircle(point: *const Point, circle: *const Circle) bool {
-    const distance = point.p.distance(&circle.center);
-    return distance <= circle.radius;
+inline fn collisionPointEllipse(point: *const Point, ellipse: *const Ellipse) bool {
+    const distance = point.p.distance(&ellipse.center);
+    return distance <= ellipse.radius;
 }
 
 inline fn collisionLines(l1: *const Line, l2: *const Line) bool {
@@ -192,22 +178,22 @@ inline fn collisionLineRectangle(line: *const Line, rectangle: *const Rectangle)
     return false;
 }
 
-inline fn collisionLineCircle(line: *const Line, circle: *const Circle) bool {
+inline fn collisionLineEllipse(line: *const Line, ellipse: *const Ellipse) bool {
     const d = line.p1.sub(&line.p2);
-    if (@abs(d.x()) + @abs(d.y()) <= std.math.floatEps(f32)) return collisionCircles(&Circle.init(&line.p1, 0), circle);
+    if (@abs(d.x()) + @abs(d.y()) <= std.math.floatEps(f32)) return collisionEllipses(&Ellipse.init(&line.p1, 0), ellipse);
 
     const sq_len = d.squaredLen();
-    const dot = std.math.clamp(((circle.center.x() - line.p1.x()) * (line.p2.x() - line.p1.x()) +
-        (circle.center.y() - line.p1.y()) * (line.p2.y() - line.p1.y())) / sq_len, 0, 1);
+    const dot = std.math.clamp(((ellipse.center.x() - line.p1.x()) * (line.p2.x() - line.p1.x()) +
+        (ellipse.center.y() - line.p1.y()) * (line.p2.y() - line.p1.y())) / sq_len, 0, 1);
 
     const closest_x = line.p1.x() + dot * d.x();
     const closest_y = line.p1.y() + dot * d.y();
 
-    const dx = closest_x - circle.center.x();
-    const dy = closest_y - circle.center.y();
+    const dx = closest_x - ellipse.center.x();
+    const dy = closest_y - ellipse.center.y();
     const sq_dist = vec2(dx, dy).squaredLen();
 
-    return sq_dist <= circle.radius * circle.radius;
+    return sq_dist <= ellipse.radius * ellipse.radius;
 }
 
 inline fn collisionRectangles(r1: *const Rectangle, r2: *const Rectangle) bool {
@@ -218,31 +204,27 @@ inline fn collisionRectangles(r1: *const Rectangle, r2: *const Rectangle) bool {
     return collision;
 }
 
-inline fn collisionRectangleCircle(rectangle: *const Rectangle, circle: *const Circle) bool {
+inline fn collisionRectangleEllipse(rectangle: *const Rectangle, ellipse: *const Ellipse) bool {
     const rec_center_x = rectangle.pos.x() + rectangle.width / 2;
     const rec_center_y = rectangle.pos.y() + rectangle.height / 2;
 
-    const dx = @abs(circle.center.x() - rec_center_x);
-    const dy = @abs(circle.center.y() - rec_center_y);
+    const dx = @abs(ellipse.center.x() - rec_center_x);
+    const dy = @abs(ellipse.center.y() - rec_center_y);
 
-    if (dx > (rectangle.width / 2 + circle.radius)) return false;
-    if (dy > (rectangle.height / 2 + circle.radius)) return false;
+    if (dx > (rectangle.width / 2 + ellipse.radius)) return false;
+    if (dy > (rectangle.height / 2 + ellipse.radius)) return false;
 
     if (dx <= (rectangle.width / 2)) return true;
     if (dy <= (rectangle.height / 2)) return true;
 
     const corner_distance_squared = (dx - rectangle.width / 2) * (dx - rectangle.width / 2) + (dy - rectangle.height / 2) * (dy - rectangle.height / 2);
 
-    return corner_distance_squared <= (circle.radius * circle.radius);
+    return corner_distance_squared <= (ellipse.radius * ellipse.radius);
 }
 
-inline fn collisionCircles(c1: *const Circle, c2: *const Circle) bool {
+inline fn collisionEllipses(c1: *const Ellipse, c2: *const Ellipse) bool {
     const distance = c1.center.distance(&c2.center);
     return distance <= c1.radius + c2.radius;
-}
-
-pub fn pow(x: f32, n: f32) f32 {
-    return std.math.pow(f32, x, n);
 }
 
 pub const vec2 = Vec2.init;
@@ -427,26 +409,26 @@ test "Rectangle.collisionRectangle" {
     try std.testing.expect(rectangle1.collidesWith(&.{ .rectangle = rectangle2 }));
 }
 
-test "Circle.collisionPoint" {
-    const circle = Circle.init(&vec2(0, 0), 3.0);
+test "Ellipse.collisionPoint" {
+    const ellipse = Ellipse.init(&vec2(0, 0), 3.0);
     const point = Point.init(&vec2(1, 1));
-    try std.testing.expect(circle.collidesWith(&.{ .point = point }));
+    try std.testing.expect(ellipse.collidesWith(&.{ .point = point }));
 }
 
-test "Circle.collisionLine" {
-    const circle = Circle.init(&vec2(0, 0), 3.0);
+test "Ellipse.collisionLine" {
+    const ellipse = Ellipse.init(&vec2(0, 0), 3.0);
     const line = Line.init(&vec2(0, 0), &vec2(1, 1));
-    try std.testing.expect(circle.collidesWith(&.{ .line = line }));
+    try std.testing.expect(ellipse.collidesWith(&.{ .line = line }));
 }
 
-test "Circle.collisionRectangle" {
-    const circle = Circle.init(&vec2(0, 0), 3.0);
+test "Ellipse.collisionRectangle" {
+    const ellipse = Ellipse.init(&vec2(0, 0), 3.0);
     const rectangle = Rectangle.init(&vec2(2, 2), 3.0, 3.0);
-    try std.testing.expect(circle.collidesWith(&.{ .rectangle = rectangle }));
+    try std.testing.expect(ellipse.collidesWith(&.{ .rectangle = rectangle }));
 }
 
-test "Circle.collisionCircle" {
-    const circle1 = Circle.init(&vec2(0, 0), 3.0);
-    const circle2 = Circle.init(&vec2(2, 2), 3.0);
-    try std.testing.expect(circle1.collidesWith(&.{ .circle = circle2 }));
+test "Ellipse.collisionellipse" {
+    const ellipse1 = Ellipse.init(&vec2(0, 0), 3.0);
+    const ellipse2 = Ellipse.init(&vec2(2, 2), 3.0);
+    try std.testing.expect(ellipse1.collidesWith(&.{ .ellipse = ellipse2 }));
 }

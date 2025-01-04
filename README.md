@@ -5,13 +5,11 @@ a simple "ASCII" graphics game library for zig
 ```zig build example```
 
 ### Todo
-- [ ] Add local scaling to drawable objects
-- [ ] Fix frame pacing
+- [ ] Fix frame pacing and slightly incorrect position calculating after resize
 - [ ] Drawing only within view constraints (clipping)
 - [ ] Add frame transition system (screen melting)
 - [ ] Clean the code
 - [ ] Add tests and docs
 
-- [ ] Maybe add grapheme clusters
-- [ ] Screen resizing handled by a signal
 - [ ] Add Windows support
+- [ ] Add grapheme clusters

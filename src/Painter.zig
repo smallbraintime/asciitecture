@@ -9,12 +9,11 @@ const Border = style.Border;
 const Attribute = style.Attribute;
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
-const pow = math.pow;
 const Sprite = @import("sprite.zig");
 const Point = math.Point;
 const Line = math.Line;
 const Rectangle = math.Rectangle;
-const Circle = math.Circle;
+const Ellipse = math.Ellipse;
 
 const Painter = @This();
 
@@ -33,7 +32,7 @@ pub inline fn setCell(self: *Painter, new_cell: *const Cell) void {
 }
 
 pub inline fn drawCell(self: *Painter, x: f32, y: f32) void {
-    self.screen.writeCellF(x, y, &self.cell);
+    self.screen.writeCellWorldSpace(x, y, &self.cell);
 }
 
 pub fn drawLine(self: *Painter, p0: *const Vec2, p1: *const Vec2) void {
@@ -72,10 +71,6 @@ pub fn drawCubicSpline(self: *Painter, p0: *const Vec2, p1: *const Vec2, p2: *co
         self.drawCell(x, y);
         t = t + inc_val;
     }
-}
-
-fn cubic_bezier(t: f32, p0: f32, p1: f32, p2: f32, p3: f32) f32 {
-    return pow(1 - t, 3) * p0 + 3 * pow(1 - t, 2) * t * p1 + 3 * (1 - t) * pow(t, 2) * p2 + pow(t, 3) * p3;
 }
 
 pub fn drawRectangle(self: *Painter, width: f32, height: f32, position: *const Vec2, filled: bool) void {
@@ -201,20 +196,7 @@ pub fn drawTriangle(self: *Painter, p1: *const Vec2, p2: *const Vec2, p3: *const
     }
 }
 
-fn checkEdge(p1: *const Vec2, p2: *const Vec2, y: f32, x_min: *?f32, x_max: *?f32) void {
-    if ((y < @min(p1.y(), p2.y())) or (y > @max(p1.y(), p2.y()))) return;
-
-    const edgex = if (p1.y() == p2.y()) p1.x() else p1.x() + (y - p1.y()) * (p2.x() - p1.x()) / (p2.y() - p1.y());
-
-    if (x_min.* == null or edgex < x_min.*.?) {
-        x_min.* = edgex;
-    }
-    if (x_max.* == null or edgex > x_max.*.?) {
-        x_max.* = edgex;
-    }
-}
-
-pub fn drawCircle(self: *Painter, position: *const Vec2, radius: f32, stretch: *const Vec2, filled: bool) void {
+pub fn drawEllipse(self: *Painter, position: *const Vec2, radius: f32, stretch: *const Vec2, filled: bool) void {
     const stretch_x = if (stretch.x() == 0) 1 else stretch.x();
     const stretch_y = if (stretch.y() == 0) 1 else stretch.y();
 
@@ -256,23 +238,23 @@ pub fn drawCircle(self: *Painter, position: *const Vec2, radius: f32, stretch: *
     }
 }
 
-pub inline fn drawPointShape(self: *Painter, point: *const Point) void {
+pub fn drawPointShape(self: *Painter, point: *const Point) void {
     self.drawCell(point.p.x(), point.p.y());
 }
 
-pub inline fn drawLineShape(self: *Painter, line: *const Line) void {
+pub fn drawLineShape(self: *Painter, line: *const Line) void {
     self.drawLine(&line.p1, &line.p2);
 }
 
-pub inline fn drawRectangleShape(self: *Painter, rectangle: *const Rectangle, filled: bool) void {
+pub fn drawRectangleShape(self: *Painter, rectangle: *const Rectangle, filled: bool) void {
     self.drawRectangle(rectangle.width, rectangle.height, &rectangle.pos, filled);
 }
 
-pub inline fn drawPrettyRectangleShape(self: *Painter, rectangle: *const Rectangle, border: Border, filled: bool) void {
+pub fn drawPrettyRectangleShape(self: *Painter, rectangle: *const Rectangle, border: Border, filled: bool) void {
     self.drawPrettyRectangle(rectangle.width, rectangle.height, &rectangle.pos, border, filled);
 }
 
-pub inline fn drawCircleShape(self: *Painter, circle: *const Circle, stretch: *const Vec2, filled: bool) void {
+pub fn drawEllipseShape(self: *Painter, circle: *const Ellipse, stretch: *const Vec2, filled: bool) void {
     self.drawCircle(&circle.center, circle.radius, stretch, filled);
 }
 
@@ -280,5 +262,22 @@ pub fn drawText(self: *Painter, content: []const u8, pos: *const Vec2) void {
     for (0..content.len) |i| {
         self.cell.char = content[i];
         self.drawCell(pos.x() + @as(f32, @floatFromInt(i)), pos.y());
+    }
+}
+
+fn cubic_bezier(t: f32, p0: f32, p1: f32, p2: f32, p3: f32) f32 {
+    return std.math.pow(f32, 1 - t, 3) * p0 + 3 * std.math.pow(f32, 1 - t, 2) * t * p1 + 3 * (1 - t) * std.math.pow(f32, t, 2) * p2 + std.math.pow(f32, t, 3) * p3;
+}
+
+fn checkEdge(p1: *const Vec2, p2: *const Vec2, y: f32, x_min: *?f32, x_max: *?f32) void {
+    if ((y < @min(p1.y(), p2.y())) or (y > @max(p1.y(), p2.y()))) return;
+
+    const edgex = if (p1.y() == p2.y()) p1.x() else p1.x() + (y - p1.y()) * (p2.x() - p1.x()) / (p2.y() - p1.y());
+
+    if (x_min.* == null or edgex < x_min.*.?) {
+        x_min.* = edgex;
+    }
+    if (x_max.* == null or edgex > x_max.*.?) {
+        x_max.* = edgex;
     }
 }

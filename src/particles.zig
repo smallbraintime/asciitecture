@@ -11,24 +11,24 @@ const clamp = std.math.clamp;
 
 pub fn ParticleEmitter(comptime amount: usize) type {
     return struct {
-        particle_pool: [amount]Particle,
-        amount: usize,
         config: ParticleConfig,
-        particle_count: usize,
-        emit_counter: f32,
-        time_elapsed: f32,
+        _particle_pool: [amount]Particle,
+        _amount: usize,
+        _particle_count: usize,
+        _emit_counter: f32,
+        _time_elapsed: f32,
 
         pub fn init(config: *const ParticleConfig) ParticleEmitter(amount) {
             var self = ParticleEmitter(amount){
-                .particle_pool = undefined,
-                .amount = amount,
                 .config = config.*,
-                .particle_count = amount,
-                .emit_counter = 0,
-                .time_elapsed = 0,
+                ._particle_pool = undefined,
+                ._amount = amount,
+                ._particle_count = amount,
+                ._emit_counter = 0,
+                ._time_elapsed = 0,
             };
 
-            for (&self.particle_pool) |*particle| {
+            for (&self._particle_pool) |*particle| {
                 particle.cell.attr = .none;
 
                 particle.cell.char = if (config.chars) |chars|
@@ -47,30 +47,30 @@ pub fn ParticleEmitter(comptime amount: usize) type {
             self.update(delta_time);
 
             var current_index: usize = 0;
-            while (current_index < self.particle_count) : (current_index += 1) {
-                const particle = &self.particle_pool[current_index];
+            while (current_index < self._particle_count) : (current_index += 1) {
+                const particle = &self._particle_pool[current_index];
                 painter.setCell(&particle.cell);
                 painter.drawCell(particle.pos.x(), particle.pos.y());
             }
         }
 
-        pub fn update(self: *ParticleEmitter(amount), delta_time: f32) void {
-            self.time_elapsed += delta_time;
-            if (self.time_elapsed > self.config.duration) return;
+        fn update(self: *ParticleEmitter(amount), delta_time: f32) void {
+            self._time_elapsed += delta_time;
+            if (self._time_elapsed > self.config.duration) return;
 
             if (self.config.emission_rate > 0) {
                 const rate = 1 / self.config.emission_rate;
-                self.emit_counter += delta_time;
+                self._emit_counter += delta_time;
 
-                while (self.particle_count < self.particle_pool.len and self.emit_counter > rate) {
+                while (self._particle_count < self._particle_pool.len and self._emit_counter > rate) {
                     self.addParticle();
-                    self.emit_counter -= rate;
+                    self._emit_counter -= rate;
                 }
             }
 
             var current_index: usize = 0;
-            while (current_index < self.particle_count) {
-                const particle = &self.particle_pool[current_index];
+            while (current_index < self._particle_count) {
+                const particle = &self._particle_pool[current_index];
 
                 if (particle.life > 0) {
                     self.updateParticle(particle, delta_time);
@@ -94,13 +94,13 @@ pub fn ParticleEmitter(comptime amount: usize) type {
         }
 
         fn addParticle(self: *ParticleEmitter(amount)) void {
-            self.initParticle(&self.particle_pool[self.particle_count]);
-            self.particle_count += 1;
+            self.initParticle(&self._particle_pool[self._particle_count]);
+            self._particle_count += 1;
         }
 
         fn removeParticle(self: *ParticleEmitter(amount), particle: *Particle) void {
-            std.mem.swap(Particle, particle, &self.particle_pool[self.particle_count - 1]);
-            self.particle_count -= 1;
+            std.mem.swap(Particle, particle, &self._particle_pool[self._particle_count - 1]);
+            self._particle_count -= 1;
         }
 
         fn updateParticle(self: *const ParticleEmitter(amount), particle: *Particle, delta_time: f32) void {
@@ -175,11 +175,6 @@ pub fn ParticleEmitter(comptime amount: usize) type {
     };
 }
 
-pub const ColorRange = struct {
-    start: RgbColor,
-    end: RgbColor,
-};
-
 pub const ParticleConfig = struct {
     pos: Vec2,
     chars: ?[]const u21,
@@ -195,6 +190,11 @@ pub const ParticleConfig = struct {
     emission_rate: f32,
     gravity: Vec2,
     duration: f32,
+};
+
+pub const ColorRange = struct {
+    start: RgbColor,
+    end: RgbColor,
 };
 
 const Particle = struct {

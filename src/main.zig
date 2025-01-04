@@ -1,16 +1,10 @@
 pub const LinuxTty = @import("LinuxTty.zig");
 pub const Terminal = @import("terminal.zig").Terminal;
 pub const style = @import("style.zig");
-pub const Cell = style.Cell;
-pub const Color = style.Color;
-pub const Attribute = style.Attribute;
 pub const Painter = @import("Painter.zig");
+pub const ParticleEmitter = @import("particles.zig").ParticleEmitter;
 pub const sprite = @import("sprite.zig");
-pub const Sprite = sprite.Sprite;
-pub const spriteFromStr = sprite.spriteFromStr;
-pub const Animation = sprite.Animation;
 pub const math = @import("math.zig");
 pub const input = @import("input.zig");
 pub const extra = @import("extra.zig");
 pub const widgets = @import("widgets.zig");
-pub const ParticleEmitter = @import("particles.zig").ParticleEmitter;

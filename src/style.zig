@@ -36,10 +36,6 @@ pub const IndexedColor = enum(u8) {
     bright_white,
 };
 
-pub fn indexed(indexed_color: IndexedColor) Color {
-    return .{ .indexed = indexed_color };
-}
-
 pub const Attribute = enum(u8) {
     reset = 0,
     bold = 1,

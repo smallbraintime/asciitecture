@@ -124,9 +124,9 @@ pub const Paragraph = struct {
 };
 
 pub const Menu = struct {
-    selected_item: i16,
-    items: std.ArrayList([]const u8),
     style: MenuConfig,
+    items: std.ArrayList([]const u8),
+    selected_item: i16,
 
     pub const MenuConfig = struct {
         width: f32,
