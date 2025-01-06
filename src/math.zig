@@ -16,8 +16,8 @@ pub const Point = struct {
         };
     }
 
-    pub inline fn collidesWith(self: *const Point, object: *const Shape) bool {
-        switch (object.*) {
+    pub inline fn collidesWith(self: *const Point, shape: *const Shape) bool {
+        switch (shape.*) {
             .point => |*p| return collisionPoints(self, p),
             .line => |*l| return collisionPointLine(self, l),
             .rectangle => |*r| return collisionPointRectangle(self, r),
@@ -37,8 +37,8 @@ pub const Line = struct {
         };
     }
 
-    pub inline fn collidesWith(self: *const Line, object: *const Shape) bool {
-        switch (object.*) {
+    pub inline fn collidesWith(self: *const Line, shape: *const Shape) bool {
+        switch (shape.*) {
             .point => |*p| return collisionPointLine(p, self),
             .line => |*l| return collisionLines(self, l),
             .rectangle => |*r| return collisionLineRectangle(self, r),
@@ -60,8 +60,8 @@ pub const Rectangle = struct {
         };
     }
 
-    pub inline fn collidesWith(self: *const Rectangle, object: *const Shape) bool {
-        switch (object.*) {
+    pub inline fn collidesWith(self: *const Rectangle, shape: *const Shape) bool {
+        switch (shape.*) {
             .point => |*p| return collisionPointRectangle(p, self),
             .line => |*l| return collisionLineRectangle(l, self),
             .rectangle => |*r| return collisionRectangles(self, r),
@@ -81,8 +81,8 @@ pub const Ellipse = struct {
         };
     }
 
-    pub inline fn collidesWith(self: *const Ellipse, object: *const Shape) bool {
-        switch (object.*) {
+    pub inline fn collidesWith(self: *const Ellipse, shape: *const Shape) bool {
+        switch (shape.*) {
             .point => |*p| return collisionPointEllipse(p, self),
             .line => |*l| return collisionLineEllipse(l, self),
             .rectangle => |*r| return collisionRectangleEllipse(r, self),

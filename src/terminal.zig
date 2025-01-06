@@ -8,6 +8,7 @@ const Color = style.Color;
 const IndexedColor = style.IndexedColor;
 const Painter = @import("Painter.zig");
 const Vec2 = @import("math.zig").Vec2;
+const ScreenSize = Buffer.ScreenSize;
 
 pub fn Terminal(comptime T: type) @TypeOf(T) {
     return struct {
@@ -26,10 +27,11 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
             try backend.hideCursor();
             try backend.newScreen();
             try backend.flush();
+
             var screen_size: [2]usize = undefined;
             try backend.screenSize(&screen_size);
 
-            const screen = try Screen.init(allocator, screen_size[0], screen_size[1]);
+            const screen = try Screen.init(allocator, .{ .cols = screen_size[0], .rows = screen_size[1] });
             const delta = 1 / target_fps;
 
             return .{
@@ -77,8 +79,12 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
             }
         }
 
-        pub fn setView(self: *Terminal(T), pos: *const Vec2) void {
+        pub fn setViewPos(self: *Terminal(T), pos: *const Vec2) void {
             self.screen.setView(pos);
+        }
+
+        pub fn setBg(self: *Terminal(T), color: Color) void {
+            self._screen.setBg(color);
         }
 
         fn drawFrame(self: *Terminal(T)) !void {

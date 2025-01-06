@@ -1,12 +1,12 @@
+const std = @import("std");
+const math = @import("math.zig");
+const style = @import("style.zig");
 const Screen = @import("Screen.zig");
 const Painter = @import("Painter.zig");
-const math = @import("math.zig");
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
-const style = @import("style.zig");
 const Cell = style.Cell;
 const RgbColor = style.RgbColor;
-const std = @import("std");
 
 pub fn screenMeltingTransition(screen: *Screen, old_buffer: []const Cell, new_buffer: []const Cell, allocator: std.mem.Allocator) !void {
     // init part

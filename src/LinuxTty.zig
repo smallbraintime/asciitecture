@@ -2,9 +2,6 @@ const std = @import("std");
 const builtin = @import("builtin");
 const style = @import("style.zig");
 const util = @import("util.zig");
-const posix = std.posix;
-const stdout = std.io.getStdOut();
-const os = std.os;
 const Color = style.Color;
 const IndexedColor = style.IndexedColor;
 const RgbColor = style.RgbColor;
@@ -12,19 +9,19 @@ const Attribute = style.Attribute;
 
 const LinuxTty = @This();
 
-handle: posix.fd_t,
-orig_termios: posix.termios,
+handle: std.posix.fd_t,
+orig_termios: std.posix.termios,
 buf: std.io.BufferedWriter(4096, std.fs.File.Writer),
 
 pub fn init() !LinuxTty {
     if (builtin.os.tag != .linux) @panic("System not supported");
 
-    const handle = stdout.handle;
+    const handle = std.io.getStdOut().handle;
 
     return .{
-        .orig_termios = try posix.tcgetattr(handle),
+        .orig_termios = try std.posix.tcgetattr(handle),
         .handle = handle,
-        .buf = std.io.bufferedWriter(stdout.writer()),
+        .buf = std.io.bufferedWriter(std.io.getStdOut().writer()),
     };
 }
 
@@ -53,10 +50,10 @@ pub inline fn flush(self: *LinuxTty) !void {
 }
 
 pub inline fn screenSize(self: *const LinuxTty, size: []usize) !void {
-    var ws: posix.winsize = undefined;
+    var ws: std.posix.winsize = undefined;
 
-    const err = std.os.linux.ioctl(self.handle, posix.T.IOCGWINSZ, @intFromPtr(&ws));
-    if (posix.errno(err) != .SUCCESS) {
+    const err = std.os.linux.ioctl(self.handle, std.posix.T.IOCGWINSZ, @intFromPtr(&ws));
+    if (std.posix.errno(err) != .SUCCESS) {
         return error.IoctlError;
     }
 
@@ -65,7 +62,7 @@ pub inline fn screenSize(self: *const LinuxTty, size: []usize) !void {
 }
 
 pub fn enterRawMode(self: *LinuxTty) !void {
-    const orig_termios = try posix.tcgetattr(self.handle);
+    const orig_termios = try std.posix.tcgetattr(self.handle);
     var termios = orig_termios;
 
     termios.iflag.IGNBRK = false;
@@ -84,15 +81,15 @@ pub fn enterRawMode(self: *LinuxTty) !void {
     termios.cflag.CSIZE = .CS8;
     termios.cflag.PARENB = false;
     termios.oflag.OPOST = false;
-    termios.cc[@intFromEnum(posix.V.MIN)] = 0;
-    termios.cc[@intFromEnum(posix.V.TIME)] = 0;
+    termios.cc[@intFromEnum(std.posix.V.MIN)] = 0;
+    termios.cc[@intFromEnum(std.posix.V.TIME)] = 0;
 
-    try posix.tcsetattr(self.handle, .FLUSH, termios);
+    try std.posix.tcsetattr(self.handle, .FLUSH, termios);
     self.orig_termios = orig_termios;
 }
 
 pub fn exitRawMode(self: *const LinuxTty) !void {
-    try posix.tcsetattr(self.handle, .FLUSH, self.orig_termios);
+    try std.posix.tcsetattr(self.handle, .FLUSH, self.orig_termios);
 }
 
 pub inline fn setCursor(self: *LinuxTty, x: usize, y: usize) !void {

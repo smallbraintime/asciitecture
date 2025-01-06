@@ -11,8 +11,12 @@ const ParticleEmitter = at.ParticleEmitter;
 const Animation = at.sprite.Animation;
 const spriteFromStr = at.sprite.spriteFromStr;
 const Style = at.style.Style;
-const widgets = at.widgets;
 const Paragraph = at.widgets.Paragraph;
+const Menu = at.widgets.Menu;
+const TextArea = at.widgets.TextArea;
+const Line = at.math.Line;
+const Sprite = at.sprite.Sprite;
+const Rectangle = at.math.Rectangle;
 
 pub fn main() !void {
     // init
@@ -29,25 +33,27 @@ pub fn main() !void {
     defer input.deinit() catch |err| @panic(@errorName(err));
     errdefer input.deinit() catch |err| @panic(@errorName(err));
 
-    var emmiter = ParticleEmitter(50).init(&.{
-        .pos = vec2(0, 40),
-        .chars = &[_]u21{'○'},
-        .fg_color = .{
+    var emmiter = try ParticleEmitter.init(gpa.allocator(), &.{
+        .pos = vec2(0, 19),
+        .amount = 100,
+        .chars = &[_]u21{' '},
+        .fg_color = null,
+        .bg_color = .{
             .start = .{ .r = 190, .g = 60, .b = 30 },
             .end = .{ .r = 0, .g = 0, .b = 0 },
         },
-        .bg_color = null,
         .color_var = 0,
-        .start_angle = 45,
-        .end_angle = 135,
-        .life = 3,
-        .life_var = 0.5,
+        .start_angle = 30,
+        .end_angle = 150,
+        .life = 2,
+        .life_var = 1,
         .speed = 10,
         .speed_var = 5,
-        .emission_rate = 50 / 3,
+        .emission_rate = 100 / 3,
         .gravity = vec2(0, 0),
         .duration = std.math.inf(f32),
     });
+    defer emmiter.deinit();
 
     // game state
     var rect_posx: f32 = 0;
@@ -104,19 +110,19 @@ pub fn main() !void {
         \\/ \
     ;
 
-    var anim_right = Animation.init(gpa.allocator(), 2 * term.delta_time, true);
+    var anim_right = Animation.init(gpa.allocator(), 2, true);
     defer anim_right.deinit();
     try anim_right.frames.append(&spriteFromStr(walk_right, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
     try anim_right.frames.append(&spriteFromStr(walk_right2, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
     try anim_right.frames.append(&spriteFromStr(walk_right3, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
 
-    var anim_left = Animation.init(gpa.allocator(), 2 * term.delta_time, true);
+    var anim_left = Animation.init(gpa.allocator(), 2, true);
     defer anim_left.deinit();
     try anim_left.frames.append(&spriteFromStr(walk_left, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
     try anim_left.frames.append(&spriteFromStr(walk_left2, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
     try anim_left.frames.append(&spriteFromStr(walk_left3, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }));
 
-    var paragraph = try widgets.Paragraph.init(gpa.allocator(), &[_][]const u8{ "something", "goes", "wrong" }, &.{
+    var paragraph = try Paragraph.init(gpa.allocator(), &[_][]const u8{ "something", "goes", "wrong" }, &.{
         .border_style = .{
             .border = .rounded,
             .style = .{
@@ -128,15 +134,15 @@ pub fn main() !void {
         },
         .filling = false,
         .animation = .{
-            .speed = 5 * term.delta_time,
-            .looping = true,
+            .speed = 5,
+            .looping = false,
         },
     });
     defer paragraph.deinit();
 
     // menu list segment
     {
-        var list = widgets.Menu.init(gpa.allocator(), &.{
+        var list = Menu.init(gpa.allocator(), &.{
             .width = 50,
             .height = 21,
             .orientation = .vertical,
@@ -197,13 +203,19 @@ pub fn main() !void {
     // text area segment
     {
         var text_entered = false;
-        var text_area = try widgets.TextArea.init(gpa.allocator(), &.{
-            .width = 10,
+        var text_area = try TextArea.init(gpa.allocator(), &.{
+            .width = 20,
             .text_style = .{ .fg = .{ .indexed = .red }, .attr = .bold },
             .cursor_style = .{ .indexed = .green },
             .border = .plain,
             .border_style = .{ .fg = .{ .indexed = .magenta }, .attr = .bold },
             .filled = false,
+            .placeholder = .{
+                .content = "Type your nickname here...",
+                .style = .{
+                    .fg = .{ .indexed = .bright_black },
+                },
+            },
         });
         defer text_area.deinit();
 
@@ -230,7 +242,7 @@ pub fn main() !void {
         emmiter.draw(&painter, term.delta_time);
 
         painter.setCell(&.{ .fg = .{ .indexed = .red } });
-        paragraph.draw(&painter, &vec2(-12, 0));
+        paragraph.draw(&painter, &vec2(-12, 0), term.delta_time);
 
         painter.setCell(&.{ .bg = .{ .indexed = .red } });
         painter.drawLine(&vec2(100.0, 20.0), &vec2(-100.0, 20.0));
@@ -256,6 +268,9 @@ pub fn main() !void {
         painter.setCell(&.{ .char = ' ', .bg = .{ .indexed = .magenta } });
         painter.drawEllipse(&vec2(-50.0, 2.0), 15, &vec2(0, 0.5), true);
 
+        painter.setCell(&.{ .bg = .{ .indexed = .bright_black } });
+        painter.drawLine(&vec2(-3, 19), &vec2(3, 19));
+
         painter.setCell(&.{ .fg = .{ .indexed = .green } });
         painter.drawText("Goodbye, World!", &text_pos);
 
@@ -279,7 +294,7 @@ pub fn main() !void {
         if (text_pos.y() >= height / 2 or text_pos.y() <= (-height / 2) + 1.0) text_speed = text_speed.mul(&vec2(1.0, -1.0));
         if (@round(rect_posx) == 60.0 or @round(rect_posx) == 0.0) rect_speed *= -1.0;
 
-        term._screen.setView(&view_pos);
+        term._screen.setViewPos(&view_pos);
         if (view_pos.y() <= max_jump) {
             is_falling = true;
             start_jump = false;
@@ -297,32 +312,32 @@ pub fn main() !void {
             spriteFromStr(jump, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }).draw(&painter, &view_pos);
         }
 
-        if (!start_jump and (!input.contains(&.{ .key = .d }) and !input.contains(&.{ .key = .a }) and !input.contains(&.{ .key = .lshift }))) {
+        if (!start_jump and (!input.contains(.d) and !input.contains(.a) and !input.contains(.lshift))) {
             spriteFromStr(idle, &.{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } }).draw(&painter, &view_pos);
         }
-        if (input.contains(&.{ .key = .d }) and input.contains(&.{ .key = .lshift })) {
+        if (input.contains(.d) and input.contains(.lshift)) {
             view_direction = 1;
             view_pos = view_pos.add(&vec2(view_speed * 2 * view_direction * term.delta_time, 0));
-            if (!start_jump) anim_right.draw(&painter, &view_pos);
-        } else if (input.contains(&.{ .key = .d })) {
+            if (!start_jump) anim_right.draw(&painter, &view_pos, term.delta_time);
+        } else if (input.contains(.d)) {
             view_direction = 1;
             view_pos = view_pos.add(&vec2(view_speed * view_direction * term.delta_time, 0));
-            if (!start_jump) anim_right.draw(&painter, &view_pos);
+            if (!start_jump) anim_right.draw(&painter, &view_pos, term.delta_time);
         }
-        if (input.contains(&.{ .key = .a }) and input.contains(&.{ .key = .lshift })) {
+        if (input.contains(.a) and input.contains(.lshift)) {
             view_direction = -1;
             view_pos = view_pos.add(&vec2(view_speed * 2 * view_direction * term.delta_time, 0));
-            if (!start_jump) anim_left.draw(&painter, &view_pos);
-        } else if (input.contains(&.{ .key = .a })) {
+            if (!start_jump) anim_left.draw(&painter, &view_pos, term.delta_time);
+        } else if (input.contains(.a)) {
             view_direction = -1;
             view_pos = view_pos.add(&vec2(view_speed * view_direction * term.delta_time, 0));
-            if (!start_jump) anim_left.draw(&painter, &view_pos);
+            if (!start_jump) anim_left.draw(&painter, &view_pos, term.delta_time);
         }
-        if (input.contains(&.{ .key = .space })) {
+        if (input.contains(.space)) {
             start_jump = true;
             view_speed = 100.0;
         }
-        if (input.contains(&.{ .key = .escape })) {
+        if (input.contains(.escape)) {
             break;
         }
 

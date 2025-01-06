@@ -1,8 +1,8 @@
 pub const LinuxTty = @import("LinuxTty.zig");
 pub const Terminal = @import("terminal.zig").Terminal;
-pub const style = @import("style.zig");
 pub const Painter = @import("Painter.zig");
-pub const ParticleEmitter = @import("particles.zig").ParticleEmitter;
+pub const ParticleEmitter = @import("ParticleEmitter.zig");
+pub const style = @import("style.zig");
 pub const sprite = @import("sprite.zig");
 pub const math = @import("math.zig");
 pub const input = @import("input.zig");

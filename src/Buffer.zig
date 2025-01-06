@@ -11,18 +11,15 @@ const Buffer = @This();
 buf: std.ArrayList(Cell),
 size: ScreenSize,
 
-pub fn init(allocator: std.mem.Allocator, cols: usize, rows: usize) !Buffer {
-    const capacity = cols * rows;
+pub fn init(allocator: std.mem.Allocator, screen_size: ScreenSize) !Buffer {
+    const capacity = screen_size.cols * screen_size.rows;
     var buf = try std.ArrayList(Cell).initCapacity(allocator, capacity);
     try buf.appendNTimes(.{ .fg = .none }, capacity);
     try buf.ensureTotalCapacity(capacity);
 
     return .{
         .buf = buf,
-        .size = .{
-            .cols = cols,
-            .rows = rows,
-        },
+        .size = screen_size,
     };
 }
 

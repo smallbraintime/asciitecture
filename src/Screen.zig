@@ -24,16 +24,16 @@ center: Vec2,
 view: View,
 bg: Color,
 
-pub fn init(allocator: std.mem.Allocator, cols: usize, rows: usize) !Screen {
-    const buf = try Buffer.init(allocator, cols, rows);
+pub fn init(allocator: std.mem.Allocator, screen_size: ScreenSize) !Screen {
+    const buf = try Buffer.init(allocator, screen_size);
 
     var screen = Screen{
         .buffer = buf,
-        .center = Vec2.fromInt(cols, rows).div(&vec2(2, 2)),
+        .center = Vec2.fromInt(screen_size.cols, screen_size.rows).div(&vec2(2, 2)),
         .view = undefined,
         .bg = .{ .indexed = .black },
     };
-    screen.setView(&vec2(0, 0));
+    screen.setViewPos(&vec2(0, 0));
 
     return screen;
 }
@@ -47,7 +47,7 @@ pub fn resize(self: *Screen, cols: usize, rows: usize) !void {
     try self.buffer.resize(cols, rows);
 }
 
-pub inline fn setView(self: *Screen, pos: *const Vec2) void {
+pub inline fn setViewPos(self: *Screen, pos: *const Vec2) void {
     const size = pos.add(&vec2(self.center.x() / 2, self.center.y() / 2));
     self.view = View{
         .pos = pos.*,
@@ -91,7 +91,7 @@ pub inline fn readCell(self: *const Screen, x: usize, y: usize) Cell {
     }
 }
 
-pub inline fn setBackground(self: *Screen, color: Color) void {
+pub inline fn setBg(self: *Screen, color: Color) void {
     self.bg = color;
 }
 

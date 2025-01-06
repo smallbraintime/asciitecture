@@ -27,9 +27,9 @@ pub const Input = struct {
         _ = x11.XCloseDisplay(self._display);
     }
 
-    pub fn contains(self: *Input, key: *const KeyInput) bool {
+    pub fn contains(self: *Input, key: Key) bool {
         _ = self.nextEvent();
-        return self._pressed_keys.isSet(@intFromEnum(key.key));
+        return self._pressed_keys.isSet(@intFromEnum(key));
     }
 
     pub fn nextEvent(self: *Input) ?KeyInput {
