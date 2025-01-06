@@ -399,7 +399,7 @@ test "Rectangle.collisionPoint" {
 
 test "Rectangle.collisionLine" {
     const rectangle = Rectangle.init(&vec2(0, 0), 3.0, 3.0);
-    const line = Line.init(&vec2(0, 0), &vec2(1, 1));
+    const line = Line.init(&vec2(-10, 3), &vec2(10, 3));
     try std.testing.expect(rectangle.collidesWith(&.{ .line = line }));
 }
 

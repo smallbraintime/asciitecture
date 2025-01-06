@@ -92,6 +92,10 @@ pub fn exitRawMode(self: *const LinuxTty) !void {
     try std.posix.tcsetattr(self.handle, .FLUSH, self.orig_termios);
 }
 
+pub inline fn resetColors(self: *LinuxTty) !void {
+    try self.buf.writer().print("\x1b]110\x1b\\\x1b]111\x1b\\", .{});
+}
+
 pub inline fn setCursor(self: *LinuxTty, x: usize, y: usize) !void {
     try self.buf.writer().print("\x1b[{d};{d}H", .{ y, x });
 }

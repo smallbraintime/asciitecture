@@ -1,13 +1,11 @@
 # 🔺asciitecture
-A simple, slightly chaotic, text-based ("ASCII") graphics game library for zig. Currently, it only supports Linux. 
+A simple text-based graphics game library for zig . Currently, it only supports Linux. 
 
 ### Run Example
 ```zig build example```
 
 ### Todo
-- [ ] Fix frame pacing and slightly incorrect position calculating after resize
-- [ ] Add fixed screen size
-- [ ] Clean the code and do some packing
+- [ ] Add percentage pos  
 - [ ] Add frame transition system (screen melting)
 
 - [ ] Add more tests and docs
