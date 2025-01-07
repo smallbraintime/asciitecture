@@ -5,6 +5,7 @@ const Buffer = @import("Buffer.zig");
 const ScreenSize = Buffer.ScreenSize;
 const Cell = style.Cell;
 const Color = style.Color;
+const IndexedColor = style.IndexedColor;
 const Attribute = style.Attribute;
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
@@ -23,7 +24,7 @@ pub fn init(allocator: std.mem.Allocator, screen_size: ScreenSize) !Screen {
         .buffer = buf,
         .center = Vec2.fromInt(screen_size.cols, screen_size.rows).div(&vec2(2, 2)),
         .view = undefined,
-        .bg = .{ .indexed = .black },
+        .bg = IndexedColor.black,
     };
     screen.setViewPos(&vec2(0, 0));
 
@@ -43,12 +44,12 @@ pub inline fn setViewPos(self: *Screen, pos: *const Vec2) void {
     self.view = pos.*;
 }
 
-pub fn writeCellWorldSpace(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
+pub inline fn writeCellWorldSpace(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
     const buffer_pos = vec2(self.center.x() + (x - self.view.x()), self.center.y() + (y - self.view.y()));
     self.writeCell(buffer_pos.x(), buffer_pos.y(), cell);
 }
 
-pub fn writeCellScreenSpace(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
+pub inline fn writeCellScreenSpace(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
     const buffer_pos = vec2(self.center.x() + x, self.center.y() + y);
     self.writeCell(buffer_pos.x(), buffer_pos.y(), cell);
 }
@@ -80,7 +81,7 @@ inline fn writeCell(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
         if (fit_to_screen) {
             const index = iy * self.buffer.size.cols + ix;
             var new_cell = cell.*;
-            if (new_cell.bg == .none) new_cell.bg = self.buffer.buf.items[index].bg; // if there is no bg, take the color from the layer below
+            if (new_cell.bg == null) new_cell.bg = self.buffer.buf.items[index].bg; // if there is no bg, take the color from the layer below
             self.buffer.buf.items[index] = new_cell;
         }
     }

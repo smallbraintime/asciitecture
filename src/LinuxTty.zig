@@ -92,8 +92,8 @@ pub fn exitRawMode(self: *const LinuxTty) !void {
     try std.posix.tcsetattr(self.handle, .FLUSH, self.orig_termios);
 }
 
-pub inline fn resetColors(self: *LinuxTty) !void {
-    try self.buf.writer().print("\x1b]110\x1b\\\x1b]111\x1b\\", .{});
+pub inline fn restoreColors(self: *LinuxTty) !void {
+    try self.buf.writer().print("\x1b[0m", .{});
 }
 
 pub inline fn setCursor(self: *LinuxTty, x: usize, y: usize) !void {
@@ -112,14 +112,6 @@ pub inline fn putChar(self: *LinuxTty, char: u21) !void {
     var encoded_char: [4]u8 = undefined;
     const len = try std.unicode.utf8Encode(char, &encoded_char);
     try self.buf.writer().print("{s}", .{encoded_char[0..len]});
-}
-
-pub inline fn setIndexedFg(self: *LinuxTty, color: u8) !void {
-    try self.buf.writer().print("\x1b[38;5;{d}m", .{color});
-}
-
-pub inline fn setIndexedBg(self: *LinuxTty, color: u8) !void {
-    try self.buf.writer().print("\x1b[48;5;{d}m", .{color});
 }
 
 pub inline fn setRgbFg(self: *LinuxTty, r: u8, g: u8, b: u8) !void {

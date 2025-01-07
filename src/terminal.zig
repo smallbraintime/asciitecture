@@ -43,8 +43,8 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
                     fixed_offset = .{ .cols = 0, .rows = 0 };
                 }
                 screen = try Screen.init(allocator, s);
+                try backend.restoreColors();
                 try backend.clearScreen();
-                try backend.resetColors();
                 try backend.flush();
             } else {
                 fixed_offset = null;
@@ -123,15 +123,11 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
                     if (!std.meta.eql(cell, last_cell)) {
                         try self._backend.setAttr(@intFromEnum(Attribute.reset));
                         try self._backend.setCursor(@intCast(x + start_col), @intCast(y + start_row));
-                        switch (cell.fg) {
-                            .indexed => |*indexed| try self._backend.setIndexedFg(@intFromEnum(indexed.*)),
-                            .rgb => |*rgb| try self._backend.setRgbFg(rgb.r, rgb.g, rgb.b),
-                            else => {},
+                        if (cell.fg) |fg| {
+                            try self._backend.setRgbFg(fg.r, fg.g, fg.b);
                         }
-                        switch (cell.bg) {
-                            .indexed => |*indexed| try self._backend.setIndexedBg(@intFromEnum(indexed.*)),
-                            .rgb => |*rgb| try self._backend.setRgbBg(rgb.r, rgb.g, rgb.b),
-                            else => {},
+                        if (cell.bg) |bg| {
+                            try self._backend.setRgbBg(bg.r, bg.g, bg.b);
                         }
                         if (cell.attr != .none) {
                             try self._backend.setAttr(@intFromEnum(cell.attr));
@@ -165,14 +161,15 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
                         self._fixed_offset = .{ .cols = 0, .rows = 0 };
                     }
 
-                    // temporary idea to solve this
-                    for (0..self._term_size.rows) |r| {
-                        for (0..self._term_size.cols) |c| {
-                            try self._backend.setCursor(r, c);
-                            try self._backend.setIndexedFg(@intFromEnum(IndexedColor.black));
-                            try self._backend.setIndexedBg(@intFromEnum(IndexedColor.black));
-                        }
-                    }
+                    // // temporary idea to solve this
+                    // for (0..self._term_size.rows) |r| {
+                    //     for (0..self._term_size.cols) |c| {
+                    //         try self._backend.setCursor(r, c);
+                    //         try self._backend.setIndexedFg(@intFromEnum(IndexedColor.black));
+                    //         try self._backend.setIndexedBg(@intFromEnum(IndexedColor.black));
+                    //     }
+                    // }
+                    try self._backend.restoreColors();
                     try self._backend.clearScreen();
                     try self._backend.flush();
                 } else {

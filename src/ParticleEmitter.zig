@@ -4,7 +4,7 @@ const style = @import("style.zig");
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
 const Cell = style.Cell;
-const RgbColor = style.RgbColor;
+const Color = style.Color;
 const Painter = @import("Painter.zig");
 const randomRange = @import("util.zig").randomRange;
 
@@ -49,8 +49,8 @@ pub const ParticleConfig = struct {
 };
 
 pub const ColorRange = struct {
-    start: RgbColor,
-    end: RgbColor,
+    start: Color,
+    end: Color,
 };
 
 pub const ParticleEmitter = @This();
@@ -157,37 +157,37 @@ fn updateParticle(self: *const ParticleEmitter, particle: *Particle, delta_time:
     particle.life -= delta_time;
     particle.pos = particle.pos.add(&vec2(particle.velocity.x() * delta_time, particle.velocity.y() * delta_time));
     particle.pos = particle.pos.add(&self.config.gravity.mul(&vec2(delta_time, delta_time)));
-    if (particle.cell.fg != .none) {
-        particle.cell.fg.rgb.r = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(particle.cell.fg.rgb.r)) + particle.delta_color_fg.r * delta_time, 0, 255));
-        particle.cell.fg.rgb.g = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(particle.cell.fg.rgb.g)) + particle.delta_color_fg.g * delta_time, 0, 255));
-        particle.cell.fg.rgb.b = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(particle.cell.fg.rgb.b)) + particle.delta_color_fg.b * delta_time, 0, 255));
+    if (particle.cell.fg) |*fg| {
+        fg.r = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(fg.r)) + particle.delta_color_fg.r * delta_time, 0, 255));
+        fg.g = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(fg.g)) + particle.delta_color_fg.g * delta_time, 0, 255));
+        fg.b = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(fg.b)) + particle.delta_color_fg.b * delta_time, 0, 255));
     }
-    if (particle.cell.bg != .none) {
-        particle.cell.bg.rgb.r = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(particle.cell.bg.rgb.r)) + particle.delta_color_bg.r * delta_time, 0, 255));
-        particle.cell.bg.rgb.g = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(particle.cell.bg.rgb.g)) + particle.delta_color_bg.g * delta_time, 0, 255));
-        particle.cell.bg.rgb.b = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(particle.cell.bg.rgb.b)) + particle.delta_color_bg.b * delta_time, 0, 255));
+    if (particle.cell.bg) |*bg| {
+        bg.r = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(bg.r)) + particle.delta_color_bg.r * delta_time, 0, 255));
+        bg.g = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(bg.g)) + particle.delta_color_bg.g * delta_time, 0, 255));
+        bg.b = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(bg.b)) + particle.delta_color_bg.b * delta_time, 0, 255));
     }
 }
 
 fn setParticleColor(self: *ParticleEmitter, particle: *Particle) void {
     if (self.config.fg_color) |color| {
         const colors = calcColors(&color, self.config.color_var, particle.life);
-        particle.cell.fg = .{ .rgb = colors.start_color };
+        particle.cell.fg = colors.start_color;
         particle.delta_color_fg = colors.delta_color;
     } else {
-        particle.cell.fg = .none;
+        particle.cell.fg = null;
     }
 
     if (self.config.bg_color) |color| {
         const colors = calcColors(&color, self.config.color_var, particle.life);
-        particle.cell.bg = .{ .rgb = colors.start_color };
+        particle.cell.bg = colors.start_color;
         particle.delta_color_bg = colors.delta_color;
     } else {
-        particle.cell.bg = .none;
+        particle.cell.bg = null;
     }
 }
 
-fn calcColors(color: *const ColorRange, color_var: u8, life: f32) struct { start_color: RgbColor, delta_color: DeltaColor } {
+fn calcColors(color: *const ColorRange, color_var: u8, life: f32) struct { start_color: Color, delta_color: DeltaColor } {
     var sr: f32 = @floatFromInt(color.start.r);
     var sg: f32 = @floatFromInt(color.start.g);
     var sb: f32 = @floatFromInt(color.start.b);

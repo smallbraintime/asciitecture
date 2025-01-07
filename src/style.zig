@@ -1,39 +1,33 @@
 pub const Cell = struct {
-    fg: Color = .none,
-    bg: Color = .none,
+    fg: ?Color = null,
+    bg: ?Color = null,
     char: u21 = ' ',
     attr: Attribute = .none,
 };
 
-pub const Color = union(enum) {
-    indexed: IndexedColor,
-    rgb: RgbColor,
-    none,
-};
-
-pub const RgbColor = struct {
+pub const Color = struct {
     r: u8,
     g: u8,
     b: u8,
 };
 
-pub const IndexedColor = enum(u8) {
-    black = 0,
-    red,
-    green,
-    yellow,
-    blue,
-    magenta,
-    cyan,
-    white,
-    bright_black,
-    bright_red,
-    bright_green,
-    bright_yellow,
-    bright_blue,
-    bright_magenta,
-    bright_cyan,
-    bright_white,
+pub const IndexedColor = struct {
+    pub const black = Color{ .r = 0, .g = 0, .b = 0 };
+    pub const red = Color{ .r = 255, .g = 0, .b = 0 };
+    pub const green = Color{ .r = 0, .g = 255, .b = 0 };
+    pub const yellow = Color{ .r = 255, .g = 255, .b = 0 };
+    pub const blue = Color{ .r = 0, .g = 0, .b = 255 };
+    pub const magenta = Color{ .r = 255, .g = 0, .b = 255 };
+    pub const cyan = Color{ .r = 0, .g = 255, .b = 255 };
+    pub const white = Color{ .r = 255, .g = 255, .b = 255 };
+    pub const bright_black = Color{ .r = 85, .g = 85, .b = 85 };
+    pub const bright_red = Color{ .r = 255, .g = 85, .b = 85 };
+    pub const bright_green = Color{ .r = 85, .g = 255, .b = 85 };
+    pub const bright_yellow = Color{ .r = 255, .g = 255, .b = 85 };
+    pub const bright_blue = Color{ .r = 85, .g = 85, .b = 255 };
+    pub const bright_magenta = Color{ .r = 255, .g = 85, .b = 255 };
+    pub const bright_cyan = Color{ .r = 85, .g = 255, .b = 255 };
+    pub const bright_white = Color{ .r = 255, .g = 255, .b = 255 };
 };
 
 pub const Attribute = enum(u8) {
@@ -61,8 +55,8 @@ pub const Border = enum(u8) {
 };
 
 pub const Style = struct {
-    fg: Color = .none,
-    bg: Color = .none,
+    fg: ?Color = null,
+    bg: ?Color = null,
     attr: Attribute = .none,
 
     pub fn cell(self: *const Style) Cell {

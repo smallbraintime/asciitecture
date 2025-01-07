@@ -12,6 +12,7 @@ const Animation = at.sprite.Animation;
 const spriteFromStr = at.sprite.spriteFromStr;
 const Style = at.style.Style;
 const Color = at.style.Color;
+const IndexedColor = at.style.IndexedColor;
 const Paragraph = at.widgets.Paragraph;
 const Menu = at.widgets.Menu;
 const TextArea = at.widgets.TextArea;
@@ -25,7 +26,6 @@ pub fn main() !void {
     defer if (gpa.deinit() == .leak) @panic("memory leak occured");
 
     var term = try Terminal(LinuxTty).init(gpa.allocator(), 75, .{ .rows = 35, .cols = 105 });
-    term.setBg(.{ .rgb = .{ .r = 0, .g = 0, .b = 0 } });
     defer term.deinit() catch |err| @panic(@errorName(err));
 
     var painter = term.painter();
@@ -80,13 +80,8 @@ pub fn main() !void {
         \\)|/
         \\( \
     ;
-    // const jump =
-    //     \\\o/
-    //     \\ |
-    //     \\/ \
-    // ;
 
-    const player_style = Style{ .fg = .{ .rgb = .{ .r = 127, .g = 176, .b = 5 } } };
+    const player_style = Style{ .fg = IndexedColor.green };
 
     var anim_right = Animation.init(gpa.allocator(), 2, true);
     defer anim_right.deinit();
@@ -106,15 +101,15 @@ pub fn main() !void {
         .border_style = .{
             .border = .rounded,
             .style = .{
-                .fg = .{ .indexed = .cyan },
+                .fg = IndexedColor.cyan,
                 .attr = .bold,
             },
         },
         .text_style = .{
-            .fg = .{ .indexed = .red },
+            .fg = IndexedColor.red,
             .attr = .bold,
         },
-        .filling = false,
+        .filling = true,
         .animation = .{
             .speed = 5,
             .looping = true,
@@ -132,14 +127,14 @@ pub fn main() !void {
         .border_style = .{
             .border = .rounded,
             .style = .{
-                .fg = .{ .indexed = .black },
-                .bg = .{ .indexed = .white },
+                .fg = IndexedColor.black,
+                .bg = IndexedColor.white,
                 .attr = .bold,
             },
         },
         .text_style = .{
-            .fg = .{ .indexed = .black },
-            .bg = .{ .indexed = .white },
+            .fg = IndexedColor.black,
+            .bg = IndexedColor.white,
             .attr = .bold,
         },
         .filling = true,
@@ -204,28 +199,28 @@ pub fn main() !void {
             .border = .{
                 .border = .rounded,
                 .style = .{
-                    .fg = .{ .indexed = .white },
+                    .fg = IndexedColor.white,
                 },
                 .filled = false,
             },
             .element = .{
                 .style = .{
-                    .fg = .{ .indexed = .white },
+                    .fg = IndexedColor.white,
                 },
                 .filled = false,
             },
             .selection = .{
                 .element_style = .{
-                    .fg = .{ .indexed = .red },
+                    .fg = IndexedColor.red,
                 },
                 .text_style = .{
-                    .fg = .{ .indexed = .red },
+                    .fg = IndexedColor.red,
                 },
                 .filled = false,
             },
             .text_style = .{
-                .fg = .{ .indexed = .white },
-                .bg = .{ .indexed = .black },
+                .fg = IndexedColor.white,
+                .bg = IndexedColor.black,
             },
         });
         defer list.deinit();
@@ -257,18 +252,18 @@ pub fn main() !void {
     // text area
     {
         var text_entered = false;
-        var color = Color{ .indexed = .magenta };
+        var color = IndexedColor.magenta;
         var text_area = try TextArea.init(gpa.allocator(), &.{
             .width = 20,
             .text_style = .{ .fg = color, .attr = .bold },
-            .cursor_style = .{ .indexed = .green },
+            .cursor_style = IndexedColor.green,
             .border = .plain,
             .border_style = .{ .fg = color, .attr = .bold },
             .filled = false,
             .placeholder = .{
                 .content = "Type your nickname here...",
                 .style = .{
-                    .fg = .{ .indexed = .bright_black },
+                    .fg = IndexedColor.bright_black,
                 },
             },
         });
@@ -293,9 +288,9 @@ pub fn main() !void {
             }
 
             if (text_area.buffer().len >= name.len) {
-                color = .{ .indexed = .red };
+                color = IndexedColor.red;
             } else {
-                color = .{ .indexed = .magenta };
+                color = IndexedColor.magenta;
             }
             text_area.config.text_style.fg = color;
             text_area.config.border_style.fg = color;
@@ -357,11 +352,11 @@ pub fn main() !void {
         // drawing
         {
             // pyramide
-            painter.setCell(&.{ .char = ' ', .bg = .{ .indexed = .yellow } });
+            painter.setCell(&.{ .char = '┘', .bg = IndexedColor.yellow, .fg = IndexedColor.bright_black });
             painter.drawTriangle(&vec2(-105 / 2, (35 / 2) - 1), &vec2(105 / 2, (35 / 2) - 1), &vec2(0, -4), true);
 
             // moon
-            painter.setCell(&.{ .char = ' ', .bg = .{ .indexed = .bright_black } });
+            painter.setCell(&.{ .char = ' ', .bg = IndexedColor.bright_black });
             painter.drawEllipse(&vec2(-30, -10), 7, &vec2(0, 0.5), true);
 
             // logo
@@ -369,12 +364,12 @@ pub fn main() !void {
 
             // bonfire
             fire.draw(&painter, term.delta_time);
-            painter.setCell(&.{ .bg = .{ .indexed = .bright_black } });
+            painter.setCell(&.{ .bg = IndexedColor.bright_black });
             painter.drawLine(&vec2(15, (35 / 2) - 2), &vec2(21, (35 / 2) - 2));
 
             // npc
             const npc_pos = fire.config.pos.add(&vec2(15, -2));
-            idle_sprite.style = .{ .fg = .{ .indexed = .red } };
+            idle_sprite.style = .{ .fg = IndexedColor.red };
             idle_sprite.draw(&painter, &npc_pos);
             if (player_pos.x() <= npc_pos.add(&vec2(10, 0)).x() and player_pos.x() >= npc_pos.sub(&vec2(10, 0)).x()) {
                 npc_cloud.draw(&painter, &npc_pos.add(&vec2(-4, -7)), term.delta_time);
@@ -383,11 +378,11 @@ pub fn main() !void {
             }
 
             // floor
-            painter.setCell(&.{ .bg = .{ .indexed = .bright_black } });
+            painter.setCell(&.{ .bg = IndexedColor.bright_black });
             painter.drawLineShape(&floor_collider.line);
 
             // box
-            painter.setCell(&.{ .bg = .{ .indexed = .bright_red } });
+            painter.setCell(&.{ .bg = IndexedColor.bright_red });
             painter.drawRectangleShape(&box_collider.rectangle, true);
 
             // player
@@ -399,13 +394,13 @@ pub fn main() !void {
             } else {
                 idle_sprite.draw(&painter, &player_pos);
             }
-            painter.setCell(&.{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .white } });
+            painter.setCell(&.{ .fg = IndexedColor.red, .bg = IndexedColor.white });
             painter.drawText(name[0..name_len], &player_pos.add(&vec2(-@as(f32, @floatFromInt(name_len / 2)), -2)));
             bubbles.draw(&painter, term.delta_time);
 
             // fps overlay
             painter.setDrawingSpace(.screen);
-            painter.setCell(&.{ .fg = .{ .indexed = .magenta } });
+            painter.setCell(&.{ .fg = IndexedColor.magenta });
             var buf: [5]u8 = undefined;
             const fps = try std.fmt.bufPrint(&buf, "{d:.2}", .{1.0 / term.delta_time});
             painter.drawText(fps, &(vec2((105 / 2) - 10, -35 / 2)));

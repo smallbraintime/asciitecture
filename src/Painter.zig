@@ -4,6 +4,7 @@ const math = @import("math.zig");
 const Screen = @import("Screen.zig");
 const Cell = style.Cell;
 const Color = style.Color;
+const IndexedColor = style.IndexedColor;
 const Style = style.Style;
 const Border = style.Border;
 const Attribute = style.Attribute;
@@ -29,7 +30,7 @@ drawing_space: DrawingSpace = .world,
 pub fn init(screen: *Screen) Painter {
     return .{
         .screen = screen,
-        .cell = .{ .fg = .{ .indexed = .white } },
+        .cell = .{ .fg = IndexedColor.white },
     };
 }
 
