@@ -50,19 +50,44 @@ pub const Paragraph = struct {
     }
 
     pub fn draw(self: *Paragraph, painter: *Painter, pos: *const Vec2, delta_time: f32) void {
+        if (self.content.items.len == 0) return;
+
         var longest: usize = 0;
+        for (self.content.items) |el| {
+            if (el.len > longest) longest = el.len;
+        }
+        painter.setCell(&self.config.border_style.style.cell());
+        painter.drawPrettyRectangle(@floatFromInt(longest + 2), @floatFromInt(self.content.items.len + 2), pos, self.config.border_style.border, self.config.filling);
+
         var new_pos = pos.*.add(&vec2(1, 0));
         painter.setCell(&self.config.text_style.cell());
+        if (self.config.animation) |anim| {
+            if (anim.looping) {
+                var current_index: usize = @intFromFloat(@round(self._animation_state.current_index));
+                if (current_index > self.content.items[self._animation_state.current_line].len) {
+                    self._animation_state.current_line += 1;
+                    self._animation_state.current_index = 0;
+                    current_index = 0;
+                }
+                if (self._animation_state.current_line >= self.content.items.len) {
+                    self._animation_state.current_line = 0;
+                    self._animation_state.current_index = 0;
+                }
 
-        if (self.content.items.len == 0) {
-            for (self.content.items) |el| {
-                if (el.len > longest) longest = el.len;
-            }
-        } else {
-            if (self.config.animation) |anim| {
-                if (anim.looping) {
-                    var current_index: usize = @intFromFloat(@round(self._animation_state.current_index));
-                    if (current_index > self.content.items[self._animation_state.current_line].len) {
+                for (0.., self.content.items) |line, el| {
+                    new_pos = new_pos.add(&vec2(0, 1));
+                    if (line < self._animation_state.current_line) {
+                        painter.drawText(el, &new_pos);
+                    } else if (line == self._animation_state.current_line) {
+                        painter.drawText(el[0..current_index], &new_pos);
+                    }
+                }
+
+                self._animation_state.current_index += anim.speed * delta_time;
+            } else {
+                var current_index: usize = @intFromFloat(@round(self._animation_state.current_index));
+                if (self._animation_state.current_line != self.content.items.len - 1 or current_index < self.content.items[self._animation_state.current_line].len) {
+                    if (current_index >= self.content.items[self._animation_state.current_line].len) {
                         self._animation_state.current_line += 1;
                         self._animation_state.current_index = 0;
                         current_index = 0;
@@ -72,54 +97,24 @@ pub const Paragraph = struct {
                         self._animation_state.current_index = 0;
                     }
 
-                    for (0.., self.content.items) |line, el| {
-                        new_pos = new_pos.add(&vec2(0, 1));
-                        if (line < self._animation_state.current_line) {
-                            painter.drawText(el, &new_pos);
-                        } else if (line == self._animation_state.current_line) {
-                            painter.drawText(el[0..current_index], &new_pos);
-                        }
-                        if (el.len > longest) longest = el.len;
-                    }
-
                     self._animation_state.current_index += anim.speed * delta_time;
-                } else {
-                    var current_index: usize = @intFromFloat(@round(self._animation_state.current_index));
-                    if (self._animation_state.current_line != self.content.items.len - 1 or current_index < self.content.items[self._animation_state.current_line].len) {
-                        if (current_index >= self.content.items[self._animation_state.current_line].len) {
-                            self._animation_state.current_line += 1;
-                            self._animation_state.current_index = 0;
-                            current_index = 0;
-                        }
-                        if (self._animation_state.current_line >= self.content.items.len) {
-                            self._animation_state.current_line = 0;
-                            self._animation_state.current_index = 0;
-                        }
-
-                        self._animation_state.current_index += anim.speed * delta_time;
-                    }
-
-                    for (0.., self.content.items) |line, el| {
-                        new_pos = new_pos.add(&vec2(0, 1));
-                        if (line < self._animation_state.current_line) {
-                            painter.drawText(el, &new_pos);
-                        } else if (line == self._animation_state.current_line) {
-                            painter.drawText(el[0..current_index], &new_pos);
-                        }
-                        if (el.len > longest) longest = el.len;
-                    }
                 }
-            } else {
-                for (self.content.items) |el| {
+
+                for (0.., self.content.items) |line, el| {
                     new_pos = new_pos.add(&vec2(0, 1));
-                    painter.drawText(el, &new_pos);
-                    if (el.len > longest) longest = el.len;
+                    if (line < self._animation_state.current_line) {
+                        painter.drawText(el, &new_pos);
+                    } else if (line == self._animation_state.current_line) {
+                        painter.drawText(el[0..current_index], &new_pos);
+                    }
                 }
             }
+        } else {
+            for (self.content.items) |el| {
+                new_pos = new_pos.add(&vec2(0, 1));
+                painter.drawText(el, &new_pos);
+            }
         }
-
-        painter.setCell(&self.config.border_style.style.cell());
-        painter.drawPrettyRectangle(@floatFromInt(longest + 2), @floatFromInt(self.content.items.len + 2), pos, self.config.border_style.border, self.config.filling);
     }
 
     pub fn reset(self: *Paragraph) void {

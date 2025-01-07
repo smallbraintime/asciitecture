@@ -25,26 +25,25 @@ pub fn main() !void {
     defer if (gpa.deinit() == .leak) @panic("memory leak occured");
 
     var term = try Terminal(LinuxTty).init(gpa.allocator(), 75, .{ .rows = 35, .cols = 105 });
+    term.setBg(.{ .rgb = .{ .r = 0, .g = 0, .b = 0 } });
     defer term.deinit() catch |err| @panic(@errorName(err));
-    errdefer term.deinit() catch |err| @panic(@errorName(err));
 
     var painter = term.painter();
 
     var input = try Input.init();
     defer input.deinit() catch |err| @panic(@errorName(err));
-    errdefer input.deinit() catch |err| @panic(@errorName(err));
 
     // game state
     var player_pos = vec2(0, (35 / 2) - 4);
     var player_velocity = vec2(0, 0);
-    var name: [30]u8 = undefined;
+    var name: [10]u8 = undefined;
     var name_len: usize = undefined;
     var player_collider = Shape{ .rectangle = Rectangle.init(&player_pos, 3, 3) };
     var floor_collider = Shape{ .line = Line.init(&vec2(-105 / 2, (35 / 2) - 1), &vec2(105 / 2, (35 / 2) - 1)) };
     const box_collider = Shape{ .rectangle = Rectangle.init(&vec2(-30, (35 / 2) - 6), 10, 5) };
     const colliders = [_]*const Shape{ &floor_collider, &box_collider };
-    const gravity = vec2(0, 1);
-    var grounded = true;
+    const gravity = vec2(0, 0.5);
+    player_pos.v[1] -= 1;
 
     const idle =
         \\ o
@@ -101,9 +100,9 @@ pub fn main() !void {
     try anim_left.frames.append(&spriteFromStr(walk_left2, &player_style));
     try anim_left.frames.append(&spriteFromStr(walk_left3, &player_style));
 
-    const idle_sprite = spriteFromStr(idle, &player_style);
+    var idle_sprite = spriteFromStr(idle, &player_style);
 
-    var paragraph = try Paragraph.init(gpa.allocator(), &[_][]const u8{"ASCIItecture"}, &.{
+    var logo = try Paragraph.init(gpa.allocator(), &[_][]const u8{"ASCIItecture"}, &.{
         .border_style = .{
             .border = .rounded,
             .style = .{
@@ -112,7 +111,7 @@ pub fn main() !void {
             },
         },
         .text_style = .{
-            .fg = .{ .indexed = .magenta },
+            .fg = .{ .indexed = .red },
             .attr = .bold,
         },
         .filling = false,
@@ -121,9 +120,37 @@ pub fn main() !void {
             .looping = true,
         },
     });
-    defer paragraph.deinit();
+    defer logo.deinit();
 
-    var emmiter = try ParticleEmitter.init(gpa.allocator(), &.{
+    var npc_cloud = try Paragraph.init(gpa.allocator(), &[_][]const u8{
+        "Hello!",
+        "Use:",
+        "->/<- to move right/left",
+        "c to jump",
+        "x to blow the bubbles",
+    }, &.{
+        .border_style = .{
+            .border = .rounded,
+            .style = .{
+                .fg = .{ .indexed = .black },
+                .bg = .{ .indexed = .white },
+                .attr = .bold,
+            },
+        },
+        .text_style = .{
+            .fg = .{ .indexed = .black },
+            .bg = .{ .indexed = .white },
+            .attr = .bold,
+        },
+        .filling = true,
+        .animation = .{
+            .speed = 15,
+            .looping = false,
+        },
+    });
+    defer npc_cloud.deinit();
+
+    var fire = try ParticleEmitter.init(gpa.allocator(), &.{
         .pos = vec2(18, (35 / 2) - 2),
         .amount = 100,
         .chars = &[_]u21{' '},
@@ -143,7 +170,29 @@ pub fn main() !void {
         .gravity = vec2(0, 0),
         .duration = std.math.inf(f32),
     });
-    defer emmiter.deinit();
+    defer fire.deinit();
+
+    var bubbles = try ParticleEmitter.init(gpa.allocator(), &.{
+        .pos = player_pos,
+        .amount = 50,
+        .chars = &[_]u21{'○'},
+        .fg_color = .{
+            .start = .{ .r = 125, .g = 125, .b = 125 },
+            .end = .{ .r = 125, .g = 125, .b = 125 },
+        },
+        .bg_color = null,
+        .color_var = 50,
+        .start_angle = 60,
+        .end_angle = 120,
+        .life = 2,
+        .life_var = 1,
+        .speed = 20,
+        .speed_var = 5,
+        .emission_rate = 50 / 2,
+        .gravity = vec2(0, 0),
+        .duration = std.math.inf(f32),
+    });
+    defer bubbles.deinit();
 
     // menu list
     {
@@ -242,7 +291,8 @@ pub fn main() !void {
                     else => try text_area.input(&key),
                 }
             }
-            if (text_area.buffer().len > 31) {
+
+            if (text_area.buffer().len >= name.len) {
                 color = .{ .indexed = .red };
             } else {
                 color = .{ .indexed = .magenta };
@@ -252,18 +302,21 @@ pub fn main() !void {
         }
     }
 
-    player_pos.v[1] -= 1;
-
     // main loop
     while (true) {
         // input handling
         {
-            if (input.contains(.a)) {
+            if (input.contains(.left)) {
                 player_velocity.v[0] = -20;
-            } else if (input.contains(.d)) {
+            } else if (input.contains(.right)) {
                 player_velocity.v[0] = 20;
             } else {
                 player_velocity.v[0] = 0;
+            }
+            if (input.contains(.x)) {
+                bubbles.config.emission_rate = 50 / 2;
+            } else {
+                bubbles.config.emission_rate = 0;
             }
             if (input.contains(.escape)) {
                 break;
@@ -274,21 +327,17 @@ pub fn main() !void {
         {
             for (&colliders) |collider| {
                 switch (collider.*) {
-                    .line => {
+                    .line => |*lin| {
                         if (player_collider.rectangle.collidesWith(collider)) {
-                            player_velocity.v[1] = 0;
-                            grounded = true;
-                        } else {
-                            grounded = false;
+                            player_pos.v[1] = lin.p1.y() - 3 - std.math.floatEps(f32);
                         }
                     },
-                    .rectangle => {
+                    .rectangle => |*rec| {
                         if (player_collider.rectangle.collidesWith(collider)) {
-                            player_velocity.v[0] = 0;
                             if (player_velocity.x() > 0) {
-                                player_pos.v[0] -= 0.033;
+                                player_pos.v[0] = rec.pos.x() - player_collider.rectangle.width;
                             } else {
-                                player_pos.v[0] += 0.033;
+                                player_pos.v[0] = rec.pos.x() + rec.width;
                             }
                         }
                     },
@@ -300,8 +349,9 @@ pub fn main() !void {
             player_collider.rectangle.pos = player_pos;
             floor_collider.line.p1 = vec2(player_pos.x(), floor_collider.line.p1.y()).add(&vec2(-105 / 2, 0));
             floor_collider.line.p2 = vec2(player_pos.x(), floor_collider.line.p2.y()).add(&vec2(105 / 2, 0));
-            player_velocity.v[1] = gravity.y() * term.delta_time;
+            player_velocity.v[1] += gravity.y() * term.delta_time;
             player_pos = player_pos.add(&player_velocity.mul(&vec2(term.delta_time, term.delta_time)));
+            bubbles.config.pos = player_pos.add(&vec2(2, 0));
         }
 
         // drawing
@@ -312,16 +362,25 @@ pub fn main() !void {
 
             // moon
             painter.setCell(&.{ .char = ' ', .bg = .{ .indexed = .bright_black } });
-            painter.drawEllipse(&vec2(-30, -2), 7, &vec2(0, 0.5), true);
+            painter.drawEllipse(&vec2(-30, -10), 7, &vec2(0, 0.5), true);
 
             // logo
-            painter.setCell(&.{ .fg = .{ .indexed = .red } });
-            paragraph.draw(&painter, &vec2(-6, 5), term.delta_time);
+            logo.draw(&painter, &vec2(-6, 5), term.delta_time);
 
             // bonfire
-            emmiter.draw(&painter, term.delta_time);
+            fire.draw(&painter, term.delta_time);
             painter.setCell(&.{ .bg = .{ .indexed = .bright_black } });
             painter.drawLine(&vec2(15, (35 / 2) - 2), &vec2(21, (35 / 2) - 2));
+
+            // npc
+            const npc_pos = fire.config.pos.add(&vec2(15, -2));
+            idle_sprite.style = .{ .fg = .{ .indexed = .red } };
+            idle_sprite.draw(&painter, &npc_pos);
+            if (player_pos.x() <= npc_pos.add(&vec2(10, 0)).x() and player_pos.x() >= npc_pos.sub(&vec2(10, 0)).x()) {
+                npc_cloud.draw(&painter, &npc_pos.add(&vec2(-4, -7)), term.delta_time);
+            } else {
+                npc_cloud.reset();
+            }
 
             // floor
             painter.setCell(&.{ .bg = .{ .indexed = .bright_black } });
@@ -332,6 +391,7 @@ pub fn main() !void {
             painter.drawRectangleShape(&box_collider.rectangle, true);
 
             // player
+            idle_sprite.style = player_style;
             if (player_velocity.x() > 0) {
                 anim_right.draw(&painter, &player_pos, term.delta_time);
             } else if (player_velocity.x() < 0) {
@@ -341,15 +401,15 @@ pub fn main() !void {
             }
             painter.setCell(&.{ .fg = .{ .indexed = .red }, .bg = .{ .indexed = .white } });
             painter.drawText(name[0..name_len], &player_pos.add(&vec2(-@as(f32, @floatFromInt(name_len / 2)), -2)));
+            bubbles.draw(&painter, term.delta_time);
 
-            // overlay
-            painter.setCell(&.{ .fg = .{ .indexed = .black }, .bg = .{ .indexed = .white } });
-            var buf1: [50]u8 = undefined;
-            const delta_time = try std.fmt.bufPrint(&buf1, "dt:{d:.5}", .{term.delta_time});
-            var buf2: [50]u8 = undefined;
-            const fps = try std.fmt.bufPrint(&buf2, "fps:{d:.2}", .{1.0 / term.delta_time});
-            painter.drawText(delta_time, &player_pos.add(&vec2((105 / 2) - 10, -30)));
-            painter.drawText(fps, &(vec2((105 / 2) - 10, -29).add(&player_pos)));
+            // fps overlay
+            painter.setDrawingSpace(.screen);
+            painter.setCell(&.{ .fg = .{ .indexed = .magenta } });
+            var buf: [5]u8 = undefined;
+            const fps = try std.fmt.bufPrint(&buf, "{d:.2}", .{1.0 / term.delta_time});
+            painter.drawText(fps, &(vec2((105 / 2) - 10, -35 / 2)));
+            painter.setDrawingSpace(.world);
         }
 
         try term.draw();

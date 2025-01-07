@@ -9,19 +9,11 @@ const Attribute = style.Attribute;
 const Vec2 = math.Vec2;
 const vec2 = math.vec2;
 
-const View = struct {
-    pos: Vec2,
-    left: f32,
-    right: f32,
-    bottom: f32,
-    top: f32,
-};
-
 const Screen = @This();
 
 buffer: Buffer,
 center: Vec2,
-view: View,
+view: Vec2,
 bg: Color,
 
 pub fn init(allocator: std.mem.Allocator, screen_size: ScreenSize) !Screen {
@@ -48,39 +40,17 @@ pub fn resize(self: *Screen, cols: usize, rows: usize) !void {
 }
 
 pub inline fn setViewPos(self: *Screen, pos: *const Vec2) void {
-    const size = pos.add(&vec2(self.center.x() / 2, self.center.y() / 2));
-    self.view = View{
-        .pos = pos.*,
-        .left = -size.x(),
-        .right = size.x(),
-        .bottom = -size.y(),
-        .top = size.y(),
-    };
+    self.view = pos.*;
 }
 
-pub inline fn writeCell(self: *Screen, x: usize, y: usize, cell: *const Cell) void {
-    const fit_to_screen = x >= 0 and x < self.buffer.size.cols and y >= 0 and y < self.buffer.size.rows;
-    if (fit_to_screen) {
-        var new_cell = cell.*;
-        const index = y * self.buffer.size.cols + x;
-        if (new_cell.bg == .none) new_cell.bg = self.buffer.buf.items[index].bg;
-        self.buffer.buf.items[index] = new_cell;
-    }
+pub fn writeCellWorldSpace(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
+    const buffer_pos = vec2(self.center.x() + (x - self.view.x()), self.center.y() + (y - self.view.y()));
+    self.writeCell(buffer_pos.x(), buffer_pos.y(), cell);
 }
 
-pub inline fn writeCellWorldSpace(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
-    const screen_pos = self.worldToScreen(&vec2(x, y));
-    if (screen_pos.x() >= 0 and screen_pos.y() >= 0) {
-        const ix: usize = @intFromFloat(@round(screen_pos.x()));
-        const iy: usize = @intFromFloat(@round(screen_pos.y()));
-        const fit_to_screen = ix < self.buffer.size.cols and iy < self.buffer.size.rows;
-        if (fit_to_screen) {
-            const index = iy * self.buffer.size.cols + ix;
-            var new_cell = cell.*;
-            if (new_cell.bg == .none) new_cell.bg = self.buffer.buf.items[index].bg;
-            self.buffer.buf.items[index] = new_cell;
-        }
-    }
+pub fn writeCellScreenSpace(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
+    const buffer_pos = vec2(self.center.x() + x, self.center.y() + y);
+    self.writeCell(buffer_pos.x(), buffer_pos.y(), cell);
 }
 
 pub inline fn readCell(self: *const Screen, x: usize, y: usize) Cell {
@@ -102,6 +72,16 @@ pub inline fn clear(self: *Screen) void {
     });
 }
 
-inline fn worldToScreen(self: *const Screen, pos: *const Vec2) Vec2 {
-    return vec2(self.center.x() + (pos.x() - self.view.pos.x()), self.center.y() + (pos.y() - self.view.pos.y()));
+inline fn writeCell(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
+    if (x >= 0 and y >= 0) {
+        const ix: usize = @intFromFloat(@round(x));
+        const iy: usize = @intFromFloat(@round(y));
+        const fit_to_screen = ix < self.buffer.size.cols and iy < self.buffer.size.rows;
+        if (fit_to_screen) {
+            const index = iy * self.buffer.size.cols + ix;
+            var new_cell = cell.*;
+            if (new_cell.bg == .none) new_cell.bg = self.buffer.buf.items[index].bg; // if there is no bg, take the color from the layer below
+            self.buffer.buf.items[index] = new_cell;
+        }
+    }
 }

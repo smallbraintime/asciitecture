@@ -6,5 +6,4 @@ pub const style = @import("style.zig");
 pub const sprite = @import("sprite.zig");
 pub const math = @import("math.zig");
 pub const input = @import("input.zig");
-pub const extra = @import("extra.zig");
 pub const widgets = @import("widgets.zig");

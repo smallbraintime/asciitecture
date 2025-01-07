@@ -15,10 +15,16 @@ const Line = math.Line;
 const Rectangle = math.Rectangle;
 const Ellipse = math.Ellipse;
 
+const DrawingSpace = enum {
+    screen,
+    world,
+};
+
 const Painter = @This();
 
 screen: *Screen,
 cell: Cell,
+drawing_space: DrawingSpace = .world,
 
 pub fn init(screen: *Screen) Painter {
     return .{
@@ -31,8 +37,15 @@ pub inline fn setCell(self: *Painter, new_cell: *const Cell) void {
     self.cell = new_cell.*;
 }
 
+pub inline fn setDrawingSpace(self: *Painter, drawing_space: DrawingSpace) void {
+    self.drawing_space = drawing_space;
+}
+
 pub inline fn drawCell(self: *Painter, x: f32, y: f32) void {
-    self.screen.writeCellWorldSpace(x, y, &self.cell);
+    switch (self.drawing_space) {
+        .world => self.screen.writeCellWorldSpace(x, y, &self.cell),
+        .screen => self.screen.writeCellScreenSpace(x, y, &self.cell),
+    }
 }
 
 pub fn drawLine(self: *Painter, p0: *const Vec2, p1: *const Vec2) void {
