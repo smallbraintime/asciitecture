@@ -116,8 +116,8 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
 
             for (0..self._screen.buffer.size.rows) |y| {
                 for (0..self._screen.buffer.size.cols) |x| {
-                    const cell = &self._screen.buffer.buf.items[y * self._screen.buffer.size.cols + x];
-                    const last_cell = &self._prev_screen.buf.items[y * self._prev_screen.size.cols + x];
+                    const cell = self._screen.buffer.buf.items[y * self._screen.buffer.size.cols + x];
+                    const last_cell = self._prev_screen.buf.items[y * self._prev_screen.size.cols + x];
 
                     if (!std.meta.eql(cell, last_cell)) {
                         try self._backend.setAttr(@intFromEnum(Attribute.reset));

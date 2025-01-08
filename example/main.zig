@@ -20,8 +20,6 @@ const Line = at.math.Line;
 const Sprite = at.sprite.Sprite;
 const Rectangle = at.math.Rectangle;
 
-const drawCodepointText = at.util.drawCodepointText;
-
 pub fn main() !void {
     // init
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -129,17 +127,15 @@ pub fn main() !void {
         .border_style = .{
             .border = .rounded,
             .style = .{
-                .fg = IndexedColor.black,
-                .bg = IndexedColor.white,
+                .fg = IndexedColor.white,
                 .attr = .bold,
             },
         },
         .text_style = .{
-            .fg = IndexedColor.black,
-            .bg = IndexedColor.white,
+            .fg = IndexedColor.white,
             .attr = .bold,
         },
-        .filling = true,
+        .filling = false,
         .animation = .{
             .speed = 15,
             .looping = false,
@@ -148,7 +144,7 @@ pub fn main() !void {
     defer npc_cloud.deinit();
 
     var fire = try ParticleEmitter.init(gpa.allocator(), &.{
-        .pos = vec2(18, (35 / 2) - 2),
+        .pos = vec2(55, (35 / 2) - 2),
         .amount = 100,
         .chars = &[_]u21{' '},
         .fg_color = null,
@@ -203,13 +199,13 @@ pub fn main() !void {
                 .style = .{
                     .fg = IndexedColor.white,
                 },
-                .filled = false,
+                .filling = false,
             },
             .element = .{
                 .style = .{
                     .fg = IndexedColor.white,
                 },
-                .filled = false,
+                .filling = false,
             },
             .selection = .{
                 .element_style = .{
@@ -218,11 +214,10 @@ pub fn main() !void {
                 .text_style = .{
                     .fg = IndexedColor.red,
                 },
-                .filled = false,
+                .filling = false,
             },
             .text_style = .{
                 .fg = IndexedColor.white,
-                .bg = IndexedColor.black,
             },
         });
         defer menu.deinit();
@@ -261,7 +256,7 @@ pub fn main() !void {
             .cursor_style = IndexedColor.green,
             .border = .plain,
             .border_style = .{ .fg = color, .attr = .bold },
-            .filled = false,
+            .filling = false,
             .placeholder = .{
                 .content = "Type your nickname here...",
                 .style = .{
@@ -368,10 +363,10 @@ pub fn main() !void {
             // bonfire
             fire.draw(&painter, term.delta_time);
             painter.setCell(&.{ .bg = IndexedColor.bright_black });
-            painter.drawLine(&vec2(15, (35 / 2) - 2), &vec2(21, (35 / 2) - 2));
+            painter.drawLine(&fire.config.pos.add(&vec2(-3, 0)), &fire.config.pos.add(&vec2(3, 0)));
 
             // npc
-            const npc_pos = fire.config.pos.add(&vec2(15, -2));
+            const npc_pos = fire.config.pos.add(&vec2(10, -2));
             idle_sprite.style = .{ .fg = IndexedColor.red };
             try idle_sprite.draw(&painter, &npc_pos);
             if (player_pos.x() <= npc_pos.add(&vec2(10, 0)).x() and player_pos.x() >= npc_pos.sub(&vec2(10, 0)).x()) {
@@ -405,8 +400,8 @@ pub fn main() !void {
             painter.setDrawingSpace(.screen);
             painter.setCell(&.{ .fg = IndexedColor.magenta });
             var buf: [5]u8 = undefined;
-            const fps = try std.fmt.bufPrint(&buf, "{d:.2}", .{1.0 / term.delta_time});
-            try painter.drawText(fps, &(vec2((105 / 2) - 10, -35 / 2)));
+            const fps = try std.fmt.bufPrint(&buf, "{d:.0}", .{1.0 / term.delta_time});
+            try painter.drawText(fps, &(vec2((105 / 2) - 4, -35 / 2 - 0.5)));
             painter.setDrawingSpace(.world);
         }
 
