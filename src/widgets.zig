@@ -49,7 +49,7 @@ pub const Paragraph = struct {
         self.content.deinit();
     }
 
-    pub fn draw(self: *Paragraph, painter: *Painter, pos: *const Vec2, delta_time: f32) void {
+    pub fn draw(self: *Paragraph, painter: *Painter, pos: *const Vec2, delta_time: f32) !void {
         if (self.content.items.len == 0) return;
 
         var longest: usize = 0;
@@ -77,9 +77,9 @@ pub const Paragraph = struct {
                 for (0.., self.content.items) |line, el| {
                     new_pos = new_pos.add(&vec2(0, 1));
                     if (line < self._animation_state.current_line) {
-                        painter.drawText(el, &new_pos);
+                        try painter.drawText(el, &new_pos);
                     } else if (line == self._animation_state.current_line) {
-                        painter.drawText(el[0..current_index], &new_pos);
+                        try painter.drawText(el[0..current_index], &new_pos);
                     }
                 }
 
@@ -103,16 +103,16 @@ pub const Paragraph = struct {
                 for (0.., self.content.items) |line, el| {
                     new_pos = new_pos.add(&vec2(0, 1));
                     if (line < self._animation_state.current_line) {
-                        painter.drawText(el, &new_pos);
+                        try painter.drawText(el, &new_pos);
                     } else if (line == self._animation_state.current_line) {
-                        painter.drawText(el[0..current_index], &new_pos);
+                        try painter.drawText(el[0..current_index], &new_pos);
                     }
                 }
             }
         } else {
             for (self.content.items) |el| {
                 new_pos = new_pos.add(&vec2(0, 1));
-                painter.drawText(el, &new_pos);
+                try painter.drawText(el, &new_pos);
             }
         }
     }
@@ -167,7 +167,7 @@ pub const Menu = struct {
         self.items.deinit();
     }
 
-    pub fn draw(self: *const Menu, painter: *Painter, pos: *const Vec2) void {
+    pub fn draw(self: *const Menu, painter: *Painter, pos: *const Vec2) !void {
         const items_len: f32 = @floatFromInt(self.items.items.len);
 
         if (items_len == 0) return;
@@ -214,10 +214,10 @@ pub const Menu = struct {
             painter.setCell(&text_style);
             if (text_len > element_width - 2) {
                 const text_x = current_pos.x() + 1;
-                painter.drawText(self.items.items[i][0..@as(usize, @intFromFloat(@round(element_width - 2)))], &vec2(text_x, text_y));
+                try painter.drawText(self.items.items[i][0..@as(usize, @intFromFloat(@round(element_width - 2)))], &vec2(text_x, text_y));
             } else {
                 const text_x = current_pos.x() + (element_width - text_len) / 2;
-                painter.drawText(self.items.items[i], &vec2(text_x, text_y));
+                try painter.drawText(self.items.items[i], &vec2(text_x, text_y));
             }
 
             switch (self.config.orientation) {
@@ -269,7 +269,7 @@ pub const TextArea = struct {
         self._buffer.deinit();
     }
 
-    pub fn draw(self: *const TextArea, painter: *Painter, pos: *const Vec2) void {
+    pub fn draw(self: *const TextArea, painter: *Painter, pos: *const Vec2) !void {
         painter.setCell(&self.config.border_style.cell());
         painter.drawPrettyRectangle(@floatFromInt(self.config.width), 3, pos, self.config.border, self.config.filled);
         var cursor_style = self.config.text_style;
@@ -277,11 +277,11 @@ pub const TextArea = struct {
 
         if (self._buffer.items.len > 0) {
             painter.setCell(&self.config.text_style.cell());
-            painter.drawText(self._buffer.items[self._viewport.begin..self._viewport.end], &pos.add(&vec2(1, 1)));
+            try painter.drawText(self._buffer.items[self._viewport.begin..self._viewport.end], &pos.add(&vec2(1, 1)));
         } else {
             if (self.config.placeholder) |ph| {
                 painter.setCell(&ph.style.cell());
-                painter.drawText(ph.content[0 .. self.config.width - 2], &pos.add(&vec2(1, 1)));
+                try painter.drawText(ph.content[0 .. self.config.width - 2], &pos.add(&vec2(1, 1)));
             }
         }
 
@@ -289,10 +289,10 @@ pub const TextArea = struct {
             if (self.config.placeholder == null or self._buffer.items.len > 0) {
                 if (self._cursor_pos == self._viewport.end or self._viewport.end == 0) {
                     painter.setCell(&cursor_style.cell());
-                    painter.drawText(" ", &pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
+                    try painter.drawText(" ", &pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
                 } else {
                     painter.setCell(&cursor_style.cell());
-                    painter.drawText(self._buffer.items[self._cursor_pos .. self._cursor_pos + 1], &pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
+                    try painter.drawText(self._buffer.items[self._cursor_pos .. self._cursor_pos + 1], &pos.add(&vec2(@floatFromInt(1 + self._cursor_pos - self._viewport.begin), 1)));
                 }
             }
         }

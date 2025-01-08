@@ -272,10 +272,14 @@ pub fn drawEllipseShape(self: *Painter, circle: *const Ellipse, stretch: *const 
     self.drawCircle(&circle.center, circle.radius, stretch, filled);
 }
 
-pub fn drawText(self: *Painter, content: []const u8, pos: *const Vec2) void {
-    for (0..content.len) |i| {
-        self.cell.char = content[i];
-        self.drawCell(pos.x() + @as(f32, @floatFromInt(i)), pos.y());
+pub fn drawText(self: *Painter, text: []const u8, pos: *const Vec2) !void {
+    const view = try std.unicode.Utf8View.init(text);
+    var iter = view.iterator();
+    var i: f32 = 0;
+    while (iter.nextCodepoint()) |cp| {
+        self.cell.char = cp;
+        self.drawCell(pos.x() + i, pos.y());
+        i += 1;
     }
 }
 

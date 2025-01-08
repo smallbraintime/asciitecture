@@ -1,4 +1,6 @@
 const std = @import("std");
+const Painter = @import("Painter.zig");
+const Vec2 = @import("math.zig").Vec2;
 
 pub fn randomRange(comptime T: type, a: T, b: T) T {
     var rn: [1]u8 = undefined;

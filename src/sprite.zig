@@ -17,18 +17,20 @@ pub const Sprite = struct {
         return .{ .image = str, .style = style.* };
     }
 
-    pub fn draw(self: *const Sprite, painter: *Painter, position: *const Vec2) void {
+    pub fn draw(self: *const Sprite, painter: *Painter, pos: *const Vec2) !void {
         var x: f32 = 0.0;
         var y: f32 = 0.0;
 
+        const view = try std.unicode.Utf8View.init(self.image);
+        var iter = view.iterator();
         painter.setCell(&self.style.cell());
-        for (self.image) |c| {
-            if (c != ' ' and c != '\n') {
-                painter.cell.char = @intCast(c);
-                painter.drawCell(position.x() + x, position.y() + y);
+        while (iter.nextCodepoint()) |cp| {
+            if (cp != ' ' and cp != '\n') {
+                painter.cell.char = cp;
+                painter.drawCell(pos.x() + x, pos.y() + y);
             }
 
-            if (c == '\n') {
+            if (cp == '\n') {
                 y += 1.0;
                 x = 0.0;
             } else {
@@ -59,19 +61,19 @@ pub const Animation = struct {
         self.frames.deinit();
     }
 
-    pub fn draw(self: *Animation, painter: *Painter, position: *const Vec2, delta_time: f32) void {
+    pub fn draw(self: *Animation, painter: *Painter, position: *const Vec2, delta_time: f32) !void {
         if (self.frames.items.len == 0) return;
 
         if (self.looping) {
             const index: usize = @intFromFloat(@round(self._counter));
-            self.frames.items[index].draw(painter, position);
+            try self.frames.items[index].draw(painter, position);
             if (!self.stopped) {
                 self._counter = @mod((self._counter + self.speed * delta_time), @as(f32, @floatFromInt(self.frames.items.len - 1)));
             }
         } else {
             const index: usize = @intFromFloat(@round(self._counter));
             if (index < self.frames.items.len) {
-                self.frames.items[index].draw(painter, position);
+                try self.frames.items[index].draw(painter, position);
                 if (!self.stopped) {
                     self._counter += self.speed * delta_time;
                 }

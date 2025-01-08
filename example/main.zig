@@ -20,6 +20,8 @@ const Line = at.math.Line;
 const Sprite = at.sprite.Sprite;
 const Rectangle = at.math.Rectangle;
 
+const drawCodepointText = at.util.drawCodepointText;
+
 pub fn main() !void {
     // init
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -154,14 +156,14 @@ pub fn main() !void {
             .start = .{ .r = 190, .g = 60, .b = 30 },
             .end = .{ .r = 0, .g = 0, .b = 0 },
         },
-        .color_var = 0,
+        .color_var = 5,
         .start_angle = 30,
         .end_angle = 150,
         .life = 2,
         .life_var = 1,
         .speed = 10,
         .speed_var = 5,
-        .emission_rate = 100 / 3,
+        .emission_rate = 100 / 2,
         .gravity = vec2(0, 0),
         .duration = std.math.inf(f32),
     });
@@ -189,9 +191,9 @@ pub fn main() !void {
     });
     defer bubbles.deinit();
 
-    // menu list
+    // menu
     {
-        var list = Menu.init(gpa.allocator(), &.{
+        var menu = Menu.init(gpa.allocator(), &.{
             .width = 50,
             .height = 21,
             .orientation = .vertical,
@@ -223,26 +225,26 @@ pub fn main() !void {
                 .bg = IndexedColor.black,
             },
         });
-        defer list.deinit();
+        defer menu.deinit();
 
-        try list.items.append("play");
-        try list.items.append("exit");
+        try menu.items.append("play");
+        try menu.items.append("exit");
 
         while (true) {
-            list.draw(&painter, &vec2(-25, -12.5));
+            try menu.draw(&painter, &vec2(-25, -12.5));
             try term.draw();
             if (input.nextEvent()) |key| {
                 switch (key.key) {
                     .enter => {
-                        switch (list.selected_item) {
+                        switch (menu.selected_item) {
                             0 => break,
                             1 => return,
                             else => {},
                         }
                     },
                     .escape => return,
-                    .down => list.next(),
-                    .up => list.previous(),
+                    .down => menu.next(),
+                    .up => menu.previous(),
                     else => {},
                 }
             }
@@ -270,7 +272,7 @@ pub fn main() !void {
         defer text_area.deinit();
 
         while (!text_entered) {
-            text_area.draw(&painter, &vec2(-10, 0));
+            try text_area.draw(&painter, &vec2(-10, 0));
             try term.draw();
             if (input.nextEvent()) |key| {
                 switch (key.key) {
@@ -351,6 +353,7 @@ pub fn main() !void {
 
         // drawing
         {
+
             // pyramide
             painter.setCell(&.{ .char = '┘', .bg = IndexedColor.yellow, .fg = IndexedColor.bright_black });
             painter.drawTriangle(&vec2(-105 / 2, (35 / 2) - 1), &vec2(105 / 2, (35 / 2) - 1), &vec2(0, -4), true);
@@ -360,7 +363,7 @@ pub fn main() !void {
             painter.drawEllipse(&vec2(-30, -10), 7, &vec2(0, 0.5), true);
 
             // logo
-            logo.draw(&painter, &vec2(-6, 5), term.delta_time);
+            try logo.draw(&painter, &vec2(-6, 5), term.delta_time);
 
             // bonfire
             fire.draw(&painter, term.delta_time);
@@ -370,9 +373,9 @@ pub fn main() !void {
             // npc
             const npc_pos = fire.config.pos.add(&vec2(15, -2));
             idle_sprite.style = .{ .fg = IndexedColor.red };
-            idle_sprite.draw(&painter, &npc_pos);
+            try idle_sprite.draw(&painter, &npc_pos);
             if (player_pos.x() <= npc_pos.add(&vec2(10, 0)).x() and player_pos.x() >= npc_pos.sub(&vec2(10, 0)).x()) {
-                npc_cloud.draw(&painter, &npc_pos.add(&vec2(-4, -7)), term.delta_time);
+                try npc_cloud.draw(&painter, &npc_pos.add(&vec2(-4, -7)), term.delta_time);
             } else {
                 npc_cloud.reset();
             }
@@ -388,14 +391,14 @@ pub fn main() !void {
             // player
             idle_sprite.style = player_style;
             if (player_velocity.x() > 0) {
-                anim_right.draw(&painter, &player_pos, term.delta_time);
+                try anim_right.draw(&painter, &player_pos, term.delta_time);
             } else if (player_velocity.x() < 0) {
-                anim_left.draw(&painter, &player_pos, term.delta_time);
+                try anim_left.draw(&painter, &player_pos, term.delta_time);
             } else {
-                idle_sprite.draw(&painter, &player_pos);
+                try idle_sprite.draw(&painter, &player_pos);
             }
             painter.setCell(&.{ .fg = IndexedColor.red, .bg = IndexedColor.white });
-            painter.drawText(name[0..name_len], &player_pos.add(&vec2(-@as(f32, @floatFromInt(name_len / 2)), -2)));
+            try painter.drawText(name[0..name_len], &player_pos.add(&vec2(-@as(f32, @floatFromInt(name_len / 2)), -2)));
             bubbles.draw(&painter, term.delta_time);
 
             // fps overlay
@@ -403,7 +406,7 @@ pub fn main() !void {
             painter.setCell(&.{ .fg = IndexedColor.magenta });
             var buf: [5]u8 = undefined;
             const fps = try std.fmt.bufPrint(&buf, "{d:.2}", .{1.0 / term.delta_time});
-            painter.drawText(fps, &(vec2((105 / 2) - 10, -35 / 2)));
+            try painter.drawText(fps, &(vec2((105 / 2) - 10, -35 / 2)));
             painter.setDrawingSpace(.world);
         }
 
