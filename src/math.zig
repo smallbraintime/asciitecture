@@ -256,16 +256,32 @@ pub const Vec2 = struct {
         return .{ .v = a.v + b.v };
     }
 
+    pub inline fn addScalar(self: *const Vec2, scalar: f32) Vec2 {
+        return .{ .v = self.v + Vec2.splat(scalar).v };
+    }
+
     pub inline fn sub(a: *const Vec2, b: *const Vec2) Vec2 {
         return .{ .v = a.v - b.v };
+    }
+
+    pub inline fn subScalar(self: *const Vec2, scalar: f32) Vec2 {
+        return .{ .v = self.v - Vec2.splat(scalar).v };
     }
 
     pub inline fn mul(a: *const Vec2, b: *const Vec2) Vec2 {
         return .{ .v = a.v * b.v };
     }
 
+    pub inline fn mulScalar(self: *const Vec2, scalar: f32) Vec2 {
+        return .{ .v = self.v * Vec2.splat(scalar).v };
+    }
+
     pub inline fn div(a: *const Vec2, b: *const Vec2) Vec2 {
         return .{ .v = a.v / b.v };
+    }
+
+    pub inline fn divScalar(self: *const Vec2, scalar: f32) Vec2 {
+        return .{ .v = self.v / Vec2.splat(scalar).v };
     }
 
     pub inline fn translate(a: *const Vec2, b: *const Vec2) Vec2 {

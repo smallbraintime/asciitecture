@@ -55,7 +55,7 @@ pub inline fn writeCellScreenSpace(self: *Screen, x: f32, y: f32, cell: *const C
 }
 
 pub inline fn readCell(self: *const Screen, x: usize, y: usize) Cell {
-    if (x >= 0 and x < self.buffer.size.width and y >= 0 and y < self.buffer.size.height) {
+    if (x < self.buffer.size.width and y < self.buffer.size.height) {
         return self.buffer.buf.items[y * self.buffer.size.width + x];
     } else {
         @panic("Screen index out of bounds");

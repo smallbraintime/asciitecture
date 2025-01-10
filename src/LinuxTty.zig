@@ -4,7 +4,6 @@ const style = @import("style.zig");
 const util = @import("util.zig");
 const Color = style.Color;
 const IndexedColor = style.IndexedColor;
-const RgbColor = style.RgbColor;
 const Attribute = style.Attribute;
 
 const LinuxTty = @This();
@@ -114,11 +113,11 @@ pub inline fn putChar(self: *LinuxTty, char: u21) !void {
     try self.buf.writer().print("{s}", .{encoded_char[0..len]});
 }
 
-pub inline fn setRgbFg(self: *LinuxTty, r: u8, g: u8, b: u8) !void {
+pub inline fn setFg(self: *LinuxTty, r: u8, g: u8, b: u8) !void {
     try self.buf.writer().print("\x1b[38;2;{d};{d};{d}m", .{ r, g, b });
 }
 
-pub inline fn setRgbBg(self: *LinuxTty, r: u8, g: u8, b: u8) !void {
+pub inline fn setBg(self: *LinuxTty, r: u8, g: u8, b: u8) !void {
     try self.buf.writer().print("\x1b[48;2;{d};{d};{d}m", .{ r, g, b });
 }
 

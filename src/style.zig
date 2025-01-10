@@ -19,13 +19,6 @@ pub const Color = packed struct {
     r: u8,
     g: u8,
     b: u8,
-
-    pub fn eql(self: Color, color: Color) bool {
-        if (self.r != color.r) return false;
-        if (self.g != color.g) return false;
-        if (self.b != color.b) return false;
-        return true;
-    }
 };
 
 pub const Style = struct {

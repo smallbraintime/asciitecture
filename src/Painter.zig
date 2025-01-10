@@ -273,6 +273,8 @@ pub fn drawEllipseShape(self: *Painter, circle: *const Ellipse, stretch: *const 
 }
 
 pub fn drawText(self: *Painter, text: []const u8, pos: *const Vec2) !void {
+    if (text.len == 0) return;
+
     const view = try std.unicode.Utf8View.init(text);
     var iter = view.iterator();
     var i: f32 = 0;

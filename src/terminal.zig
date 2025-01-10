@@ -37,10 +37,14 @@ pub fn Terminal(comptime T: type) type {
             var fixed_offset: ?ScreenSize = undefined;
             if (size) |s| {
                 if (screen_size[0] > s.width and screen_size[1] > s.height) {
-                    fixed_offset = .{ .width = (screen_size[0] - s.width) / 2, .height = (screen_size[1] - s.height) / 2 };
+                    fixed_offset = .{
+                        .width = (screen_size[0] - s.width) / 2,
+                        .height = (screen_size[1] - s.height) / 2,
+                    };
                 } else {
                     fixed_offset = .{ .width = 0, .height = 0 };
                 }
+
                 screen = try Screen.init(allocator, s);
                 try backend.restoreColors();
                 try backend.clearScreen();
@@ -123,10 +127,10 @@ pub fn Terminal(comptime T: type) type {
                         try self._backend.setAttr(@intFromEnum(Attribute.reset));
                         try self._backend.setCursor(@intCast(x + start_col), @intCast(y + start_row));
                         if (cell.fg) |fg| {
-                            try self._backend.setRgbFg(fg.r, fg.g, fg.b);
+                            try self._backend.setFg(fg.r, fg.g, fg.b);
                         }
                         if (cell.bg) |bg| {
-                            try self._backend.setRgbBg(bg.r, bg.g, bg.b);
+                            try self._backend.setBg(bg.r, bg.g, bg.b);
                         }
                         if (cell.attr != .none) {
                             try self._backend.setAttr(@intFromEnum(cell.attr));
@@ -135,6 +139,7 @@ pub fn Terminal(comptime T: type) type {
                     }
                 }
             }
+
             try self._prev_screen.replace(&self._screen.buffer.buf.items);
             try self._backend.flush();
             self._screen.clear();
@@ -149,20 +154,24 @@ pub fn Terminal(comptime T: type) type {
                 self._term_size.width = screen_size[0];
                 self._term_size.height = screen_size[1];
 
-                if (screen_size[0] == 0 and screen_size[1] == 0) {
-                    self._minimized = true;
-                }
+                if (screen_size[0] == 0 and screen_size[1] == 0) self._minimized = true;
 
-                if (self._fixed_offset != null) {
-                    if (screen_size[0] > self._screen.buffer.size.width and screen_size[1] > self._screen.buffer.size.height) {
-                        self._fixed_offset = .{ .width = (screen_size[0] - self._screen.buffer.size.width) / 2, .height = (screen_size[1] - self._screen.buffer.size.height) / 2 };
+                if (self._fixed_offset) |*fixed_offset| {
+                    if (screen_size[0] > self._screen.buffer.size.width) {
+                        fixed_offset.width = (screen_size[0] - self._screen.buffer.size.width) / 2;
                     } else {
-                        self._fixed_offset = .{ .width = 0, .height = 0 };
+                        fixed_offset.width = 0;
+                    }
+                    if (screen_size[1] > self._screen.buffer.size.height) {
+                        fixed_offset.height = (screen_size[1] - self._screen.buffer.size.height) / 2;
+                    } else {
+                        fixed_offset.height = 0;
                     }
 
                     try self._backend.restoreColors();
                     try self._backend.clearScreen();
                     try self._backend.flush();
+                    self._prev_screen.clear();
                 } else {
                     try self._screen.resize(screen_size[0], screen_size[1]);
                     try self._prev_screen.resize(screen_size[0], screen_size[1]);

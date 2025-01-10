@@ -25,7 +25,7 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer if (gpa.deinit() == .leak) @panic("memory leak occured");
 
-    var term = try Terminal(LinuxTty).init(gpa.allocator(), 99999, .{ .height = 35, .width = 105 });
+    var term = try Terminal(LinuxTty).init(gpa.allocator(), 60, .{ .height = 35, .width = 105 });
     defer term.deinit() catch |err| @panic(@errorName(err));
 
     var painter = term.painter();
@@ -40,10 +40,11 @@ pub fn main() !void {
     var name_len: usize = undefined;
     var player_collider = Shape{ .rectangle = Rectangle.init(&player_pos, 3, 3) };
     var floor_collider = Shape{ .line = Line.init(&vec2(-105 / 2, (35 / 2) - 1), &vec2(105 / 2, (35 / 2) - 1)) };
-    const box_collider = Shape{ .rectangle = Rectangle.init(&vec2(-30, (35 / 2) - 6), 10, 5) };
+    const box_collider = Shape{ .rectangle = Rectangle.init(&vec2(-60, (35 / 2) - 6), 10, 5) };
     const colliders = [_]*const Shape{ &floor_collider, &box_collider };
-    const gravity = vec2(0, 0.5);
-    player_pos.v[1] -= 1;
+    const gravity = vec2(0, 30);
+    var grounded = false;
+    player_pos.v[1] -= 5;
 
     const idle =
         \\ o
@@ -305,6 +306,9 @@ pub fn main() !void {
             } else {
                 player_velocity.v[0] = 0;
             }
+            if (input.contains(.c) and grounded) {
+                player_velocity.v[1] = -gravity.y();
+            }
             if (input.contains(.x)) {
                 bubbles.config.emission_rate = 50 / 2;
             } else {
@@ -317,33 +321,55 @@ pub fn main() !void {
 
         // update game state
         {
+            if (!grounded) {
+                player_velocity.v[1] += gravity.y() * 1.5 * term.delta_time;
+            }
+            player_pos = player_pos.add(&player_velocity.mulScalar(term.delta_time));
+
+            player_collider.rectangle.pos = player_pos;
             for (&colliders) |collider| {
                 switch (collider.*) {
                     .line => |*lin| {
                         if (player_collider.rectangle.collidesWith(collider)) {
-                            player_pos.v[1] = lin.p1.y() - 3 - std.math.floatEps(f32);
+                            player_pos.v[1] = lin.p1.y() - player_collider.rectangle.width;
+                            player_velocity.v[1] = 0;
+                            grounded = true;
+                        } else {
+                            grounded = false;
                         }
                     },
                     .rectangle => |*rec| {
                         if (player_collider.rectangle.collidesWith(collider)) {
-                            if (player_velocity.x() > 0) {
+                            const player_right = player_pos.x() + player_collider.rectangle.width;
+                            const player_bottom = player_pos.y() + player_collider.rectangle.height;
+                            const rec_right = rec.pos.x() + rec.width;
+                            const rec_bottom = rec.pos.y() + rec.height;
+
+                            if (player_right > rec.pos.x() and player_pos.x() < rec.pos.x()) {
                                 player_pos.v[0] = rec.pos.x() - player_collider.rectangle.width;
+                            } else if (player_pos.x() < rec_right and player_right > rec_right) {
+                                player_pos.v[0] = rec_right;
+                            } else if (player_bottom > rec.pos.y() and player_pos.y() < rec.pos.y()) {
+                                player_pos.v[1] = rec.pos.y() - player_collider.rectangle.height;
+                                grounded = true;
+                                player_velocity.v[1] = 0;
+                            } else if (player_pos.y() < rec_bottom and player_bottom > rec_bottom) {
+                                player_pos.v[1] = rec_bottom;
+                                grounded = true;
+                                player_velocity.v[1] = 0;
                             } else {
-                                player_pos.v[0] = rec.pos.x() + rec.width;
+                                grounded = false;
                             }
                         }
                     },
                     else => {},
                 }
-            }
 
-            term.setViewPos(&player_pos.add(&vec2(0, (-35 / 2) + 4)));
-            player_collider.rectangle.pos = player_pos;
-            floor_collider.line.p1 = vec2(player_pos.x(), floor_collider.line.p1.y()).add(&vec2(-105 / 2, 0));
-            floor_collider.line.p2 = vec2(player_pos.x(), floor_collider.line.p2.y()).add(&vec2(105 / 2, 0));
-            player_velocity.v[1] += gravity.y() * term.delta_time;
-            player_pos = player_pos.add(&player_velocity.mul(&vec2(term.delta_time, term.delta_time)));
-            bubbles.config.pos = player_pos.add(&vec2(2, 0));
+                term.setViewPos(&player_pos);
+                floor_collider.line.p1 = vec2(player_pos.x(), floor_collider.line.p1.y()).add(&vec2(-105 / 2, 0));
+                floor_collider.line.p2 = vec2(player_pos.x(), floor_collider.line.p2.y()).add(&vec2(105 / 2, 0));
+                bubbles.config.pos = player_pos.add(&vec2(2, 0));
+            }
         }
 
         // drawing

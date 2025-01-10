@@ -1,5 +1,7 @@
 const std = @import("std");
-const Cell = @import("style.zig").Cell;
+const style = @import("style.zig");
+const Cell = style.Cell;
+const Color = style.Color;
 
 pub const ScreenSize = struct {
     width: usize,
@@ -37,6 +39,13 @@ pub fn resize(self: *Buffer, width: usize, height: usize) !void {
     try self.buf.resize(width * height);
     @memset(self.buf.items, Cell{
         .fg = null,
+    });
+}
+
+pub fn clear(self: *Buffer) void {
+    @memset(self.buf.items, Cell{
+        .fg = null,
+        .bg = null,
     });
 }
 
