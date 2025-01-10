@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const x11 = @cImport({
     @cInclude("X11/Xlib.h");
@@ -5,11 +6,16 @@ const x11 = @cImport({
     @cInclude("X11/extensions/Xrandr.h");
 });
 
-pub const Input = struct {
+pub const Input = switch (builtin.os.tag) {
+    .linux => X11Input,
+    else => @compileError("Platform not supported"),
+};
+
+pub const X11Input = struct {
     _display: *x11.Display,
     _pressed_keys: std.StaticBitSet(std.math.maxInt(u8)),
 
-    pub fn init() !Input {
+    pub fn init() !X11Input {
         const dpy = x11.XOpenDisplay(null) orelse return error.X11Error;
         var focused: x11.Window = undefined;
         var revert: i32 = undefined;
@@ -22,17 +28,17 @@ pub const Input = struct {
         };
     }
 
-    pub fn deinit(self: *Input) !void {
+    pub fn deinit(self: *X11Input) !void {
         _ = x11.XAutoRepeatOn(self._display);
         _ = x11.XCloseDisplay(self._display);
     }
 
-    pub fn contains(self: *Input, key: Key) bool {
+    pub fn contains(self: *X11Input, key: Key) bool {
         _ = self.nextEvent();
         return self._pressed_keys.isSet(@intFromEnum(key));
     }
 
-    pub fn nextEvent(self: *Input) ?KeyInput {
+    pub fn nextEvent(self: *X11Input) ?KeyInput {
         var press: ?KeyInput = null;
         while (x11.XPending(self._display) > 0) {
             var event: x11.XEvent = undefined;

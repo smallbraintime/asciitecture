@@ -1,14 +1,46 @@
+const std = @import("std");
+
 pub const Cell = struct {
     fg: ?Color = null,
     bg: ?Color = null,
     char: u21 = ' ',
     attr: Attribute = .none,
+
+    pub fn eql(self: Cell, cell: Cell) bool {
+        if (!std.meta.eql(self.fg, cell.fg)) return false;
+        if (!std.meta.eql(self.bg, cell.bg)) return false;
+        if (self.char != cell.char) return false;
+        if (self.attr != cell.attr) return false;
+        return true;
+    }
 };
 
-pub const Color = struct {
+pub const Color = packed struct {
     r: u8,
     g: u8,
     b: u8,
+
+    pub fn eql(self: Color, color: Color) bool {
+        if (self.r != color.r) return false;
+        if (self.g != color.g) return false;
+        if (self.b != color.b) return false;
+        return true;
+    }
+};
+
+pub const Style = struct {
+    fg: ?Color = null,
+    bg: ?Color = null,
+    attr: Attribute = .none,
+
+    pub fn cell(self: *const Style) Cell {
+        return .{
+            .fg = self.fg,
+            .bg = self.bg,
+            .attr = self.attr,
+            .char = ' ',
+        };
+    }
 };
 
 pub const IndexedColor = struct {
@@ -52,19 +84,4 @@ pub const Border = enum(u8) {
     thick,
     double_line,
     rounded,
-};
-
-pub const Style = struct {
-    fg: ?Color = null,
-    bg: ?Color = null,
-    attr: Attribute = .none,
-
-    pub fn cell(self: *const Style) Cell {
-        return .{
-            .fg = self.fg,
-            .bg = self.bg,
-            .attr = self.attr,
-            .char = ' ',
-        };
-    }
 };

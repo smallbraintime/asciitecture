@@ -22,7 +22,7 @@ pub fn init(allocator: std.mem.Allocator, screen_size: ScreenSize) !Screen {
 
     var screen = Screen{
         .buffer = buf,
-        .center = Vec2.fromInt(screen_size.cols, screen_size.rows).div(&vec2(2, 2)),
+        .center = Vec2.fromInt(screen_size.width, screen_size.height).div(&vec2(2, 2)),
         .view = undefined,
         .bg = IndexedColor.black,
     };
@@ -35,9 +35,9 @@ pub fn deinit(self: *Screen) void {
     self.buffer.deinit();
 }
 
-pub fn resize(self: *Screen, cols: usize, rows: usize) !void {
-    self.center = Vec2.fromInt(cols, rows).div(&vec2(2, 2));
-    try self.buffer.resize(cols, rows);
+pub fn resize(self: *Screen, width: usize, height: usize) !void {
+    self.center = Vec2.fromInt(width, height).div(&vec2(2, 2));
+    try self.buffer.resize(width, height);
 }
 
 pub inline fn setViewPos(self: *Screen, pos: *const Vec2) void {
@@ -55,8 +55,8 @@ pub inline fn writeCellScreenSpace(self: *Screen, x: f32, y: f32, cell: *const C
 }
 
 pub inline fn readCell(self: *const Screen, x: usize, y: usize) Cell {
-    if (x >= 0 and x < self.buffer.size.cols and y >= 0 and y < self.buffer.size.rows) {
-        return self.buffer.buf.items[y * self.buffer.size.cols + x];
+    if (x >= 0 and x < self.buffer.size.width and y >= 0 and y < self.buffer.size.height) {
+        return self.buffer.buf.items[y * self.buffer.size.width + x];
     } else {
         @panic("Screen index out of bounds");
     }
@@ -77,9 +77,9 @@ inline fn writeCell(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
     if (x >= 0 and y >= 0) {
         const ix: usize = @intFromFloat(@round(x));
         const iy: usize = @intFromFloat(@round(y));
-        const fit_to_screen = ix < self.buffer.size.cols and iy < self.buffer.size.rows;
+        const fit_to_screen = ix < self.buffer.size.width and iy < self.buffer.size.height;
         if (fit_to_screen) {
-            const index = iy * self.buffer.size.cols + ix;
+            const index = iy * self.buffer.size.width + ix;
             var new_cell = cell.*;
             if (new_cell.bg == null) new_cell.bg = self.buffer.buf.items[index].bg; // if there is no bg, take the color from the layer below
             self.buffer.buf.items[index] = new_cell;

@@ -2,8 +2,8 @@ const std = @import("std");
 const Cell = @import("style.zig").Cell;
 
 pub const ScreenSize = struct {
-    cols: usize,
-    rows: usize,
+    width: usize,
+    height: usize,
 };
 
 const Buffer = @This();
@@ -12,9 +12,9 @@ buf: std.ArrayList(Cell),
 size: ScreenSize,
 
 pub fn init(allocator: std.mem.Allocator, screen_size: ScreenSize) !Buffer {
-    const capacity = screen_size.cols * screen_size.rows;
+    const capacity = screen_size.width * screen_size.height;
     var buf = try std.ArrayList(Cell).initCapacity(allocator, capacity);
-    try buf.appendNTimes(.{ .fg = null }, capacity);
+    try buf.appendNTimes(.{}, capacity);
     try buf.ensureTotalCapacity(capacity);
 
     return .{
@@ -31,10 +31,10 @@ pub fn replace(self: *Buffer, buf: *[]const Cell) !void {
     @memcpy(self.buf.items, buf.*);
 }
 
-pub fn resize(self: *Buffer, cols: usize, rows: usize) !void {
-    self.size.cols = cols;
-    self.size.rows = rows;
-    try self.buf.resize(cols * rows);
+pub fn resize(self: *Buffer, width: usize, height: usize) !void {
+    self.size.width = width;
+    self.size.height = height;
+    try self.buf.resize(width * height);
     @memset(self.buf.items, Cell{
         .fg = null,
     });

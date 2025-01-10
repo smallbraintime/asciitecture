@@ -9,7 +9,7 @@ const Painter = @import("Painter.zig");
 const Vec2 = @import("math.zig").Vec2;
 const ScreenSize = Buffer.ScreenSize;
 
-pub fn Terminal(comptime T: type) @TypeOf(T) {
+pub fn Terminal(comptime T: type) type {
     return struct {
         delta_time: f32,
         target_delta: f32,
@@ -30,16 +30,16 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
 
             var screen_size: [2]usize = undefined;
             try backend.screenSize(&screen_size);
-            const term_size = ScreenSize{ .rows = screen_size[0], .cols = screen_size[1] };
+            const term_size = ScreenSize{ .height = screen_size[0], .width = screen_size[1] };
 
             // if size of the screen is set fixed, then init fixed offset which is offset required to draw screen in the middle
             var screen: Screen = undefined;
             var fixed_offset: ?ScreenSize = undefined;
             if (size) |s| {
-                if (screen_size[0] > s.cols and screen_size[1] > s.rows) {
-                    fixed_offset = .{ .cols = (screen_size[0] - s.cols) / 2, .rows = (screen_size[1] - s.rows) / 2 };
+                if (screen_size[0] > s.width and screen_size[1] > s.height) {
+                    fixed_offset = .{ .width = (screen_size[0] - s.width) / 2, .height = (screen_size[1] - s.height) / 2 };
                 } else {
-                    fixed_offset = .{ .cols = 0, .rows = 0 };
+                    fixed_offset = .{ .width = 0, .height = 0 };
                 }
                 screen = try Screen.init(allocator, s);
                 try backend.restoreColors();
@@ -47,7 +47,7 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
                 try backend.flush();
             } else {
                 fixed_offset = null;
-                screen = try Screen.init(allocator, .{ .cols = screen_size[0], .rows = screen_size[1] });
+                screen = try Screen.init(allocator, .{ .width = screen_size[0], .height = screen_size[1] });
             }
 
             const delta = 1 / target_fps;
@@ -110,16 +110,16 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
             var start_row: usize = 0;
             var start_col: usize = 0;
             if (self._fixed_offset) |offset| {
-                start_row = offset.rows;
-                start_col = offset.cols;
+                start_row = offset.height;
+                start_col = offset.width;
             }
 
-            for (0..self._screen.buffer.size.rows) |y| {
-                for (0..self._screen.buffer.size.cols) |x| {
-                    const cell = self._screen.buffer.buf.items[y * self._screen.buffer.size.cols + x];
-                    const last_cell = self._prev_screen.buf.items[y * self._prev_screen.size.cols + x];
+            for (0..self._screen.buffer.size.height) |y| {
+                for (0..self._screen.buffer.size.width) |x| {
+                    const cell = self._screen.buffer.buf.items[y * self._screen.buffer.size.width + x];
+                    const last_cell = self._prev_screen.buf.items[y * self._prev_screen.size.width + x];
 
-                    if (!std.meta.eql(cell, last_cell)) {
+                    if (!cell.eql(last_cell)) {
                         try self._backend.setAttr(@intFromEnum(Attribute.reset));
                         try self._backend.setCursor(@intCast(x + start_col), @intCast(y + start_row));
                         if (cell.fg) |fg| {
@@ -145,19 +145,19 @@ pub fn Terminal(comptime T: type) @TypeOf(T) {
             var screen_size: [2]usize = undefined;
             try self._backend.screenSize(&screen_size);
 
-            if (screen_size[0] != self._term_size.cols or screen_size[1] != self._term_size.rows) {
-                self._term_size.cols = screen_size[0];
-                self._term_size.rows = screen_size[1];
+            if (screen_size[0] != self._term_size.width or screen_size[1] != self._term_size.height) {
+                self._term_size.width = screen_size[0];
+                self._term_size.height = screen_size[1];
 
                 if (screen_size[0] == 0 and screen_size[1] == 0) {
                     self._minimized = true;
                 }
 
                 if (self._fixed_offset != null) {
-                    if (screen_size[0] > self._screen.buffer.size.cols and screen_size[1] > self._screen.buffer.size.rows) {
-                        self._fixed_offset = .{ .cols = (screen_size[0] - self._screen.buffer.size.cols) / 2, .rows = (screen_size[1] - self._screen.buffer.size.rows) / 2 };
+                    if (screen_size[0] > self._screen.buffer.size.width and screen_size[1] > self._screen.buffer.size.height) {
+                        self._fixed_offset = .{ .width = (screen_size[0] - self._screen.buffer.size.width) / 2, .height = (screen_size[1] - self._screen.buffer.size.height) / 2 };
                     } else {
-                        self._fixed_offset = .{ .cols = 0, .rows = 0 };
+                        self._fixed_offset = .{ .width = 0, .height = 0 };
                     }
 
                     try self._backend.restoreColors();
