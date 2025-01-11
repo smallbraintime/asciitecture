@@ -38,9 +38,9 @@ pub fn main() !void {
     var player_velocity = vec2(0, 0);
     var name: [10]u8 = undefined;
     var name_len: usize = undefined;
-    var player_collider = Shape{ .rectangle = Rectangle.init(&player_pos, 3, 3) };
-    var floor_collider = Shape{ .line = Line.init(&vec2(-105 / 2, (35 / 2) - 1), &vec2(105 / 2, (35 / 2) - 1)) };
-    const box_collider = Shape{ .rectangle = Rectangle.init(&vec2(-60, (35 / 2) - 6), 10, 5) };
+    var player_collider = Shape{ .rectangle = Rectangle.init(player_pos, 3, 3) };
+    var floor_collider = Shape{ .line = Line.init(vec2(-105 / 2, (35 / 2) - 1), vec2(105 / 2, (35 / 2) - 1)) };
+    const box_collider = Shape{ .rectangle = Rectangle.init(vec2(-60, (35 / 2) - 6), 10, 5) };
     const colliders = [_]*const Shape{ &floor_collider, &box_collider };
     const gravity = vec2(0, 30);
     var grounded = false;
@@ -82,23 +82,23 @@ pub fn main() !void {
         \\( \
     ;
 
-    const player_style = Style{ .fg = IndexedColor.green };
+    const player_style = Style{ .fg = IndexedColor.cyan };
 
     var anim_right = Animation.init(gpa.allocator(), 2, true);
     defer anim_right.deinit();
-    try anim_right.frames.append(&spriteFromStr(walk_right, &player_style));
-    try anim_right.frames.append(&spriteFromStr(walk_right2, &player_style));
-    try anim_right.frames.append(&spriteFromStr(walk_right3, &player_style));
+    try anim_right.frames.append(&spriteFromStr(walk_right, player_style));
+    try anim_right.frames.append(&spriteFromStr(walk_right2, player_style));
+    try anim_right.frames.append(&spriteFromStr(walk_right3, player_style));
 
     var anim_left = Animation.init(gpa.allocator(), 2, true);
     defer anim_left.deinit();
-    try anim_left.frames.append(&spriteFromStr(walk_left, &player_style));
-    try anim_left.frames.append(&spriteFromStr(walk_left2, &player_style));
-    try anim_left.frames.append(&spriteFromStr(walk_left3, &player_style));
+    try anim_left.frames.append(&spriteFromStr(walk_left, player_style));
+    try anim_left.frames.append(&spriteFromStr(walk_left2, player_style));
+    try anim_left.frames.append(&spriteFromStr(walk_left3, player_style));
 
-    var idle_sprite = spriteFromStr(idle, &player_style);
+    var idle_sprite = spriteFromStr(idle, player_style);
 
-    var logo = try Paragraph.init(gpa.allocator(), &[_][]const u8{"ASCIItecture"}, &.{
+    var logo = try Paragraph.init(gpa.allocator(), &[_][]const u8{"ASCIItecture"}, .{
         .border_style = .{
             .border = .rounded,
             .style = .{
@@ -120,11 +120,9 @@ pub fn main() !void {
 
     var npc_cloud = try Paragraph.init(gpa.allocator(), &[_][]const u8{
         "Hello!",
-        "Use:",
         "->/<- to move right/left",
         "c to jump",
-        "x to blow the bubbles",
-    }, &.{
+    }, .{
         .border_style = .{
             .border = .rounded,
             .style = .{
@@ -144,7 +142,7 @@ pub fn main() !void {
     });
     defer npc_cloud.deinit();
 
-    var fire = try ParticleEmitter.init(gpa.allocator(), &.{
+    var fire = try ParticleEmitter.init(gpa.allocator(), .{
         .pos = vec2(55, (35 / 2) - 2),
         .amount = 100,
         .chars = &[_]u21{' '},
@@ -166,8 +164,8 @@ pub fn main() !void {
     });
     defer fire.deinit();
 
-    var bubbles = try ParticleEmitter.init(gpa.allocator(), &.{
-        .pos = player_pos,
+    var bubbles = try ParticleEmitter.init(gpa.allocator(), .{
+        .pos = box_collider.rectangle.pos.add(&vec2(-1, box_collider.rectangle.height / 2)),
         .amount = 50,
         .chars = &[_]u21{'○'},
         .fg_color = .{
@@ -176,8 +174,8 @@ pub fn main() !void {
         },
         .bg_color = null,
         .color_var = 50,
-        .start_angle = 60,
-        .end_angle = 120,
+        .start_angle = 160,
+        .end_angle = 200,
         .life = 2,
         .life_var = 1,
         .speed = 20,
@@ -190,7 +188,7 @@ pub fn main() !void {
 
     // menu
     {
-        var menu = Menu.init(gpa.allocator(), &.{
+        var menu = Menu.init(gpa.allocator(), .{
             .width = 50,
             .height = 21,
             .orientation = .vertical,
@@ -251,7 +249,7 @@ pub fn main() !void {
     {
         var text_entered = false;
         var color = IndexedColor.magenta;
-        var text_area = try TextArea.init(gpa.allocator(), &.{
+        var text_area = try TextArea.init(gpa.allocator(), .{
             .width = 20,
             .text_style = .{ .fg = color, .attr = .bold },
             .cursor_style = IndexedColor.green,
@@ -309,11 +307,6 @@ pub fn main() !void {
             if (input.contains(.c) and grounded) {
                 player_velocity.v[1] = -gravity.y();
             }
-            if (input.contains(.x)) {
-                bubbles.config.emission_rate = 50 / 2;
-            } else {
-                bubbles.config.emission_rate = 0;
-            }
             if (input.contains(.escape)) {
                 break;
             }
@@ -355,7 +348,6 @@ pub fn main() !void {
                                 player_velocity.v[1] = 0;
                             } else if (player_pos.y() < rec_bottom and player_bottom > rec_bottom) {
                                 player_pos.v[1] = rec_bottom;
-                                grounded = true;
                                 player_velocity.v[1] = 0;
                             } else {
                                 grounded = false;
@@ -368,7 +360,6 @@ pub fn main() !void {
                 term.setViewPos(&player_pos);
                 floor_collider.line.p1 = vec2(player_pos.x(), floor_collider.line.p1.y()).add(&vec2(-105 / 2, 0));
                 floor_collider.line.p2 = vec2(player_pos.x(), floor_collider.line.p2.y()).add(&vec2(105 / 2, 0));
-                bubbles.config.pos = player_pos.add(&vec2(2, 0));
             }
         }
 
@@ -391,12 +382,12 @@ pub fn main() !void {
             painter.setCell(&.{ .bg = IndexedColor.bright_black });
             painter.drawLine(&fire.config.pos.add(&vec2(-3, 0)), &fire.config.pos.add(&vec2(3, 0)));
 
-            // npc
+            // npc stuff
             const npc_pos = fire.config.pos.add(&vec2(10, -2));
             idle_sprite.style = .{ .fg = IndexedColor.red };
             try idle_sprite.draw(&painter, &npc_pos);
             if (player_pos.x() <= npc_pos.add(&vec2(10, 0)).x() and player_pos.x() >= npc_pos.sub(&vec2(10, 0)).x()) {
-                try npc_cloud.draw(&painter, &npc_pos.add(&vec2(-4, -7)), term.delta_time);
+                try npc_cloud.draw(&painter, &npc_pos.add(&vec2(-4, -5)), term.delta_time);
             } else {
                 npc_cloud.reset();
             }
@@ -409,7 +400,10 @@ pub fn main() !void {
             painter.setCell(&.{ .bg = IndexedColor.bright_red });
             painter.drawRectangleShape(&box_collider.rectangle, true);
 
-            // player
+            // bubbles
+            bubbles.draw(&painter, term.delta_time);
+
+            // player stuff
             idle_sprite.style = player_style;
             if (player_velocity.x() > 0) {
                 try anim_right.draw(&painter, &player_pos, term.delta_time);
@@ -420,7 +414,6 @@ pub fn main() !void {
             }
             painter.setCell(&.{ .fg = IndexedColor.red, .bg = IndexedColor.white });
             try painter.drawText(name[0..name_len], &player_pos.add(&vec2(-@as(f32, @floatFromInt(name_len / 2)), -2)));
-            bubbles.draw(&painter, term.delta_time);
 
             // fps overlay
             painter.setDrawingSpace(.screen);

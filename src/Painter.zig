@@ -277,11 +277,16 @@ pub fn drawText(self: *Painter, text: []const u8, pos: *const Vec2) !void {
 
     const view = try std.unicode.Utf8View.init(text);
     var iter = view.iterator();
-    var i: f32 = 0;
+    var current_pos = pos.*;
     while (iter.nextCodepoint()) |cp| {
+        if (cp == '\n') {
+            current_pos.v[0] = pos.x();
+            current_pos.v[1] += 1;
+            continue;
+        }
         self.cell.char = cp;
-        self.drawCell(pos.x() + i, pos.y());
-        i += 1;
+        self.drawCell(current_pos.x(), current_pos.y());
+        current_pos = current_pos.add(&vec2(1, 0));
     }
 }
 

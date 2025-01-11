@@ -10,9 +10,9 @@ pub const Shape = union(enum) {
 pub const Point = struct {
     p: Vec2,
 
-    pub fn init(pos: *const Vec2) Point {
+    pub fn init(pos: Vec2) Point {
         return .{
-            .p = pos.*,
+            .p = pos,
         };
     }
 
@@ -30,10 +30,10 @@ pub const Line = struct {
     p1: Vec2,
     p2: Vec2,
 
-    pub fn init(p1: *const Vec2, p2: *const Vec2) Line {
+    pub fn init(p1: Vec2, p2: Vec2) Line {
         return .{
-            .p1 = p1.*,
-            .p2 = p2.*,
+            .p1 = p1,
+            .p2 = p2,
         };
     }
 
@@ -52,9 +52,9 @@ pub const Rectangle = struct {
     width: f32,
     height: f32,
 
-    pub fn init(pos: *const Vec2, width: f32, height: f32) Rectangle {
+    pub fn init(pos: Vec2, width: f32, height: f32) Rectangle {
         return .{
-            .pos = pos.*,
+            .pos = pos,
             .width = width,
             .height = height,
         };
@@ -74,9 +74,9 @@ pub const Ellipse = struct {
     center: Vec2,
     radius: f32,
 
-    pub fn init(center: *const Vec2, radius: f32) Ellipse {
+    pub fn init(center: Vec2, radius: f32) Ellipse {
         return .{
-            .center = center.*,
+            .center = center,
             .radius = radius,
         };
     }
@@ -170,17 +170,17 @@ inline fn collisionLineRectangle(line: *const Line, rectangle: *const Rectangle)
     const rect_bottom_left = vec2(rectangle.pos.x(), rectangle.pos.y() + rectangle.height);
     const rect_bottom_right = vec2(rectangle.pos.x() + rectangle.width, rectangle.pos.y() + rectangle.height);
 
-    if (collisionLines(line, &Line.init(&rect_top_left, &rect_top_right))) return true;
-    if (collisionLines(line, &Line.init(&rect_top_right, &rect_bottom_right))) return true;
-    if (collisionLines(line, &Line.init(&rect_bottom_right, &rect_bottom_left))) return true;
-    if (collisionLines(line, &Line.init(&rect_bottom_left, &rect_top_left))) return true;
+    if (collisionLines(line, &Line.init(rect_top_left, rect_top_right))) return true;
+    if (collisionLines(line, &Line.init(rect_top_right, rect_bottom_right))) return true;
+    if (collisionLines(line, &Line.init(rect_bottom_right, rect_bottom_left))) return true;
+    if (collisionLines(line, &Line.init(rect_bottom_left, rect_top_left))) return true;
 
     return false;
 }
 
 inline fn collisionLineEllipse(line: *const Line, ellipse: *const Ellipse) bool {
     const d = line.p1.sub(&line.p2);
-    if (@abs(d.x()) + @abs(d.y()) <= std.math.floatEps(f32)) return collisionEllipses(&Ellipse.init(&line.p1, 0), ellipse);
+    if (@abs(d.x()) + @abs(d.y()) <= std.math.floatEps(f32)) return collisionEllipses(&Ellipse.init(line.p1, 0), ellipse);
 
     const sq_len = d.squaredLen();
     const dot = std.math.clamp(((ellipse.center.x() - line.p1.x()) * (line.p2.x() - line.p1.x()) +
@@ -372,79 +372,79 @@ test "Vec2.lerp" {
 }
 
 test "Point.collisionPoint" {
-    const point1 = Point.init(&vec2(0, 0));
-    const point2 = Point.init(&vec2(0, 0));
+    const point1 = Point.init(vec2(0, 0));
+    const point2 = Point.init(vec2(0, 0));
     try std.testing.expect(point1.collidesWith(&.{ .point = point2 }));
 }
 
 test "Point.collisionLine" {
-    const point = Point.init(&vec2(1, 1));
-    const line = Line.init(&vec2(0, 0), &vec2(2, 2));
+    const point = Point.init(vec2(1, 1));
+    const line = Line.init(vec2(0, 0), vec2(2, 2));
     try std.testing.expect(point.collidesWith(&.{ .line = line }));
 }
 
 test "Point.collisionRectangle" {
-    const point = Point.init(&vec2(1, 1));
-    const rectangle = Rectangle.init(&vec2(0, 0), 3.0, 3.0);
+    const point = Point.init(vec2(1, 1));
+    const rectangle = Rectangle.init(vec2(0, 0), 3.0, 3.0);
     try std.testing.expect(point.collidesWith(&.{ .rectangle = rectangle }));
 }
 
 test "Line.collisionPoint" {
-    const line = Line.init(&vec2(0, 0), &vec2(2, 2));
-    const point = Point.init(&vec2(1, 1));
+    const line = Line.init(vec2(0, 0), vec2(2, 2));
+    const point = Point.init(vec2(1, 1));
     try std.testing.expect(line.collidesWith(&.{ .point = point }));
 }
 
 test "Line.collisionLine" {
-    const line1 = Line.init(&vec2(1, 1), &vec2(5, 1));
-    const line2 = Line.init(&vec2(2.5, 5), &vec2(2.5, -2));
+    const line1 = Line.init(vec2(1, 1), vec2(5, 1));
+    const line2 = Line.init(vec2(2.5, 5), vec2(2.5, -2));
     try std.testing.expect(line1.collidesWith(&.{ .line = line2 }));
 }
 
 test "Line.collisionRectangle" {
-    const line = Line.init(&vec2(0, 0), &vec2(1, 1));
-    const rectangle = Rectangle.init(&vec2(0, 0), 3.0, 3.0);
+    const line = Line.init(vec2(0, 0), vec2(1, 1));
+    const rectangle = Rectangle.init(vec2(0, 0), 3.0, 3.0);
     try std.testing.expect(line.collidesWith(&.{ .rectangle = rectangle }));
 }
 
 test "Rectangle.collisionPoint" {
-    const rectangle = Rectangle.init(&vec2(0, 0), 3.0, 3.0);
-    const point = Point.init(&vec2(1, 1));
+    const rectangle = Rectangle.init(vec2(0, 0), 3.0, 3.0);
+    const point = Point.init(vec2(1, 1));
     try std.testing.expect(rectangle.collidesWith(&.{ .point = point }));
 }
 
 test "Rectangle.collisionLine" {
-    const rectangle = Rectangle.init(&vec2(0, 0), 3.0, 3.0);
-    const line = Line.init(&vec2(-10, 3), &vec2(10, 3));
+    const rectangle = Rectangle.init(vec2(0, 0), 3.0, 3.0);
+    const line = Line.init(vec2(-10, 3), vec2(10, 3));
     try std.testing.expect(rectangle.collidesWith(&.{ .line = line }));
 }
 
 test "Rectangle.collisionRectangle" {
-    const rectangle1 = Rectangle.init(&vec2(0, 0), 3.0, 3.0);
-    const rectangle2 = Rectangle.init(&vec2(2, 2), 3.0, 3.0);
+    const rectangle1 = Rectangle.init(vec2(0, 0), 3.0, 3.0);
+    const rectangle2 = Rectangle.init(vec2(2, 2), 3.0, 3.0);
     try std.testing.expect(rectangle1.collidesWith(&.{ .rectangle = rectangle2 }));
 }
 
 test "Ellipse.collisionPoint" {
-    const ellipse = Ellipse.init(&vec2(0, 0), 3.0);
-    const point = Point.init(&vec2(1, 1));
+    const ellipse = Ellipse.init(vec2(0, 0), 3.0);
+    const point = Point.init(vec2(1, 1));
     try std.testing.expect(ellipse.collidesWith(&.{ .point = point }));
 }
 
 test "Ellipse.collisionLine" {
-    const ellipse = Ellipse.init(&vec2(0, 0), 3.0);
-    const line = Line.init(&vec2(0, 0), &vec2(1, 1));
+    const ellipse = Ellipse.init(vec2(0, 0), 3.0);
+    const line = Line.init(vec2(0, 0), vec2(1, 1));
     try std.testing.expect(ellipse.collidesWith(&.{ .line = line }));
 }
 
 test "Ellipse.collisionRectangle" {
-    const ellipse = Ellipse.init(&vec2(0, 0), 3.0);
-    const rectangle = Rectangle.init(&vec2(2, 2), 3.0, 3.0);
+    const ellipse = Ellipse.init(vec2(0, 0), 3.0);
+    const rectangle = Rectangle.init(vec2(2, 2), 3.0, 3.0);
     try std.testing.expect(ellipse.collidesWith(&.{ .rectangle = rectangle }));
 }
 
 test "Ellipse.collisionellipse" {
-    const ellipse1 = Ellipse.init(&vec2(0, 0), 3.0);
-    const ellipse2 = Ellipse.init(&vec2(2, 2), 3.0);
+    const ellipse1 = Ellipse.init(vec2(0, 0), 3.0);
+    const ellipse2 = Ellipse.init(vec2(2, 2), 3.0);
     try std.testing.expect(ellipse1.collidesWith(&.{ .ellipse = ellipse2 }));
 }

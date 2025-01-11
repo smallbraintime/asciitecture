@@ -32,10 +32,10 @@ pub const Paragraph = struct {
         current_index: f32,
     },
 
-    pub fn init(allocator: std.mem.Allocator, content: []const []const u8, config: *const ParagraphConfig) !Paragraph {
+    pub fn init(allocator: std.mem.Allocator, content: []const []const u8, config: ParagraphConfig) !Paragraph {
         var self = Paragraph{
             .content = std.ArrayList([]const u8).init(allocator),
-            .config = config.*,
+            .config = config,
             ._animation_state = .{
                 .current_line = 0,
                 .current_index = 0,
@@ -155,9 +155,9 @@ pub const Menu = struct {
         horizontal,
     };
 
-    pub fn init(allocator: std.mem.Allocator, style_config: *const MenuConfig) Menu {
+    pub fn init(allocator: std.mem.Allocator, style_config: MenuConfig) Menu {
         return .{
-            .config = style_config.*,
+            .config = style_config,
             .items = std.ArrayList([]const u8).init(allocator),
             .selected_item = 0,
         };
@@ -256,9 +256,9 @@ pub const TextArea = struct {
     _cursor_pos: usize,
     _viewport: struct { begin: usize, end: usize },
 
-    pub fn init(allocator: std.mem.Allocator, config: *const TextAreaConfig) !TextArea {
+    pub fn init(allocator: std.mem.Allocator, config: TextAreaConfig) !TextArea {
         return .{
-            .config = config.*,
+            .config = config,
             ._buffer = std.ArrayList(u8).init(allocator),
             ._cursor_pos = 0,
             ._viewport = .{ .begin = 0, .end = 0 },

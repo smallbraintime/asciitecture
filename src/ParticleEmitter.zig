@@ -61,9 +61,9 @@ _particle_count: usize,
 _emit_counter: f32,
 _time_elapsed: f32,
 
-pub fn init(allocator: std.mem.Allocator, config: *const ParticleConfig) !ParticleEmitter {
+pub fn init(allocator: std.mem.Allocator, config: ParticleConfig) !ParticleEmitter {
     var self = ParticleEmitter{
-        .config = config.*,
+        .config = config,
         ._particle_pool = try std.ArrayList(Particle).initCapacity(allocator, config.amount),
         ._particle_count = 0,
         ._emit_counter = 0,

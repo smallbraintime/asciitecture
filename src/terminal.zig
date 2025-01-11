@@ -13,8 +13,8 @@ pub fn Terminal(comptime T: type) type {
     return struct {
         delta_time: f32,
         target_delta: f32,
-        _fixed_offset: ?ScreenSize,
-        _term_size: ScreenSize,
+        _win_size: ScreenSize,
+        _win_offset: ?ScreenSize,
         _backend: T,
         _prev_screen: Buffer,
         _screen: Screen,
@@ -28,21 +28,20 @@ pub fn Terminal(comptime T: type) type {
             try backend.newScreen();
             try backend.flush();
 
-            var screen_size: [2]usize = undefined;
-            try backend.screenSize(&screen_size);
-            const term_size = ScreenSize{ .height = screen_size[0], .width = screen_size[1] };
+            const ws = try backend.screenSize();
+            const win_size = ScreenSize{ .height = ws[0], .width = ws[1] };
 
             // if size of the screen is set fixed, then init fixed offset which is offset required to draw screen in the middle
             var screen: Screen = undefined;
-            var fixed_offset: ?ScreenSize = undefined;
+            var win_offset: ?ScreenSize = undefined;
             if (size) |s| {
-                if (screen_size[0] > s.width and screen_size[1] > s.height) {
-                    fixed_offset = .{
-                        .width = (screen_size[0] - s.width) / 2,
-                        .height = (screen_size[1] - s.height) / 2,
+                if (win_size.width > s.width and win_size.height > s.height) {
+                    win_offset = .{
+                        .width = (win_size.width - s.width) / 2,
+                        .height = (win_size.height - s.height) / 2,
                     };
                 } else {
-                    fixed_offset = .{ .width = 0, .height = 0 };
+                    win_offset = .{ .width = 0, .height = 0 };
                 }
 
                 screen = try Screen.init(allocator, s);
@@ -50,8 +49,8 @@ pub fn Terminal(comptime T: type) type {
                 try backend.clearScreen();
                 try backend.flush();
             } else {
-                fixed_offset = null;
-                screen = try Screen.init(allocator, .{ .width = screen_size[0], .height = screen_size[1] });
+                win_offset = null;
+                screen = try Screen.init(allocator, .{ .width = win_size.width, .height = win_size.height });
             }
 
             const delta = 1 / target_fps;
@@ -59,8 +58,8 @@ pub fn Terminal(comptime T: type) type {
             return .{
                 .delta_time = delta,
                 .target_delta = delta,
-                ._fixed_offset = fixed_offset,
-                ._term_size = term_size,
+                ._win_size = win_size,
+                ._win_offset = win_offset,
                 ._backend = backend,
                 ._screen = screen,
                 ._prev_screen = try screen.buffer.clone(),
@@ -113,7 +112,7 @@ pub fn Terminal(comptime T: type) type {
         fn drawFrame(self: *Terminal(T)) !void {
             var start_row: usize = 0;
             var start_col: usize = 0;
-            if (self._fixed_offset) |offset| {
+            if (self._win_offset) |offset| {
                 start_row = offset.height;
                 start_col = offset.width;
             }
@@ -147,25 +146,24 @@ pub fn Terminal(comptime T: type) type {
 
         // This can be handled by the signal
         fn handleResize(self: *Terminal(T)) !void {
-            var screen_size: [2]usize = undefined;
-            try self._backend.screenSize(&screen_size);
+            const ws = try self._backend.screenSize();
 
-            if (screen_size[0] != self._term_size.width or screen_size[1] != self._term_size.height) {
-                self._term_size.width = screen_size[0];
-                self._term_size.height = screen_size[1];
+            if (ws[0] != self._win_size.width or ws[1] != self._win_size.height) {
+                self._win_size.width = ws[0];
+                self._win_size.height = ws[1];
 
-                if (screen_size[0] == 0 and screen_size[1] == 0) self._minimized = true;
+                if (ws[0] == 0 and ws[1] == 0) self._minimized = true;
 
-                if (self._fixed_offset) |*fixed_offset| {
-                    if (screen_size[0] > self._screen.buffer.size.width) {
-                        fixed_offset.width = (screen_size[0] - self._screen.buffer.size.width) / 2;
+                if (self._win_offset) |*offset| {
+                    if (ws[0] > self._screen.buffer.size.width) {
+                        offset.width = (ws[0] - self._screen.buffer.size.width) / 2;
                     } else {
-                        fixed_offset.width = 0;
+                        offset.width = 0;
                     }
-                    if (screen_size[1] > self._screen.buffer.size.height) {
-                        fixed_offset.height = (screen_size[1] - self._screen.buffer.size.height) / 2;
+                    if (ws[1] > self._screen.buffer.size.height) {
+                        offset.height = (ws[1] - self._screen.buffer.size.height) / 2;
                     } else {
-                        fixed_offset.height = 0;
+                        offset.height = 0;
                     }
 
                     try self._backend.restoreColors();
@@ -173,8 +171,8 @@ pub fn Terminal(comptime T: type) type {
                     try self._backend.flush();
                     self._prev_screen.clear();
                 } else {
-                    try self._screen.resize(screen_size[0], screen_size[1]);
-                    try self._prev_screen.resize(screen_size[0], screen_size[1]);
+                    try self._screen.resize(ws[0], ws[1]);
+                    try self._prev_screen.resize(ws[0], ws[1]);
                     try self._backend.clearScreen();
                     try self._backend.flush();
                 }

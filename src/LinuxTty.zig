@@ -48,7 +48,7 @@ pub inline fn flush(self: *LinuxTty) !void {
     try self.buf.flush();
 }
 
-pub inline fn screenSize(self: *const LinuxTty, size: []usize) !void {
+pub inline fn screenSize(self: *const LinuxTty) ![2]usize {
     var ws: std.posix.winsize = undefined;
 
     const err = std.os.linux.ioctl(self.handle, std.posix.T.IOCGWINSZ, @intFromPtr(&ws));
@@ -56,8 +56,7 @@ pub inline fn screenSize(self: *const LinuxTty, size: []usize) !void {
         return error.IoctlError;
     }
 
-    size[0] = ws.ws_col;
-    size[1] = ws.ws_row;
+    return [_]usize{ ws.ws_col, ws.ws_row };
 }
 
 pub fn enterRawMode(self: *LinuxTty) !void {

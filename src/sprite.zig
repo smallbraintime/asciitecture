@@ -5,7 +5,7 @@ const Vec2 = @import("math.zig").Vec2;
 const Color = style_.Color;
 const Style = style_.Style;
 
-pub fn spriteFromStr(str: []const u8, style: *const Style) Sprite {
+pub fn spriteFromStr(str: []const u8, style: Style) Sprite {
     return Sprite.init(str, style);
 }
 
@@ -13,30 +13,13 @@ pub const Sprite = struct {
     image: []const u8,
     style: Style,
 
-    pub fn init(str: []const u8, style: *const Style) Sprite {
-        return .{ .image = str, .style = style.* };
+    pub fn init(str: []const u8, style: Style) Sprite {
+        return .{ .image = str, .style = style };
     }
 
     pub fn draw(self: *const Sprite, painter: *Painter, pos: *const Vec2) !void {
-        var x: f32 = 0.0;
-        var y: f32 = 0.0;
-
-        const view = try std.unicode.Utf8View.init(self.image);
-        var iter = view.iterator();
         painter.setCell(&self.style.cell());
-        while (iter.nextCodepoint()) |cp| {
-            if (cp != ' ' and cp != '\n') {
-                painter.cell.char = cp;
-                painter.drawCell(pos.x() + x, pos.y() + y);
-            }
-
-            if (cp == '\n') {
-                y += 1.0;
-                x = 0.0;
-            } else {
-                x += 1.0;
-            }
-        }
+        try painter.drawText(self.image, pos);
     }
 };
 
