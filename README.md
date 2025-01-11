@@ -18,7 +18,6 @@ e.g.:
 ```zig build test```
 
 ### Todo
-- [ ] Fix rendering
 - [ ] Add more tests and docs
 - [ ] Add Windows support
 - [ ] Add grapheme clusters
