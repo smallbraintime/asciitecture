@@ -1,7 +1,7 @@
 # 🔺asciitecture
 A simple text-based graphics game library for zig . Currently, it only supports Linux. 
 
-![example](https://github.com/user-attachments/assets/cdb330ae-9aa5-4d90-aff1-6b5cc3f581d2)
+![example](https://github.com/user-attachments/assets/9630f70f-e137-428e-af28-495cd8116b4e)
 
 ### Dependencies
 - zig 0.13.0
