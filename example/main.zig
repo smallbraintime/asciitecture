@@ -148,8 +148,8 @@ pub fn main() !void {
         .chars = &[_]u21{' '},
         .fg_color = null,
         .bg_color = .{
-            .start = .{ .r = 190, .g = 60, .b = 30 },
-            .end = .{ .r = 0, .g = 0, .b = 0 },
+            .start = .{ .rgb = .{ 190, 60, 30 } },
+            .end = .{ .rgb = .{ 0, 0, 0 } },
         },
         .color_var = 5,
         .start_angle = 30,
@@ -169,8 +169,8 @@ pub fn main() !void {
         .amount = 50,
         .chars = &[_]u21{'○'},
         .fg_color = .{
-            .start = .{ .r = 125, .g = 125, .b = 125 },
-            .end = .{ .r = 125, .g = 125, .b = 125 },
+            .start = .{ .rgb = .{ 125, 125, 125 } },
+            .end = .{ .rgb = .{ 125, 125, 125 } },
         },
         .bg_color = null,
         .color_var = 50,

@@ -126,10 +126,10 @@ pub fn Terminal(comptime T: type) type {
                         try self._backend.setAttr(@intFromEnum(Attribute.reset));
                         try self._backend.setCursor(@intCast(x + start_col), @intCast(y + start_row));
                         if (cell.fg) |fg| {
-                            try self._backend.setFg(fg.r, fg.g, fg.b);
+                            try self._backend.setFg(fg.r(), fg.g(), fg.b());
                         }
                         if (cell.bg) |bg| {
-                            try self._backend.setBg(bg.r, bg.g, bg.b);
+                            try self._backend.setBg(bg.r(), bg.g(), bg.b());
                         }
                         if (cell.attr != .none) {
                             try self._backend.setAttr(@intFromEnum(cell.attr));

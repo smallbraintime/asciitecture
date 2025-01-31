@@ -15,10 +15,20 @@ pub const Cell = struct {
     }
 };
 
-pub const Color = packed struct {
-    r: u8,
-    g: u8,
-    b: u8,
+pub const Color = struct {
+    rgb: [3]u8,
+
+    pub fn r(self: Color) u8 {
+        return self.rgb[0];
+    }
+
+    pub fn g(self: Color) u8 {
+        return self.rgb[1];
+    }
+
+    pub fn b(self: Color) u8 {
+        return self.rgb[2];
+    }
 };
 
 pub const Style = struct {
@@ -37,22 +47,22 @@ pub const Style = struct {
 };
 
 pub const IndexedColor = struct {
-    pub const black = Color{ .r = 0, .g = 0, .b = 0 };
-    pub const red = Color{ .r = 255, .g = 0, .b = 0 };
-    pub const green = Color{ .r = 0, .g = 255, .b = 0 };
-    pub const yellow = Color{ .r = 255, .g = 255, .b = 0 };
-    pub const blue = Color{ .r = 0, .g = 0, .b = 255 };
-    pub const magenta = Color{ .r = 255, .g = 0, .b = 255 };
-    pub const cyan = Color{ .r = 0, .g = 255, .b = 255 };
-    pub const white = Color{ .r = 255, .g = 255, .b = 255 };
-    pub const bright_black = Color{ .r = 85, .g = 85, .b = 85 };
-    pub const bright_red = Color{ .r = 255, .g = 85, .b = 85 };
-    pub const bright_green = Color{ .r = 85, .g = 255, .b = 85 };
-    pub const bright_yellow = Color{ .r = 255, .g = 255, .b = 85 };
-    pub const bright_blue = Color{ .r = 85, .g = 85, .b = 255 };
-    pub const bright_magenta = Color{ .r = 255, .g = 85, .b = 255 };
-    pub const bright_cyan = Color{ .r = 85, .g = 255, .b = 255 };
-    pub const bright_white = Color{ .r = 255, .g = 255, .b = 255 };
+    pub const black = Color{ .rgb = .{ 0, 0, 0 } };
+    pub const red = Color{ .rgb = .{ 255, 0, 0 } };
+    pub const green = Color{ .rgb = .{ 0, 255, 0 } };
+    pub const yellow = Color{ .rgb = .{ 255, 255, 0 } };
+    pub const blue = Color{ .rgb = .{ 0, 0, 255 } };
+    pub const magenta = Color{ .rgb = .{ 255, 0, 255 } };
+    pub const cyan = Color{ .rgb = .{ 0, 255, 255 } };
+    pub const white = Color{ .rgb = .{ 255, 255, 255 } };
+    pub const bright_black = Color{ .rgb = .{ 85, 85, 85 } };
+    pub const bright_red = Color{ .rgb = .{ 255, 85, 85 } };
+    pub const bright_green = Color{ .rgb = .{ 85, 255, 85 } };
+    pub const bright_yellow = Color{ .rgb = .{ 255, 255, 85 } };
+    pub const bright_blue = Color{ .rgb = .{ 85, 85, 255 } };
+    pub const bright_magenta = Color{ .rgb = .{ 255, 85, 255 } };
+    pub const bright_cyan = Color{ .rgb = .{ 85, 255, 255 } };
+    pub const bright_white = Color{ .rgb = .{ 255, 255, 255 } };
 };
 
 pub const Attribute = enum(u8) {
