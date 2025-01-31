@@ -236,11 +236,11 @@ pub const Menu = struct {
     }
 };
 
-pub const TextArea = struct {
-    pub const TextAreaConfig = struct {
+pub const TextInput = struct {
+    pub const TextInputConfig = struct {
         width: usize,
         text_style: Style,
-        cursor_style: Color,
+        cursor_color: Color,
         border: Border,
         border_style: Style,
         filling: bool,
@@ -251,12 +251,12 @@ pub const TextArea = struct {
         },
     };
 
-    config: TextAreaConfig,
+    config: TextInputConfig,
     _buffer: std.ArrayList(u8),
     _cursor_pos: usize,
     _viewport: struct { begin: usize, end: usize },
 
-    pub fn init(allocator: std.mem.Allocator, config: TextAreaConfig) !TextArea {
+    pub fn init(allocator: std.mem.Allocator, config: TextInputConfig) !TextInput {
         return .{
             .config = config,
             ._buffer = std.ArrayList(u8).init(allocator),
@@ -265,15 +265,15 @@ pub const TextArea = struct {
         };
     }
 
-    pub fn deinit(self: TextArea) void {
+    pub fn deinit(self: TextInput) void {
         self._buffer.deinit();
     }
 
-    pub fn draw(self: *const TextArea, painter: *Painter, pos: *const Vec2) !void {
+    pub fn draw(self: *const TextInput, painter: *Painter, pos: *const Vec2) !void {
         painter.setCell(&self.config.border_style.cell());
         painter.drawPrettyRectangle(@floatFromInt(self.config.width), 3, pos, self.config.border, self.config.filling);
         var cursor_style = self.config.text_style;
-        cursor_style.bg = self.config.cursor_style;
+        cursor_style.bg = self.config.cursor_color;
 
         if (self._buffer.items.len > 0) {
             painter.setCell(&self.config.text_style.cell());
@@ -298,11 +298,11 @@ pub const TextArea = struct {
         }
     }
 
-    pub inline fn buffer(self: *const TextArea) []const u8 {
+    pub inline fn buffer(self: *const TextInput) []const u8 {
         return self._buffer.items;
     }
 
-    pub fn putChar(self: *TextArea, char: u8) !void {
+    pub fn putChar(self: *TextInput, char: u8) !void {
         if (self._cursor_pos == 0 or self._cursor_pos > self._buffer.items.len) {
             try self._buffer.append(char);
         } else {
@@ -317,7 +317,7 @@ pub const TextArea = struct {
         if (self._cursor_pos < self._viewport.end) self._cursor_pos += 1;
     }
 
-    pub fn delChar(self: *TextArea) void {
+    pub fn delChar(self: *TextInput) void {
         if (self._cursor_pos > 0) {
             if (self._cursor_pos == self._viewport.begin or self._cursor_pos == self._viewport.end) {
                 if (self._viewport.begin > 0) {
@@ -332,7 +332,7 @@ pub const TextArea = struct {
         }
     }
 
-    pub fn cursorLeft(self: *TextArea) void {
+    pub fn cursorLeft(self: *TextInput) void {
         if (self._cursor_pos > 0) {
             if (self._cursor_pos == self._viewport.begin) {
                 if (self._viewport.begin > 0)
@@ -344,7 +344,7 @@ pub const TextArea = struct {
         }
     }
 
-    pub fn cursorRight(self: *TextArea) void {
+    pub fn cursorRight(self: *TextInput) void {
         if (self._cursor_pos < self._buffer.items.len) {
             if (self._cursor_pos == self._viewport.end - 1) {
                 if (self._viewport.end >= self.config.width - 2)
@@ -356,15 +356,7 @@ pub const TextArea = struct {
         }
     }
 
-    pub fn hideCursor(self: *TextArea) void {
-        self.cursor_hidden = true;
-    }
-
-    pub fn unhideCursor(self: *TextArea) void {
-        self.cursor_hidden = false;
-    }
-
-    pub fn input(self: *TextArea, key_input: *const KeyInput) !void {
+    pub fn input(self: *TextInput, key_input: *const KeyInput) !void {
         if (key_input.mod.shift) {
             switch (key_input.key) {
                 .a => try self.putChar('A'),

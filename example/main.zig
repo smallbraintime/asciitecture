@@ -15,7 +15,7 @@ const Color = at.style.Color;
 const IndexedColor = at.style.IndexedColor;
 const Paragraph = at.widgets.Paragraph;
 const Menu = at.widgets.Menu;
-const TextArea = at.widgets.TextArea;
+const TextInput = at.widgets.TextInput;
 const Line = at.math.Line;
 const Sprite = at.sprite.Sprite;
 const Rectangle = at.math.Rectangle;
@@ -249,10 +249,10 @@ pub fn main() !void {
     {
         var text_entered = false;
         var color = IndexedColor.magenta;
-        var text_area = try TextArea.init(gpa.allocator(), .{
+        var text_area = try TextInput.init(gpa.allocator(), .{
             .width = 20,
             .text_style = .{ .fg = color, .attr = .bold },
-            .cursor_style = IndexedColor.green,
+            .cursor_color = IndexedColor.green,
             .border = .plain,
             .border_style = .{ .fg = color, .attr = .bold },
             .filling = false,

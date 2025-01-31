@@ -18,8 +18,23 @@ pub const Sprite = struct {
     }
 
     pub fn draw(self: *const Sprite, painter: *Painter, pos: *const Vec2) !void {
+        var x: f32 = 0.0;
+        var y: f32 = 0.0;
+        const view = try std.unicode.Utf8View.init(self.image);
+        var iter = view.iterator();
         painter.setCell(&self.style.cell());
-        try painter.drawText(self.image, pos);
+        while (iter.nextCodepoint()) |cp| {
+            if (cp != ' ' and cp != '\n') {
+                painter.cell.char = cp;
+                painter.drawCell(pos.x() + x, pos.y() + y);
+            }
+            if (cp == '\n') {
+                y += 1.0;
+                x = 0.0;
+            } else {
+                x += 1.0;
+            }
+        }
     }
 };
 
