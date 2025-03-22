@@ -12,10 +12,7 @@ pub fn build(b: *std.Build) void {
     });
     if (buildin.os.tag == .linux) {
         asciitecture_mod.linkSystemLibrary("c", .{});
-        asciitecture_mod.linkSystemLibrary("Xdmcp", .{ .preferred_link_mode = .static });
-        asciitecture_mod.linkSystemLibrary("Xau", .{ .preferred_link_mode = .static });
-        asciitecture_mod.linkSystemLibrary("xcb", .{ .preferred_link_mode = .static });
-        asciitecture_mod.linkSystemLibrary("X11", .{ .preferred_link_mode = .static });
+        asciitecture_mod.linkSystemLibrary("X11", .{});
     }
     const options = b.addOptions();
     const options_mod = options.createModule();

@@ -5,11 +5,9 @@ A simple text-based graphics game library for zig . Currently, it only supports 
 
 ### Dependencies
 - zig 0.13.0
+- libc
 - libx11-dev
 - libxrandr-dev
-
-e.g.:
-```sudo apt install libx11-dev libxrandr-dev```
 
 ### Run example
 ```zig build example```
