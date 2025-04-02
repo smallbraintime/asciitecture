@@ -101,7 +101,7 @@ inline fn writeCell(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
         if (fit_to_screen) {
             const index = iy * self.buffer.size.width + ix;
             var new_cell = cell.*;
-            if (new_cell.bg == null) new_cell.bg = self.buffer.buf.items[index].bg; // if there is no bg, take the color from the layer below
+            if (new_cell.bg == null) new_cell.bg = self.buffer.buf.items[index].bg;
             self.buffer.buf.items[index] = new_cell;
         }
     }

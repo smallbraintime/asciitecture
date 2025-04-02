@@ -44,6 +44,8 @@ pub fn main() !void {
     const colliders = [_]*const Shape{ &floor_collider, &box_collider };
     const gravity = vec2(0, 30);
     var grounded = false;
+    var dashing = false;
+    var dashing_counter: f32 = 0;
     player_pos.v[1] -= 5;
 
     const idle =
@@ -165,8 +167,8 @@ pub fn main() !void {
     defer fire.deinit();
 
     var bubbles = try ParticleEmitter.init(gpa.allocator(), .{
-        .pos = box_collider.rectangle.pos.add(&vec2(-1, box_collider.rectangle.height / 2)),
-        .amount = 50,
+        .pos = player_pos,
+        .amount = 100,
         .chars = &[_]u21{'○'},
         .fg_color = .{
             .start = .{ .rgb = .{ 125, 125, 125 } },
@@ -180,7 +182,7 @@ pub fn main() !void {
         .life_var = 1,
         .speed = 20,
         .speed_var = 5,
-        .emission_rate = 50 / 2,
+        .emission_rate = 100 / 2,
         .gravity = vec2(0, 0),
         .duration = std.math.inf(f32),
     });
@@ -293,6 +295,7 @@ pub fn main() !void {
         }
     }
 
+    @setEvalBranchQuota(100000000);
     // main loop
     while (true) {
         // input handling
@@ -307,6 +310,10 @@ pub fn main() !void {
             if (input.contains(.c) and grounded) {
                 player_velocity.v[1] = -gravity.y();
             }
+            if (input.contains(.x)) {
+                dashing_counter = 0.2;
+                dashing = true;
+            }
             if (input.contains(.escape)) {
                 break;
             }
@@ -317,7 +324,27 @@ pub fn main() !void {
             if (!grounded) {
                 player_velocity.v[1] += gravity.y() * 1.5 * term.delta_time;
             }
+            if (dashing) {
+                if (dashing_counter <= 0) dashing = false;
+                dashing_counter -= term.delta_time;
+                player_velocity.v[0] *= 8;
+            }
             player_pos = player_pos.add(&player_velocity.mulScalar(term.delta_time));
+            bubbles.config.pos = player_pos.add(&vec2(0, 1));
+            if (dashing) {
+                bubbles.config.life = 2;
+                bubbles.config.life_var = 1;
+                if (player_pos.x() > 0) {
+                    bubbles.config.start_angle = 160;
+                    bubbles.config.end_angle = 200;
+                } else {
+                    bubbles.config.start_angle = -20;
+                    bubbles.config.end_angle = 20;
+                }
+            } else {
+                bubbles.config.life = 0;
+                bubbles.config.life_var = 0;
+            }
 
             player_collider.rectangle.pos = player_pos;
             for (&colliders) |collider| {
@@ -400,7 +427,7 @@ pub fn main() !void {
             painter.setCell(&.{ .bg = IndexedColor.bright_red });
             painter.drawRectangleShape(&box_collider.rectangle, true);
 
-            // bubbles
+            // dash bubbles
             bubbles.draw(&painter, term.delta_time);
 
             // player stuff
