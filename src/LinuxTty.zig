@@ -51,7 +51,11 @@ pub inline fn flush(self: *LinuxTty) !void {
 pub inline fn screenSize(self: *const LinuxTty) ![2]usize {
     var ws: std.posix.winsize = undefined;
 
-    const err = std.os.linux.ioctl(self.handle, std.posix.T.IOCGWINSZ, @intFromPtr(&ws));
+    const err = std.os.linux.ioctl(
+        self.handle,
+        std.posix.T.IOCGWINSZ,
+        @intFromPtr(&ws),
+    );
     if (std.posix.errno(err) != .SUCCESS) {
         return error.IoctlError;
     }

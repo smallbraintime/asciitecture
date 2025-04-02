@@ -74,7 +74,10 @@ _time_elapsed: f32,
 pub fn init(allocator: std.mem.Allocator, config: ParticleConfig) !ParticleEmitter {
     var self = ParticleEmitter{
         .config = config,
-        ._particle_pool = try std.ArrayList(Particle).initCapacity(allocator, config.amount),
+        ._particle_pool = try std.ArrayList(Particle).initCapacity(
+            allocator,
+            config.amount,
+        ),
         ._particle_count = 0,
         ._emit_counter = 0,
         ._time_elapsed = 0,
@@ -122,7 +125,9 @@ fn update(self: *ParticleEmitter, delta_time: f32) void {
         const rate = 1 / self.config.emission_rate;
         self._emit_counter += delta_time;
 
-        while (self._particle_count < self._particle_pool.items.len and self._emit_counter > rate) {
+        while (self._particle_count < self._particle_pool.items.len and
+            self._emit_counter > rate)
+        {
             self.addParticle();
             self._emit_counter -= rate;
         }
@@ -142,7 +147,10 @@ fn update(self: *ParticleEmitter, delta_time: f32) void {
 }
 
 fn initParticle(self: *ParticleEmitter, particle: *Particle) void {
-    const life = @max(std.math.floatEps(f32), self.config.life + self.config.life_var * randomRange(f32, -1, 1));
+    const life = @max(
+        std.math.floatEps(f32),
+        self.config.life + self.config.life_var * randomRange(f32, -1, 1),
+    );
     const speed = self.config.speed + self.config.speed_var * randomRange(f32, -1, 1);
     const angle = randomRange(f32, self.config.start_angle, self.config.end_angle);
 
@@ -199,7 +207,10 @@ fn setParticleColor(self: *ParticleEmitter, particle: *Particle) void {
     }
 }
 
-fn calcColors(color: *const ColorRange, color_var: u8, life: f32) struct { start_color: Color, delta_color: DeltaColor } {
+fn calcColors(color: *const ColorRange, color_var: u8, life: f32) struct {
+    start_color: Color,
+    delta_color: DeltaColor,
+} {
     var sr: f32 = @floatFromInt(color.start.r());
     var sg: f32 = @floatFromInt(color.start.g());
     var sb: f32 = @floatFromInt(color.start.b());

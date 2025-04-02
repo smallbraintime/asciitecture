@@ -52,12 +52,25 @@ pub inline fn setViewPos(self: *Screen, pos: *const Vec2) void {
     self.view = pos.*;
 }
 
-pub inline fn writeCellWorldSpace(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
-    const buffer_pos = vec2(self.center.x() + (x - self.view.x()), self.center.y() + (y - self.view.y()));
+pub inline fn writeCellWorldSpace(
+    self: *Screen,
+    x: f32,
+    y: f32,
+    cell: *const Cell,
+) void {
+    const buffer_pos = vec2(
+        self.center.x() + (x - self.view.x()),
+        self.center.y() + (y - self.view.y()),
+    );
     self.writeCell(buffer_pos.x(), buffer_pos.y(), cell);
 }
 
-pub inline fn writeCellScreenSpace(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
+pub inline fn writeCellScreenSpace(
+    self: *Screen,
+    x: f32,
+    y: f32,
+    cell: *const Cell,
+) void {
     const buffer_pos = vec2(self.center.x() + x, self.center.y() + y);
     self.writeCell(buffer_pos.x(), buffer_pos.y(), cell);
 }

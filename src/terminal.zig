@@ -21,7 +21,11 @@ pub fn Terminal(comptime T: type) type {
         _minimized: bool,
         _current_time: i128,
 
-        pub fn init(allocator: std.mem.Allocator, target_fps: f32, comptime size: ?ScreenSize) !Terminal(T) {
+        pub fn init(
+            allocator: std.mem.Allocator,
+            target_fps: f32,
+            comptime size: ?ScreenSize,
+        ) !Terminal(T) {
             var backend = try T.init();
             try backend.enterRawMode();
             try backend.hideCursor();
@@ -31,7 +35,8 @@ pub fn Terminal(comptime T: type) type {
             const ws = try backend.screenSize();
             const win_size = ScreenSize{ .height = ws[0], .width = ws[1] };
 
-            // if size of the screen is set fixed, then init fixed offset which is offset required to draw screen in the middle
+            // if size of the screen is set fixed,
+            // then init fixed offset which is offset required to draw screen in the middle
             var screen: Screen = undefined;
             var win_offset: ?ScreenSize = undefined;
             if (size) |s| {
@@ -50,7 +55,10 @@ pub fn Terminal(comptime T: type) type {
                 try backend.flush();
             } else {
                 win_offset = null;
-                screen = try Screen.init(allocator, .{ .width = win_size.width, .height = win_size.height });
+                screen = try Screen.init(
+                    allocator,
+                    .{ .width = win_size.width, .height = win_size.height },
+                );
             }
 
             const delta = 1 / target_fps;
@@ -85,7 +93,8 @@ pub fn Terminal(comptime T: type) type {
         pub fn draw(self: *Terminal(T)) !void {
             if (!self._minimized) {
                 const new_time = std.time.nanoTimestamp();
-                const draw_time = @as(f32, @floatFromInt(new_time - self._current_time)) / std.time.ns_per_s;
+                const draw_time =
+                    @as(f32, @floatFromInt(new_time - self._current_time)) / std.time.ns_per_s;
                 self._current_time = new_time;
 
                 if (draw_time < self.target_delta) {

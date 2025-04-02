@@ -121,10 +121,17 @@ inline fn collisionPointLine(point: *const Point, line: *const Line) bool {
     return collision;
 }
 
-inline fn collisionPointRectangle(point: *const Point, rectangle: *const Rectangle) bool {
+inline fn collisionPointRectangle(
+    point: *const Point,
+    rectangle: *const Rectangle,
+) bool {
     var collision = false;
 
-    if ((point.p.x() >= rectangle.pos.x()) and (point.p.x() < (rectangle.pos.x() + rectangle.width)) and (point.p.y() >= rectangle.pos.y()) and (point.p.y() < (rectangle.pos.y() + rectangle.height))) collision = true;
+    if ((point.p.x() >= rectangle.pos.x()) and
+        (point.p.x() < (rectangle.pos.x() + rectangle.width)) and
+        (point.p.y() >= rectangle.pos.y()) and
+        (point.p.y() < (rectangle.pos.y() + rectangle.height)))
+        collision = true;
 
     return collision;
 }
@@ -180,7 +187,8 @@ inline fn collisionLineRectangle(line: *const Line, rectangle: *const Rectangle)
 
 inline fn collisionLineEllipse(line: *const Line, ellipse: *const Ellipse) bool {
     const d = line.p1.sub(&line.p2);
-    if (@abs(d.x()) + @abs(d.y()) <= std.math.floatEps(f32)) return collisionEllipses(&Ellipse.init(line.p1, 0), ellipse);
+    if (@abs(d.x()) + @abs(d.y()) <= std.math.floatEps(f32))
+        return collisionEllipses(&Ellipse.init(line.p1, 0), ellipse);
 
     const sq_len = d.squaredLen();
     const dot = std.math.clamp(((ellipse.center.x() - line.p1.x()) * (line.p2.x() - line.p1.x()) +
@@ -199,7 +207,8 @@ inline fn collisionLineEllipse(line: *const Line, ellipse: *const Ellipse) bool 
 inline fn collisionRectangles(r1: *const Rectangle, r2: *const Rectangle) bool {
     var collision = false;
     if ((r1.pos.x() < (r2.pos.x() + r2.width) and (r1.pos.x() + r1.width) > r2.pos.x()) and
-        (r1.pos.y() < (r2.pos.y() + r2.height) and (r1.pos.y() + r1.height) > r2.pos.y())) collision = true;
+        (r1.pos.y() < (r2.pos.y() + r2.height) and (r1.pos.y() + r1.height) > r2.pos.y()))
+        collision = true;
 
     return collision;
 }
@@ -217,7 +226,8 @@ inline fn collisionRectangleEllipse(rectangle: *const Rectangle, ellipse: *const
     if (dx <= (rectangle.width / 2)) return true;
     if (dy <= (rectangle.height / 2)) return true;
 
-    const corner_distance_squared = (dx - rectangle.width / 2) * (dx - rectangle.width / 2) + (dy - rectangle.height / 2) * (dy - rectangle.height / 2);
+    const corner_distance_squared = (dx - rectangle.width / 2) * (dx - rectangle.width / 2) +
+        ((dy - rectangle.height / 2) * (dy - rectangle.height / 2));
 
     return corner_distance_squared <= (ellipse.radius * ellipse.radius);
 }

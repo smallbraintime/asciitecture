@@ -59,14 +59,22 @@ pub const Animation = struct {
         self.frames.deinit();
     }
 
-    pub fn draw(self: *Animation, painter: *Painter, position: *const Vec2, delta_time: f32) !void {
+    pub fn draw(
+        self: *Animation,
+        painter: *Painter,
+        position: *const Vec2,
+        delta_time: f32,
+    ) !void {
         if (self.frames.items.len == 0) return;
 
         if (self.looping) {
             const index: usize = @intFromFloat(@round(self._counter));
             try self.frames.items[index].draw(painter, position);
             if (!self.stopped) {
-                self._counter = @mod((self._counter + self.speed * delta_time), @as(f32, @floatFromInt(self.frames.items.len - 1)));
+                self._counter = @mod(
+                    (self._counter + self.speed * delta_time),
+                    @as(f32, @floatFromInt(self.frames.items.len - 1)),
+                );
             }
         } else {
             const index: usize = @intFromFloat(@round(self._counter));
