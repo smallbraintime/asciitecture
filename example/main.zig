@@ -9,7 +9,7 @@ const vec2 = at.math.vec2;
 const Shape = at.math.Shape;
 const ParticleEmitter = at.ParticleEmitter;
 const Animation = at.sprite.Animation;
-const spriteFromStr = at.sprite.spriteFromStr;
+const Sprite = at.sprite.Sprite;
 const Style = at.style.Style;
 const Color = at.style.Color;
 const IndexedColor = at.style.IndexedColor;
@@ -17,7 +17,6 @@ const Paragraph = at.widgets.Paragraph;
 const Menu = at.widgets.Menu;
 const TextInput = at.widgets.TextInput;
 const Line = at.math.Line;
-const Sprite = at.sprite.Sprite;
 const Rectangle = at.math.Rectangle;
 
 pub fn main() !void {
@@ -88,17 +87,17 @@ pub fn main() !void {
 
     var anim_right = Animation.init(gpa.allocator(), 2, true);
     defer anim_right.deinit();
-    try anim_right.frames.append(&spriteFromStr(walk_right, player_style));
-    try anim_right.frames.append(&spriteFromStr(walk_right2, player_style));
-    try anim_right.frames.append(&spriteFromStr(walk_right3, player_style));
+    try anim_right.frames.append(&Sprite.init(walk_right, player_style));
+    try anim_right.frames.append(&Sprite.init(walk_right2, player_style));
+    try anim_right.frames.append(&Sprite.init(walk_right3, player_style));
 
     var anim_left = Animation.init(gpa.allocator(), 2, true);
     defer anim_left.deinit();
-    try anim_left.frames.append(&spriteFromStr(walk_left, player_style));
-    try anim_left.frames.append(&spriteFromStr(walk_left2, player_style));
-    try anim_left.frames.append(&spriteFromStr(walk_left3, player_style));
+    try anim_left.frames.append(&Sprite.init(walk_left, player_style));
+    try anim_left.frames.append(&Sprite.init(walk_left2, player_style));
+    try anim_left.frames.append(&Sprite.init(walk_left3, player_style));
 
-    var idle_sprite = spriteFromStr(idle, player_style);
+    var idle_sprite = Sprite.init(idle, player_style);
 
     var logo = try Paragraph.init(gpa.allocator(), &[_][]const u8{"ASCIItecture"}, .{
         .border_style = .{

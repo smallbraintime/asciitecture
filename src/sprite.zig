@@ -5,10 +5,6 @@ const Vec2 = @import("math.zig").Vec2;
 const Color = style_.Color;
 const Style = style_.Style;
 
-pub fn spriteFromStr(str: []const u8, style: Style) Sprite {
-    return Sprite.init(str, style);
-}
-
 pub const Sprite = struct {
     image: []const u8,
     style: Style,
