@@ -14,16 +14,19 @@ pub const Sprite = struct {
     }
 
     pub fn draw(self: *const Sprite, painter: *Painter, pos: *const Vec2) !void {
-        var x: f32 = 0.0;
-        var y: f32 = 0.0;
+        painter.setCell(&self.style.cell());
         const view = try std.unicode.Utf8View.init(self.image);
         var iter = view.iterator();
-        painter.setCell(&self.style.cell());
+
+        var x: f32 = 0;
+        var y: f32 = 0;
+
         while (iter.nextCodepoint()) |cp| {
             if (cp != ' ' and cp != '\n') {
                 painter.cell.char = cp;
                 painter.drawCell(pos.x() + x, pos.y() + y);
             }
+
             if (cp == '\n') {
                 y += 1.0;
                 x = 0.0;
@@ -31,6 +34,29 @@ pub const Sprite = struct {
                 x += 1.0;
             }
         }
+    }
+
+    pub fn dims(self: *const Sprite) !struct { width: usize, height: usize } {
+        var width: usize = 0;
+        var height: usize = 1;
+        var width_counter: usize = 0;
+
+        //this should be the part of Sprite struct
+        const view = try std.unicode.Utf8View.init(self.image);
+        var iter = view.iterator();
+        while (iter.nextCodepoint()) |c| {
+            if (c == '\n') {
+                height += 1;
+                if (width_counter > width) width = width_counter;
+                width_counter = 0;
+            } else {
+                width_counter += 1;
+            }
+        }
+
+        if (width_counter > width) width = width_counter;
+
+        return .{ .width = width, .height = height };
     }
 };
 
@@ -66,6 +92,7 @@ pub const Animation = struct {
         if (self.looping) {
             const index: usize = @intFromFloat(@round(self._counter));
             try self.frames.items[index].draw(painter, position);
+
             if (!self.stopped) {
                 self._counter = @mod(
                     (self._counter + self.speed * delta_time),
@@ -74,8 +101,10 @@ pub const Animation = struct {
             }
         } else {
             const index: usize = @intFromFloat(@round(self._counter));
+
             if (index < self.frames.items.len) {
                 try self.frames.items[index].draw(painter, position);
+
                 if (!self.stopped) {
                     self._counter += self.speed * delta_time;
                 }

@@ -36,17 +36,14 @@ pub fn replace(self: *Buffer, buf: *[]const Cell) !void {
 pub fn resize(self: *Buffer, width: usize, height: usize) !void {
     self.size.width = width;
     self.size.height = height;
+
     try self.buf.resize(width * height);
-    @memset(self.buf.items, Cell{
-        .fg = null,
-    });
+
+    @memset(self.buf.items, Cell{ .fg = null });
 }
 
 pub fn clear(self: *Buffer) void {
-    @memset(self.buf.items, Cell{
-        .fg = null,
-        .bg = null,
-    });
+    @memset(self.buf.items, Cell{ .fg = null, .bg = null });
 }
 
 pub fn deinit(self: *Buffer) void {

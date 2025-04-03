@@ -19,9 +19,11 @@ pub const X11Input = struct {
         const dpy = x11.XOpenDisplay(null) orelse return error.X11Error;
         var focused: x11.Window = undefined;
         var revert: i32 = undefined;
+
         _ = x11.XGetInputFocus(dpy, &focused, &revert);
         _ = x11.XSelectInput(dpy, focused, x11.KeyPressMask | x11.KeyReleaseMask | x11.FocusChangeMask);
         _ = x11.XSynchronize(dpy, 1);
+
         return .{
             ._display = dpy,
             ._pressed_keys = std.StaticBitSet(std.math.maxInt(u8)).initEmpty(),
@@ -40,20 +42,24 @@ pub const X11Input = struct {
 
     pub fn nextEvent(self: *X11Input) ?KeyInput {
         var press: ?KeyInput = null;
+
         while (x11.XPending(self._display) > 0) {
             var event: x11.XEvent = undefined;
             _ = x11.XNextEvent(self._display, &event);
+
             switch (event.type) {
                 x11.KeyPress => {
                     var keysym: x11.KeySym = undefined;
                     _ = x11.XLookupString(&event.xkey, null, 0, &keysym, null);
                     press = KeyInput{ .key = toKey(keysym), .mod = toMod(event.xkey.state) };
+
                     self._pressed_keys.set(@intFromEnum(press.?.key));
                 },
                 x11.KeyRelease => {
                     var keysym: x11.KeySym = undefined;
                     _ = x11.XLookupString(&event.xkey, null, 0, &keysym, null);
                     const key = KeyInput{ .key = toKey(keysym), .mod = toMod(event.xkey.state) };
+
                     self._pressed_keys.unset(@intFromEnum(key.key));
                 },
                 x11.FocusOut => {

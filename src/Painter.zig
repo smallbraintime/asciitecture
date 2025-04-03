@@ -63,7 +63,9 @@ pub fn drawLine(self: *Painter, p0: *const Vec2, p1: *const Vec2) void {
 
     while (true) {
         self.drawCell(x0, y0);
+
         if (x0 == x1 and y0 == y1) break;
+
         const e2 = 2 * err;
         if (e2 > -dy) {
             err -= dy;
@@ -88,7 +90,9 @@ pub fn drawCubicSpline(
     while (t <= 1.0) {
         const x = cubic_bezier(t, p0.x(), p1.x(), p2.x(), p3.x());
         const y = cubic_bezier(t, p0.y(), p1.y(), p2.y(), p3.y());
+
         self.drawCell(x, y);
+
         t = t + inc_val;
     }
 }
@@ -104,9 +108,11 @@ pub fn drawRectangle(
         const x1 = position.x();
         const x2 = position.x() + width - 1;
         var y = position.y();
+
         while (y < position.y() + height) : (y += 1) {
             const filling_line_left = vec2(x1, y);
             const filling_line_right = vec2(x2, y);
+
             self.drawLine(&filling_line_left, &filling_line_right);
         }
     } else {
@@ -200,6 +206,7 @@ pub fn drawPrettyRectangle(
     if (filled) {
         const interior_pos = top_left.add(&vec2(1, 1));
         self.cell.char = ' ';
+
         self.drawRectangle(width - 2, height - 2, &interior_pos, filled);
     }
 }
@@ -275,6 +282,7 @@ pub fn drawEllipse(
             const adjusted_y = dy * stretch_y;
             const line_length = @sqrt(radius * radius - dy * dy);
             var dx: f32 = -line_length;
+
             while (dx <= line_length) : (dx += 1) {
                 const adjusted_x = dx * stretch_x;
                 self.drawCell(adjusted_x + position.x(), adjusted_y + position.y());
@@ -323,14 +331,18 @@ pub fn drawText(self: *Painter, text: []const u8, pos: *const Vec2) !void {
     const view = try std.unicode.Utf8View.init(text);
     var iter = view.iterator();
     var current_pos = pos.*;
+
     while (iter.nextCodepoint()) |cp| {
         if (cp == '\n') {
             current_pos.v[0] = pos.x();
             current_pos.v[1] += 1;
             continue;
         }
+
         self.cell.char = cp;
+
         self.drawCell(current_pos.x(), current_pos.y());
+
         current_pos = current_pos.add(&vec2(1, 0));
     }
 }

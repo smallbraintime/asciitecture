@@ -10,8 +10,16 @@ pub fn randomRange(comptime T: type, a: T, b: T) T {
     switch (@typeInfo(T)) {
         .Int => return rng.random().intRangeAtMost(T, a, b),
         .Float => return switch (T) {
-            f32 => return @floatFromInt(rng.random().intRangeAtMost(i32, @intFromFloat(a), @intFromFloat(b))),
-            f64 => return @floatFromInt(rng.random().intRangeAtMost(i64, @intFromFloat(a), @intFromFloat(b))),
+            f32 => return @floatFromInt(rng.random().intRangeAtMost(
+                i32,
+                @intFromFloat(a),
+                @intFromFloat(b),
+            )),
+            f64 => return @floatFromInt(rng.random().intRangeAtMost(
+                i64,
+                @intFromFloat(a),
+                @intFromFloat(b),
+            )),
             else => unreachable,
         },
         else => unreachable,

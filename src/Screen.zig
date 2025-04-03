@@ -32,6 +32,7 @@ pub fn init(allocator: std.mem.Allocator, screen_size: ScreenSize) !Screen {
         .bg = IndexedColor.black,
         ._size_parity = undefined,
     };
+
     screen.setViewPos(&vec2(0, 0));
     screen.check_size_parity(screen_size.width, screen_size.width);
 
@@ -44,6 +45,7 @@ pub fn deinit(self: *Screen) void {
 
 pub fn resize(self: *Screen, width: usize, height: usize) !void {
     self.check_size_parity(width, height);
+
     self.center = Vec2.fromInt(width, height).div(&vec2(2, 2));
     try self.buffer.resize(width, height);
 }
@@ -62,6 +64,7 @@ pub inline fn writeCellWorldSpace(
         self.center.x() + (x - self.view.x()),
         self.center.y() + (y - self.view.y()),
     );
+
     self.writeCell(buffer_pos.x(), buffer_pos.y(), cell);
 }
 
@@ -99,6 +102,7 @@ inline fn writeCell(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
         // checking parity to avoid screen flickering
         var ix: usize = undefined;
         var iy: usize = undefined;
+
         if (self._size_parity.width) {
             ix = @intFromFloat(@round(x));
         } else {
@@ -111,10 +115,12 @@ inline fn writeCell(self: *Screen, x: f32, y: f32, cell: *const Cell) void {
         }
 
         const fit_to_screen = ix < self.buffer.size.width and iy < self.buffer.size.height;
+
         if (fit_to_screen) {
             const index = iy * self.buffer.size.width + ix;
             var new_cell = cell.*;
             if (new_cell.bg == null) new_cell.bg = self.buffer.buf.items[index].bg;
+
             self.buffer.buf.items[index] = new_cell;
         }
     }

@@ -117,6 +117,10 @@ pub fn draw(self: *ParticleEmitter, painter: *Painter, delta_time: f32) void {
     }
 }
 
+pub fn reset(self: *ParticleEmitter) void {
+    self._time_elapsed = 0;
+}
+
 fn update(self: *ParticleEmitter, delta_time: f32) void {
     self._time_elapsed += delta_time;
     if (self._time_elapsed > self.config.duration) return;
@@ -151,13 +155,14 @@ fn initParticle(self: *ParticleEmitter, particle: *Particle) void {
         std.math.floatEps(f32),
         self.config.life + self.config.life_var * randomRange(f32, -1, 1),
     );
+
     const speed = self.config.speed + self.config.speed_var * randomRange(f32, -1, 1);
+
     const angle = randomRange(f32, self.config.start_angle, self.config.end_angle);
 
     particle.pos = self.config.pos;
     particle.life = @max(0, life);
     particle.setVelocity(speed, angle);
-
     self.setParticleColor(particle);
 }
 
@@ -173,18 +178,57 @@ fn removeParticle(self: *ParticleEmitter, particle: *Particle) void {
 
 fn updateParticle(self: *const ParticleEmitter, particle: *Particle, delta_time: f32) void {
     particle.life -= delta_time;
-    particle.pos = particle.pos.add(&vec2(particle.velocity.x() * delta_time, particle.velocity.y() * delta_time));
-    particle.pos = particle.pos.add(&self.config.gravity.mul(&vec2(delta_time, delta_time)));
+
+    particle.pos = particle.pos.add(&vec2(
+        particle.velocity.x() * delta_time,
+        particle.velocity.y() * delta_time,
+    ));
+
+    particle.pos = particle.pos.add(&self.config.gravity.mul(&vec2(
+        delta_time,
+        delta_time,
+    )));
+
     if (particle.cell.fg) |*fg| {
-        const r: u8 = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(fg.r())) + particle.delta_color_fg.r() * delta_time, 0, 255));
-        const g: u8 = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(fg.g())) + particle.delta_color_fg.g() * delta_time, 0, 255));
-        const b: u8 = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(fg.b())) + particle.delta_color_fg.b() * delta_time, 0, 255));
+        const r: u8 = @intFromFloat(std.math.clamp(
+            @as(f32, @floatFromInt(fg.r())) + particle.delta_color_fg.r() * delta_time,
+            0,
+            255,
+        ));
+
+        const g: u8 = @intFromFloat(std.math.clamp(
+            @as(f32, @floatFromInt(fg.g())) + particle.delta_color_fg.g() * delta_time,
+            0,
+            255,
+        ));
+
+        const b: u8 = @intFromFloat(std.math.clamp(
+            @as(f32, @floatFromInt(fg.b())) + particle.delta_color_fg.b() * delta_time,
+            0,
+            255,
+        ));
+
         fg.rgb = .{ r, g, b };
     }
     if (particle.cell.bg) |*bg| {
-        const r: u8 = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(bg.r())) + particle.delta_color_bg.r() * delta_time, 0, 255));
-        const g: u8 = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(bg.g())) + particle.delta_color_bg.g() * delta_time, 0, 255));
-        const b: u8 = @intFromFloat(std.math.clamp(@as(f32, @floatFromInt(bg.b())) + particle.delta_color_bg.b() * delta_time, 0, 255));
+        const r: u8 = @intFromFloat(std.math.clamp(
+            @as(f32, @floatFromInt(bg.r())) + particle.delta_color_bg.r() * delta_time,
+            0,
+            255,
+        ));
+
+        const g: u8 = @intFromFloat(std.math.clamp(
+            @as(f32, @floatFromInt(bg.g())) + particle.delta_color_bg.g() * delta_time,
+            0,
+            255,
+        ));
+
+        const b: u8 = @intFromFloat(std.math.clamp(
+            @as(f32, @floatFromInt(bg.b())) + particle.delta_color_bg.b() * delta_time,
+            0,
+            255,
+        ));
+
         bg.rgb = .{ r, g, b };
     }
 }

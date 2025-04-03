@@ -45,7 +45,9 @@ pub const Paragraph = struct {
                 .current_index = 0,
             },
         };
+
         if (content.len > 0) try self.content.appendSlice(content);
+
         return self;
     }
 
@@ -65,6 +67,7 @@ pub const Paragraph = struct {
         for (self.content.items) |el| {
             if (el.len > longest) longest = el.len;
         }
+
         painter.setCell(&self.config.border_style.style.cell());
         painter.drawPrettyRectangle(
             @floatFromInt(longest + 2),
@@ -79,11 +82,13 @@ pub const Paragraph = struct {
         if (self.config.animation) |anim| {
             if (anim.looping) {
                 var current_index: usize = @intFromFloat(@round(self._animation_state.current_index));
+
                 if (current_index > self.content.items[self._animation_state.current_line].len) {
                     self._animation_state.current_line += 1;
                     self._animation_state.current_index = 0;
                     current_index = 0;
                 }
+
                 if (self._animation_state.current_line >= self.content.items.len) {
                     self._animation_state.current_line = 0;
                     self._animation_state.current_index = 0;
@@ -91,6 +96,7 @@ pub const Paragraph = struct {
 
                 for (0.., self.content.items) |line, el| {
                     new_pos = new_pos.add(&vec2(0, 1));
+
                     if (line < self._animation_state.current_line) {
                         try painter.drawText(el, &new_pos);
                     } else if (line == self._animation_state.current_line) {
@@ -101,6 +107,7 @@ pub const Paragraph = struct {
                 self._animation_state.current_index += anim.speed * delta_time;
             } else {
                 var current_index: usize = @intFromFloat(@round(self._animation_state.current_index));
+
                 if (self._animation_state.current_line != self.content.items.len - 1 or
                     current_index < self.content.items[self._animation_state.current_line].len)
                 {
@@ -109,6 +116,7 @@ pub const Paragraph = struct {
                         self._animation_state.current_index = 0;
                         current_index = 0;
                     }
+
                     if (self._animation_state.current_line >= self.content.items.len) {
                         self._animation_state.current_line = 0;
                         self._animation_state.current_index = 0;
@@ -119,6 +127,7 @@ pub const Paragraph = struct {
 
                 for (0.., self.content.items) |line, el| {
                     new_pos = new_pos.add(&vec2(0, 1));
+
                     if (line < self._animation_state.current_line) {
                         try painter.drawText(el, &new_pos);
                     } else if (line == self._animation_state.current_line) {
@@ -202,6 +211,7 @@ pub const Menu = struct {
 
         var element_width: f32 = undefined;
         var element_height: f32 = undefined;
+
         switch (self.config.orientation) {
             .vertical => {
                 element_width = self.config.width - 2 * self.config.padding - 2;
@@ -214,15 +224,18 @@ pub const Menu = struct {
                 element_height = self.config.height - 2 * self.config.padding - 2;
             },
         }
+
         if (element_height < 3 or element_width < 3) return;
 
         const element_center_y = element_height / 2;
 
         var current_pos = pos.*.add(&vec2(self.config.padding + 1, self.config.padding + 1));
+
         for (0..self.items.items.len) |i| {
             var element_style: Cell = undefined;
             var text_style: Cell = undefined;
             var element_filling: bool = undefined;
+
             if (self.selected_item == i) {
                 element_style = self.config.selection.element_style.cell();
                 text_style = self.config.selection.text_style.cell();
@@ -244,9 +257,12 @@ pub const Menu = struct {
 
             const text_len: f32 = @floatFromInt(self.items.items[i].len);
             const text_y: f32 = @floor(current_pos.y() + element_center_y);
+
             painter.setCell(&text_style);
+
             if (text_len > element_width - 2) {
                 const text_x = current_pos.x() + 1;
+
                 try painter.drawText(
                     self.items.items[i][0..@as(usize, @intFromFloat(@round(element_width - 2)))],
                     &vec2(text_x, text_y),
@@ -318,6 +334,7 @@ pub const TextInput = struct {
             self.config.border,
             self.config.filling,
         );
+
         var cursor_style = self.config.text_style;
         cursor_style.bg = self.config.cursor_color;
 
@@ -363,12 +380,14 @@ pub const TextInput = struct {
         } else {
             try self._buffer.insert(self._cursor_pos, char);
         }
+
         if (self._cursor_pos == self._viewport.end) {
             if (self._viewport.end - self._viewport.begin < self.config.width - 2)
                 self._viewport.end += 1;
             if (self._viewport.end - self._viewport.begin == self.config.width - 2)
                 self._viewport.begin += 1;
         }
+
         if (self._cursor_pos < self._viewport.end) self._cursor_pos += 1;
     }
 
@@ -382,8 +401,10 @@ pub const TextInput = struct {
                     self._viewport.end -= 1;
                 }
             }
+
             if (self._viewport.end == self._buffer.items.len)
                 self._viewport.end -= 1;
+
             self._cursor_pos -= 1;
             _ = self._buffer.orderedRemove(self._cursor_pos);
         }
@@ -394,6 +415,7 @@ pub const TextInput = struct {
             if (self._cursor_pos == self._viewport.begin) {
                 if (self._viewport.begin > 0)
                     self._viewport.begin -= 1;
+
                 if (self._viewport.end - self._viewport.begin - 1 == self.config.width - 2)
                     self._viewport.end -= 1;
             }
@@ -406,6 +428,7 @@ pub const TextInput = struct {
             if (self._cursor_pos == self._viewport.end - 1) {
                 if (self._viewport.end >= self.config.width - 2)
                     self._viewport.begin += 1;
+
                 if (self._viewport.end != self._buffer.items.len)
                     self._viewport.end += 1;
             }

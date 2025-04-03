@@ -121,6 +121,7 @@ pub fn Terminal(comptime T: type) type {
         fn drawFrame(self: *Terminal(T)) !void {
             var start_row: usize = 0;
             var start_col: usize = 0;
+
             if (self._win_offset) |offset| {
                 start_row = offset.height;
                 start_col = offset.width;
@@ -133,16 +134,21 @@ pub fn Terminal(comptime T: type) type {
 
                     if (!cell.eql(last_cell)) {
                         try self._backend.setAttr(@intFromEnum(Attribute.reset));
+
                         try self._backend.setCursor(@intCast(x + start_col), @intCast(y + start_row));
+
                         if (cell.fg) |fg| {
                             try self._backend.setFg(fg.r(), fg.g(), fg.b());
                         }
+
                         if (cell.bg) |bg| {
                             try self._backend.setBg(bg.r(), bg.g(), bg.b());
                         }
+
                         if (cell.attr != .none) {
                             try self._backend.setAttr(@intFromEnum(cell.attr));
                         }
+
                         try self._backend.putChar(cell.char);
                     }
                 }
