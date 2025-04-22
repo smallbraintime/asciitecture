@@ -16,6 +16,8 @@ A simple text-based graphics game library for zig . Currently, it only supports 
 ```zig build test```
 
 ### Todo
+- [ ] Add alpha blending
+- [ ] Update Color struct
 - [ ] Make term/screen api prettier
 - [ ] Add more tests and docs
 - [ ] Add Windows support
