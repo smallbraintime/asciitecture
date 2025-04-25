@@ -41,9 +41,9 @@ pub const Sprite = struct {
         var height: usize = 1;
         var width_counter: usize = 0;
 
-        //this should be the part of Sprite struct
         const view = try std.unicode.Utf8View.init(self.image);
         var iter = view.iterator();
+
         while (iter.nextCodepoint()) |c| {
             if (c == '\n') {
                 height += 1;

@@ -383,7 +383,7 @@ pub fn main() !void {
                     else => {},
                 }
 
-                term.setViewPos(&term._screen.view.lerp(&player_pos, 0.5 * term.delta_time));
+                term.setViewPos(&term.getViewPos().lerp(&player_pos, 0.5 * term.delta_time));
                 floor_collider.line.p1 = vec2(player_pos.x(), floor_collider.line.p1.y()).add(&vec2(-105, 0));
                 floor_collider.line.p2 = vec2(player_pos.x(), floor_collider.line.p2.y()).add(&vec2(105, 0));
             }

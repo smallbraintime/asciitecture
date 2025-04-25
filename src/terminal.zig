@@ -13,7 +13,7 @@ pub fn Terminal(comptime T: type) type {
     return struct {
         delta_time: f32,
         target_delta: f32,
-        _win_size: ScreenSize,
+        win_size: ScreenSize,
         _win_offset: ?ScreenSize,
         _backend: T,
         _prev_screen: Buffer,
@@ -66,7 +66,7 @@ pub fn Terminal(comptime T: type) type {
             return .{
                 .delta_time = delta,
                 .target_delta = delta,
-                ._win_size = win_size,
+                .win_size = win_size,
                 ._win_offset = win_offset,
                 ._backend = backend,
                 ._screen = screen,
@@ -112,6 +112,10 @@ pub fn Terminal(comptime T: type) type {
 
         pub fn setViewPos(self: *Terminal(T), pos: *const Vec2) void {
             self._screen.setViewPos(pos);
+        }
+
+        pub fn getViewPos(self: *Terminal(T)) Vec2 {
+            return self._screen.view;
         }
 
         pub fn setBg(self: *Terminal(T), color: Color) void {
@@ -163,9 +167,9 @@ pub fn Terminal(comptime T: type) type {
         fn handleResize(self: *Terminal(T)) !void {
             const ws = try self._backend.screenSize();
 
-            if (ws[0] != self._win_size.width or ws[1] != self._win_size.height) {
-                self._win_size.width = ws[0];
-                self._win_size.height = ws[1];
+            if (ws[0] != self.win_size.width or ws[1] != self.win_size.height) {
+                self.win_size.width = ws[0];
+                self.win_size.height = ws[1];
 
                 if (ws[0] == 0 and ws[1] == 0) self._minimized = true;
 
