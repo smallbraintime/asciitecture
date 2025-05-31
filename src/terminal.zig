@@ -23,7 +23,6 @@ pub fn Terminal(comptime T: type) type {
 
         pub fn init(
             allocator: std.mem.Allocator,
-            target_fps: f32,
             comptime size: ?ScreenSize,
         ) !Terminal(T) {
             var backend = try T.init();
@@ -61,7 +60,7 @@ pub fn Terminal(comptime T: type) type {
                 );
             }
 
-            const delta = 1 / target_fps;
+            const delta = 1.0 / 60.0;
 
             return .{
                 .delta_time = delta,
