@@ -24,7 +24,7 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer if (gpa.deinit() == .leak) @panic("memory leak occured");
 
-    var term = try Terminal(LinuxTty).init(gpa.allocator(), 60, .{ .height = 35, .width = 105 });
+    var term = try Terminal(LinuxTty).init(gpa.allocator(), 600, .{ .height = 35, .width = 105 });
     defer term.deinit() catch |err| @panic(@errorName(err));
 
     var painter = term.painter();
@@ -445,7 +445,7 @@ pub fn main() !void {
             painter.setDrawingSpace(.screen);
             painter.setCell(&.{ .fg = IndexedColor.magenta });
             var buf: [5]u8 = undefined;
-            const fps = try std.fmt.bufPrint(&buf, "{d:.0}", .{1.0 / term.delta_time});
+            const fps = try std.fmt.bufPrint(&buf, "{d:.0}", .{1 / term.delta_time});
             try painter.drawText(fps, &(vec2((105 / 2) - 4, -35 / 2 - 0.5)));
             painter.setDrawingSpace(.world);
         }

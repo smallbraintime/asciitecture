@@ -92,21 +92,25 @@ pub fn Terminal(comptime T: type) type {
 
         pub fn draw(self: *Terminal(T)) !void {
             if (!self._minimized) {
-                const new_time = std.time.nanoTimestamp();
-                const draw_time =
-                    @as(f32, @floatFromInt(new_time - self._current_time)) / std.time.ns_per_s;
-                self._current_time = new_time;
-
-                if (draw_time < self.target_delta) {
-                    const delayTime = self.target_delta - draw_time;
-                    std.time.sleep(@intFromFloat(delayTime * std.time.ns_per_s));
-                    self.delta_time = draw_time + delayTime;
-                } else {
-                    self.delta_time = draw_time;
-                }
+                const frame_start = std.time.nanoTimestamp();
 
                 try self.drawFrame();
+
+                const frame_end = std.time.nanoTimestamp();
+                var frame_duration = @as(f32, @floatFromInt(frame_end - frame_start)) / std.time.ns_per_s;
+
+                if (frame_duration < self.target_delta) {
+                    const sleep_time = self.target_delta - frame_duration;
+                    std.time.sleep(@intFromFloat(sleep_time * std.time.ns_per_s));
+
+                    const after_sleep = std.time.nanoTimestamp();
+                    frame_duration = @as(f32, @floatFromInt(after_sleep - frame_start)) / std.time.ns_per_s;
+                }
+
+                self.delta_time = frame_duration;
+                self._current_time = frame_start;
             }
+
             try self.handleResize();
         }
 
