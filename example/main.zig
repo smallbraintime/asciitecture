@@ -24,7 +24,7 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer if (gpa.deinit() == .leak) @panic("memory leak occured");
 
-    var term = try Terminal(LinuxTty).init(gpa.allocator(), .{ .height = 35, .width = 105 });
+    var term = try Terminal(LinuxTty).init(gpa.allocator(), 60, .{ .height = 35, .width = 105 });
     defer term.deinit() catch |err| @panic(@errorName(err));
 
     var painter = term.painter();
